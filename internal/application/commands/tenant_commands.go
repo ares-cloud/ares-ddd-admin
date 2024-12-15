@@ -1,18 +1,20 @@
 package commands
 
 type CreateTenantCommand struct {
-	Code        string             `json:"code" binding:"required"`
-	Name        string             `json:"name" binding:"required"`
-	Description string             `json:"description"`
-	IsDefault   int8               `json:"is_default"`
-	AdminUser   *CreateUserCommand `json:"admin_user" binding:"required"`
+	Code        string            `json:"code" binding:"required"`
+	Name        string            `json:"name" binding:"required"`
+	Description string            `json:"description"`
+	IsDefault   int8              `json:"isDefault"`
+	ExpireTime  int64             `json:"expireTime"`
+	AdminUser   CreateUserCommand `json:"adminUser" binding:"required"`
 }
 
 type UpdateTenantCommand struct {
 	ID          string `json:"id" binding:"required"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	IsDefault   int8   `json:"is_default"`
+	IsDefault   int8   `json:"isDefault"`
+	ExpireTime  int64  `json:"expireTime"`
 }
 
 type DeleteTenantCommand struct {
@@ -20,6 +22,6 @@ type DeleteTenantCommand struct {
 }
 
 type AssignTenantPermissionsCommand struct {
-	TenantID      string  `json:"tenant_id" binding:"required"`
-	PermissionIDs []int64 `json:"permission_ids" binding:"required"`
+	TenantID      string  `json:"tenantId" binding:"required"`
+	PermissionIDs []int64 `json:"permissionIds" binding:"required"`
 }

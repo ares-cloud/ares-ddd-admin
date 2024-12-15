@@ -14,5 +14,5 @@ type ListPermissionsQuery struct {
 }
 
 type GetPermissionsTreeQuery struct {
-	Type string `json:"type" query:"type"` // 权限类型
+	Type int8 `json:"type" query:"type"` // 权限类型
 }

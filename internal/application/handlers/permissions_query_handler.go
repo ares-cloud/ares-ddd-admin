@@ -71,10 +71,9 @@ func (h *PermissionsQueryHandler) HandleGet(ctx context.Context, query queries.G
 }
 
 func (h *PermissionsQueryHandler) HandleGetTree(ctx context.Context, query queries.GetPermissionsTreeQuery) ([]*dto.PermissionsDto, herrors.Herr) {
-	//perms, err := h.permRepo.FindTree(ctx, query.Type)
-	//if err != nil {
-	//	return nil, herrors.QueryFail(err)
-	//}
-	//return dto.ToPermissionsDtoList(perms), nil
-	return nil, nil
+	perms, err := h.permRepo.FindTreeByType(ctx, query.Type)
+	if err != nil {
+		return nil, herrors.QueryFail(err)
+	}
+	return dto.ToPermissionsDtoList(perms), nil
 }

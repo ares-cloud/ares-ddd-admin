@@ -10,11 +10,12 @@ type TenantDto struct {
 	Code        string   `json:"code"`        // 租户编码
 	Name        string   `json:"name"`        // 租户名称
 	Description string   `json:"description"` // 描述
-	IsDefault   int8     `json:"is_default"`  // 是否默认租户
+	IsDefault   int8     `json:"isDefault"`   // 是否默认租户
 	Status      int8     `json:"status"`      // 状态
-	AdminUser   *UserDto `json:"admin_user"`  // 管理员用户
-	CreatedAt   int64    `json:"createdAt"`   // 创建时间
-	UpdatedAt   int64    `json:"updatedAt"`   // 更新时间
+	AdminUser   *UserDto `json:"adminUser"`   // 管理员用户
+	ExpireTime  int64    `json:"expireTime"`
+	CreatedAt   int64    `json:"createdAt"` // 创建时间
+	UpdatedAt   int64    `json:"updatedAt"` // 更新时间
 }
 
 // ToTenantDto 领域模型转换为DTO
@@ -31,6 +32,7 @@ func ToTenantDto(t *model.Tenant) *TenantDto {
 		IsDefault:   t.IsDefault,
 		Status:      t.Status,
 		CreatedAt:   t.CreatedAt,
+		ExpireTime:  t.ExpireTime,
 		UpdatedAt:   t.UpdatedAt,
 	}
 

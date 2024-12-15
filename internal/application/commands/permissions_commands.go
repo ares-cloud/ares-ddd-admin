@@ -10,7 +10,7 @@ type CreatePermissionsCommand struct {
 	Type        int8                               `json:"type" binding:"required"`
 	Path        string                             `json:"path"`
 	Properties  string                             `json:"properties"`
-	ParentID    int64                              `json:"parent_id"`
+	ParentID    int64                              `json:"parentId"`
 	Resources   []CreatePermissionsResourceCommand `json:"resources"`
 }
 

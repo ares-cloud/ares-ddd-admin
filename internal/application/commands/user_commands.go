@@ -6,7 +6,7 @@ type CreateUserCommand struct {
 	Password       string  `json:"password" binding:"required"`
 	Phone          string  `json:"phone"`
 	Email          string  `json:"email"`
-	RoleIDs        []int64 `json:"role_ids"`
+	RoleIDs        []int64 `json:"roleIds"`
 	InvitationCode string  `json:"invitation_code"`
 }
 

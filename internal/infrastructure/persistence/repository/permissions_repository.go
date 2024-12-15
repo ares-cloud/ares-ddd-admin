@@ -230,12 +230,19 @@ func (r *permissionsRepository) FindAllTree(ctx context.Context) ([]*model.Permi
 }
 
 func (r *permissionsRepository) FindTreeByType(ctx context.Context, permType int8) ([]*model.Permissions, error) {
-	permEntities, resources, err := r.repo.GetTreeByType(ctx, permType)
-	if err != nil {
-		return nil, err
+	var permissions []*entity.Permissions
+	var resources []*entity.PermissionsResource
+	var err error
+	if permType == 0 {
+		permissions, resources, err = r.repo.GetAllTree(ctx)
+	} else {
+		permissions, resources, err = r.repo.GetTreeByType(ctx, permType)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return buildPermissionTree(r.mapper.ToDomainList(permEntities, resources)), nil
+	return buildPermissionTree(r.mapper.ToDomainList(permissions, resources)), nil
 }
 
 func (r *permissionsRepository) FindTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*model.Permissions, error) {

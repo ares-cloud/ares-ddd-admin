@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence/repository"
@@ -66,6 +67,7 @@ func (r *sysTenantRepo) DelById(ctx context.Context, id string) error {
 // Create 创建租户（重写基类方法，处理默认租户）
 func (r *sysTenantRepo) Create(ctx context.Context, tenant *entity.Tenant) error {
 	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
+		tenant.CreatedAt = time.Now().Unix()
 		// 如果是默认租户，需要将其他租户设置为非默认
 		if tenant.IsDefault == 1 {
 			if err := r.Db(ctx).Model(&entity.Tenant{}).Where("is_default = ?", 1).
@@ -82,6 +84,7 @@ func (r *sysTenantRepo) Create(ctx context.Context, tenant *entity.Tenant) error
 // Update 更新租户（重写基类方法，处理默认租户）
 func (r *sysTenantRepo) Update(ctx context.Context, tenant *entity.Tenant) error {
 	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
+		tenant.UpdatedAt = time.Now().Unix()
 		// 如果是默认租户，需要将其他租户设置为非默认
 		if tenant.IsDefault == 1 {
 			if err := r.Db(ctx).Model(&entity.Tenant{}).

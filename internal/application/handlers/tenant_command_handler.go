@@ -45,6 +45,9 @@ func (h *TenantCommandHandler) HandleCreate(ctx context.Context, cmd *commands.C
 	tenant := model.NewTenant(cmd.Code, cmd.Name, adminUser)
 	tenant.Description = cmd.Description
 	tenant.IsDefault = cmd.IsDefault
+	if cmd.ExpireTime > 0 {
+		tenant.ExpireTime = cmd.ExpireTime
+	}
 
 	err = h.tenantRepo.Create(ctx, tenant)
 	if err != nil {
@@ -63,6 +66,11 @@ func (h *TenantCommandHandler) HandleUpdate(ctx context.Context, cmd commands.Up
 
 	// 更新基本信息
 	tenant.UpdateBasicInfo(cmd.Name, cmd.Description)
+
+	// 更新过期时间
+	if cmd.ExpireTime > 0 {
+		tenant.UpdateExpireTime(cmd.ExpireTime)
+	}
 
 	// 更新默认状态
 	if cmd.IsDefault != 0 {
