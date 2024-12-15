@@ -1,0 +1,19 @@
+server:
+  port: 8080
+  mode: debug
+
+database:
+  driver: postgres
+  host: localhost
+  port: 5432
+  username: postgres
+  password: postgres
+  dbname: ares_admin
+  sslmode: disable
+
+jwt:
+  secret: your-secret-key
+  expire: 24h
+
+casbin:
+  model: configs/rbac_model.conf 

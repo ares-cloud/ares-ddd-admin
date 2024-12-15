@@ -1,0 +1,47 @@
+# 服务配置
+server:
+  port: 8858
+  tracer_port: 8859
+  rate_qps: 0 # 整体QPS，0表示不限流
+  name: 'admin' # 当前服务
+  max_request_body_size: 10 #请求体的最大大小单位M
+#数据库配置
+data:
+  database:
+    driver: pgsql
+    source: "host=localhost user=root password=opeIM123 dbname=ares_admin port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+    max_idle_cons: 10 # 最大空闲连接数
+    max_open_cons: 100 # 最大连接数
+    id_table_num: 20
+    log_level: 4
+
+  redis:
+    addr: localhost:16379
+    password: 'openIM123' # REDIS密码
+    db: 0
+    read_timeout: 10
+    write_timeout: 10
+
+# 日志配置
+log:
+  output_dir: './logs/'
+  file_prefix: 'user'
+  level: 1
+  max_size: 20 #单位m
+  max_backups: 5 #最多同时保存几个文件
+  max_age: 10 #一个文件最多可以保存多少天
+  compress: true #文件是否压缩
+
+
+# JWT配置(APP端)
+jwt:
+  issuer: 'ares-cloud'
+  signing_key: 'uAYnaSgAiYzAiGwLFe'
+  expiration_token: 360000
+  expiration_refresh: 720000
+
+# 平台服务配置
+super_admin:
+    nickname: 超级管理员
+    phone: 15888888888
+    password: Super123

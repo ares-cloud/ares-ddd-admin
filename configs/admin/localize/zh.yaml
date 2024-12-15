@@ -1,0 +1,148 @@
+ServerBusy: 服务器繁忙
+Success: 成功
+GetUserProfileErr: 获取取用户信息错误
+UserNotFind: 用户不存在
+StatusInvalidParam: 参数错误
+tokenEmpty: 令牌不能为空，请重新登录
+tokenVerifyFail: 令牌无效，请重新登录
+RPC_CALL_ERROR: 服务调用异常
+UNKNOWN: 未知错误
+PLEASE_DO_NOT_RESUBMIT: 请勿重复提交
+isNotAdminAccount: 不是管理账号
+STATUS_INTERNAL_SERVER_ERROR: 服务端错误
+PARAMETER_ERROR: 参数错误
+sqlInjectionDetected: sql注入
+#通用
+QUERY_FAIL: 查询失败
+CREATE_FAIL: 创建失败
+UPDATE_FAIL: 更新失败
+DELETE_FAIL: 删除失败
+PARAMETER_TRANSFER_FAIL: 参数转换失败
+RESULT_TRANSFER_FAIL: 结果转换失败
+
+#认证
+PasswordsDoNotMatch: 两次密码不一致
+IncorrectAccountOrPassword: 账号或密码不正确
+IncorrectVerificationCode: 验证码不正确
+AccountAlreadyExists: 账号已存在
+ErrorGetTokenError: 生成token失败
+OldPasswordFail: 旧密码不正确
+VerifiedError: 实名认证失败
+IDCardFailed: 身份证号不正确
+GetUserRolesError: 获取用户角色失败
+
+#公告
+AddAnnouncementFail: 新增公告失败
+EditAnnouncementFail: 修改公告失败
+DeleteAnnouncementFail: 删除公告失败
+GetAnnouncementFail: 获取公告是失败
+
+#申请
+HandleMaterialApplication: 处理物资申请失败
+AddMaterialApplication: 新增物资申请失败
+GetMaterialApplicationFail: 获取物资申请失败
+NotMeetingApplicationRequirements: 未满足申请条件
+
+PendingApplications: 有正在处理的请求
+ApplicationApproved: 申请已批准
+
+#团长申请
+HandleHeadOfGroupApplication: 处理团长申请失败
+AddHeadOfGroupApplication: 新增团长申请失败
+GetHeadOfGroupApplicationFail: 获取团长申请失败
+
+#银行卡
+ChickBankCardField: 卡号校验失败
+BankCardField: 卡号错误
+AddBankField: 新增银行卡是吧
+SetDefaultBankCardField: 设置默认银行卡失败
+DeleteBankCardField: 删除银行卡失败
+GetBankListField: 获取银行卡列表失败
+TheCardNumberHasBeenBound: 卡号已绑定
+UpToThreeBankCardsCanBeBound: 最多只能绑定三张银行卡
+UserIsNotRealName: 用户未实名
+GetBankCardField: 获取银行卡失败
+
+# 订单
+CreateOrderFailed: 创建订单失败
+EditOrderFailed: 编辑订单失败
+GetOrderFailed: 获取订单失败
+AmountIsEmpty: 订单金额不能为空
+AmountFailed: 金额格式不正确
+ProductIsNotAvailable: 产品未上架
+LessThanTheMinimumPurchaseAmount: 小于最小购买金额
+GreaterThanTheMaximumPurchaseAmount: 大于最大购买金额
+ItemSoldOut: 产品已经售空
+TheProductHasNotYetBeenSold: 商品未开始销售
+
+#商品
+AddProductFail: 添加商品失败
+EditProductFail: 编辑商品失败
+GetProductFail: 获取商品失败
+ProductNotExist: 商品不存在
+AddProductClassFail: 新增分类失败
+GetProductClassFail: 获取商品分类失败
+EditProductClassFail: 编辑商品分类失败
+DeleteProductFail: 删除商品失败
+
+#rbac
+RbacPhoneOrNameIsExistError: 添加用户，用户手机号已存在错误
+RbacMenuNameIsExistError: 菜单名称已存在
+RbacRoleNameIsExistError:  角色名称已存在
+AddMenuError: 添加菜单失败
+DeleteMenuError: 删除菜单失败
+EditMenuError: 更改菜单失败
+GetMenuError: 获取才菜单失败
+NameRealNameInconsistentErr: 名称或iocn为空
+AddUserError: 新增用户失败
+UpdatePasswordError: 更新密码失败
+
+#签到
+SignInFail: 签到失败
+GetSignInFail: 获取签到记录失败
+SignInCompletedToday: 你已完成签到
+
+#系统配置
+SysConfigurationTypeIsExist: 配置类型已存在
+CreateConfigurationFiled: 创建系统配置错误
+UpdateConfigurationFiled: 修改系统配置错误
+SysConfigurationNotExist: 配置不存在
+GetConfigurationFile: 获取系统配置错误
+
+#用户
+AddUserFailed: 新增用户失败
+DelUserFailed: 删除用户失败
+EditUserFailed: 编辑用户失败
+GetUserFailed: 获取用户失败
+UserNotFond: 用户不存在
+InvitationCodeFailed: 推广吗无效
+PersonIdIsInvalid: 身份证有错误
+GetUserNumberOfInvitations: 获取推广数量失败
+GetUserApplicationFailed: 获取用户申请失败
+RealApplicationHasBeenProcessed: 实名认证已处理
+RealApplicationProcessedFail: 实名认证失败
+PasswordGenerateFailed: 密码生成失败
+
+#钱包
+OpenWalletError: 开通钱包失败
+GetUserWalletError: 获取钱包失败
+ChangeWalletStatusError: 更改钱包状态失败
+PleaseDoNotResubmit: 请勿重复提交
+WithdrawalPermissionIsNotEnabled: 没有提现权限
+AmountCanNotBetLessThan: 金额低于最小金额
+WithdrawalField: 提现错误
+WithdrawalAmountField: 请求金额错误
+TodayWithdrawalNumUsed: 当天提现次数用完
+InsufficientAccountBalance: 账户余额不足
+GetAccountRequestLogField: 或请求信息失败
+AccountWalletFrozen: 账户冻结
+HandleApplicationField: 处理请求失败
+ApplicationHasBeenProcessed: 请求已被处理
+AccountUnavailable: 账户不可用
+HdbField: 交易失败
+GetHdbLogField: 获取交易记录失败
+
+#资产
+TheStockIsZeroAndCannotBeExchanged: 库存数量为零不能兑换
+ExchangeFail: 兑换失败
+ExchangeConditionsNotMet: 不满足兑换条件

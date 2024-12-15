@@ -1,0 +1,1185 @@
+basePath: /api/admin
+definitions:
+  base_info.Success:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data: {}
+      msg:
+        example: err msg
+        type: string
+      reason:
+        description: 错误原因，定义为业务判定错误码
+        example: success
+        type: string
+    type: object
+  base_info.Swagger400Resp:
+    properties:
+      code:
+        example: 400
+        type: integer
+      msg:
+        example: err msg
+        type: string
+      reason:
+        example: err_reason
+        type: string
+    type: object
+  base_info.Swagger401Resp:
+    properties:
+      code:
+        example: 401
+        type: integer
+      msg:
+        example: err msg
+        type: string
+      reason:
+        example: err_reason
+        type: string
+    type: object
+  base_info.Swagger500Resp:
+    properties:
+      code:
+        example: 500
+        type: integer
+      msg:
+        example: err msg
+        type: string
+      reason:
+        example: err_reason
+        type: string
+    type: object
+  commands.AssignTenantPermissionsCommand:
+    properties:
+      permission_ids:
+        items:
+          type: integer
+        type: array
+      tenant_id:
+        type: string
+    required:
+    - permission_ids
+    - tenant_id
+    type: object
+  commands.CreatePermissionsCommand:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      localize:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: integer
+      path:
+        type: string
+      properties:
+        type: string
+      resources:
+        items:
+          $ref: '#/definitions/commands.CreatePermissionsResourceCommand'
+        type: array
+      sequence:
+        type: integer
+      type:
+        type: integer
+    required:
+    - code
+    - name
+    - type
+    type: object
+  commands.CreatePermissionsResourceCommand:
+    properties:
+      method:
+        type: string
+      path:
+        type: string
+    required:
+    - method
+    - path
+    type: object
+  commands.CreateRoleCommand:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      localize:
+        type: string
+      name:
+        type: string
+      perm_ids:
+        items:
+          type: integer
+        type: array
+      sequence:
+        type: integer
+    required:
+    - code
+    - name
+    type: object
+  commands.CreateTenantCommand:
+    properties:
+      admin_user:
+        $ref: '#/definitions/commands.CreateUserCommand'
+      code:
+        type: string
+      description:
+        type: string
+      is_default:
+        type: integer
+      name:
+        type: string
+    required:
+    - admin_user
+    - code
+    - name
+    type: object
+  commands.CreateUserCommand:
+    properties:
+      email:
+        type: string
+      invitation_code:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      role_ids:
+        items:
+          type: integer
+        type: array
+      username:
+        type: string
+    required:
+    - name
+    - password
+    - username
+    type: object
+  commands.UpdatePermissionsCommand:
+    properties:
+      description:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      path:
+        type: string
+      properties:
+        type: string
+      sequence:
+        type: integer
+      status:
+        type: integer
+    required:
+    - id
+    type: object
+  commands.UpdateRoleCommand:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      perm_ids:
+        items:
+          type: integer
+        type: array
+      sequence:
+        type: integer
+      status:
+        type: integer
+    required:
+    - id
+    type: object
+  commands.UpdateTenantCommand:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      is_default:
+        type: integer
+      name:
+        type: string
+    required:
+    - id
+    type: object
+  commands.UpdateUserCommand:
+    properties:
+      email:
+        type: string
+      faceUrl:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      remark:
+        type: string
+      roleIds:
+        items:
+          type: integer
+        type: array
+      status:
+        type: integer
+      username:
+        type: string
+    type: object
+  commands.UpdateUserStatusCommand:
+    properties:
+      id:
+        type: string
+      status:
+        type: integer
+    type: object
+  dto.PermissionsDto:
+    properties:
+      code:
+        description: 编码
+        type: string
+      createdAt:
+        description: 创建时间
+        type: integer
+      description:
+        description: 描述
+        type: string
+      icon:
+        description: 图标
+        type: string
+      id:
+        description: ID
+        type: integer
+      localize:
+        description: 本地化
+        type: string
+      name:
+        description: 名称
+        type: string
+      parentId:
+        description: 父级ID
+        type: integer
+      parentPath:
+        description: 父级路径
+        type: string
+      path:
+        description: 路径
+        type: string
+      properties:
+        description: 属性
+        type: string
+      resources:
+        allOf:
+        - $ref: '#/definitions/dto.PermissionsResource'
+        description: 资源列表
+      sequence:
+        description: 排序
+        type: integer
+      status:
+        description: 状态
+        type: integer
+      type:
+        description: 类型
+        type: integer
+      updatedAt:
+        description: 更新时间
+        type: integer
+    type: object
+  dto.PermissionsResource:
+    properties:
+      method:
+        description: HTTP方法
+        type: string
+      path:
+        description: 资源路径
+        type: string
+    type: object
+  dto.RoleDto:
+    properties:
+      code:
+        description: 编码
+        type: string
+      createdAt:
+        description: 创建时间
+        type: integer
+      description:
+        description: 描述
+        type: string
+      id:
+        description: ID
+        type: integer
+      name:
+        description: 名称
+        type: string
+      permIds:
+        description: 权限ID列表
+        items:
+          type: integer
+        type: array
+      status:
+        description: 状态
+        type: integer
+      updatedAt:
+        description: 更新时间
+        type: integer
+    type: object
+  dto.TenantDto:
+    properties:
+      admin_user:
+        allOf:
+        - $ref: '#/definitions/dto.UserDto'
+        description: 管理员用户
+      code:
+        description: 租户编码
+        type: string
+      createdAt:
+        description: 创建时间
+        type: integer
+      description:
+        description: 描述
+        type: string
+      id:
+        description: ID
+        type: string
+      is_default:
+        description: 是否默认租户
+        type: integer
+      name:
+        description: 租户名称
+        type: string
+      status:
+        description: 状态
+        type: integer
+      updatedAt:
+        description: 更新时间
+        type: integer
+    type: object
+  dto.UserDto:
+    properties:
+      createdAt:
+        description: 创建时间
+        type: integer
+      email:
+        description: 邮箱
+        type: string
+      id:
+        description: ID
+        type: string
+      name:
+        description: 姓名
+        type: string
+      phone:
+        description: 手机号
+        type: string
+      roleIds:
+        description: 角色ID列表
+        items:
+          type: integer
+        type: array
+      status:
+        description: 状态
+        type: integer
+      updatedAt:
+        description: 更新时间
+        type: integer
+      username:
+        description: 用户名
+        type: string
+    type: object
+  models.PageRes-dto_TenantDto:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/dto.TenantDto'
+        type: array
+      total:
+        type: integer
+    type: object
+host: localhost:8858
+info:
+  contact:
+    name: go-server-template-admin
+  description: This is a demo using go-server-template-admin.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: ares-ddd-admin
+  version: "1.0"
+paths:
+  /v1/sys/permissions:
+    get:
+      description: 获取权限列表
+      operationId: PermissionsList
+      parameters:
+      - description: 编码
+        in: query
+        name: code
+        type: string
+      - description: 页码，从1开始
+        in: query
+        name: current
+        type: integer
+      - description: 名称
+        in: query
+        name: name
+        type: string
+      - description: 页码大小，最大100
+        in: query
+        name: size
+        type: integer
+      - description: 角色状态（禁用、启用）
+        in: query
+        name: status
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.PermissionsDto'
+                  type: array
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取权限列表
+      tags:
+      - 系统权限
+    post:
+      description: 添加权限
+      operationId: AddPermissions
+      parameters:
+      - description: 属性说明请在对应model中查看
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.CreatePermissionsCommand'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 添加权限
+      tags:
+      - 系统权限
+    put:
+      consumes:
+      - application/json
+      description: 更新权限信息，包括基本信息和资源关联
+      operationId: UpdatePermissions
+      parameters:
+      - description: 权限更新信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.UpdatePermissionsCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 更新权限
+      tags:
+      - 系统权限
+  /v1/sys/permissions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的权限
+      operationId: DeletePermissions
+      parameters:
+      - description: 权限ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 删除权限
+      tags:
+      - 系统权限
+  /v1/sys/permissions/tree:
+    get:
+      consumes:
+      - application/json
+      description: 获取权限树形结构
+      operationId: GetPermissionsTree
+      parameters:
+      - description: 权限类型
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.PermissionsDto'
+                  type: array
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取权限树
+      tags:
+      - 系统权限
+  /v1/sys/role:
+    get:
+      description: 获取角色
+      operationId: RoleList
+      parameters:
+      - description: 编码
+        in: query
+        name: code
+        type: string
+      - description: 页码，从1开始
+        in: query
+        name: current
+        type: integer
+      - description: 名称
+        in: query
+        name: name
+        type: string
+      - description: 页码大小，最大100
+        in: query
+        name: size
+        type: integer
+      - description: 角色状态（禁用、启用）
+        in: query
+        name: status
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.RoleDto'
+                  type: array
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取角色
+      tags:
+      - 系统角色
+    post:
+      description: 添加角色
+      operationId: AddRole
+      parameters:
+      - description: 属性说明请在对应model中查看
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.CreateRoleCommand'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 添加角色
+      tags:
+      - 系统角色
+    put:
+      consumes:
+      - application/json
+      description: 更新角色信息，包括基本信息和权限关联
+      operationId: UpdateRole
+      parameters:
+      - description: 角色更新信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.UpdateRoleCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 更新角色
+      tags:
+      - 系统角色
+  /v1/sys/role/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的角色
+      operationId: DeleteRole
+      parameters:
+      - description: 角色ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 删除角色
+      tags:
+      - 系统角色
+  /v1/sys/tenant:
+    get:
+      consumes:
+      - application/json
+      description: 获取租户列表，支持分页和条件查询
+      operationId: TenantList
+      parameters:
+      - in: query
+        name: code
+        type: string
+      - description: 页码，从1开始
+        in: query
+        name: current
+        type: integer
+      - in: query
+        name: name
+        type: string
+      - description: 页码大小，最大100
+        in: query
+        name: size
+        type: integer
+      - in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PageRes-dto_TenantDto'
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取租户列表
+      tags:
+      - 系统租户
+    post:
+      consumes:
+      - application/json
+      description: 添加租户，包括管理员用户信息
+      operationId: AddTenant
+      parameters:
+      - description: 租户创建信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.CreateTenantCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 添加租户
+      tags:
+      - 系统租户
+    put:
+      consumes:
+      - application/json
+      description: 更新租户信息
+      operationId: UpdateTenant
+      parameters:
+      - description: 租户更新信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.UpdateTenantCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 更新租户
+      tags:
+      - 系统租户
+  /v1/sys/tenant/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的租户
+      operationId: DeleteTenant
+      parameters:
+      - description: 租户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 删除租户
+      tags:
+      - 系统租户
+  /v1/sys/tenant/permissions:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定租户的权限列表
+      operationId: GetTenantPermissions
+      parameters:
+      - description: 租户ID
+        in: query
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.PermissionsDto'
+                  type: array
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取租户权限
+      tags:
+      - 系统租户
+    post:
+      consumes:
+      - application/json
+      description: 为指定租户分配权限
+      operationId: AssignTenantPermissions
+      parameters:
+      - description: 权限分配信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.AssignTenantPermissionsCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 分配权限给租户
+      tags:
+      - 系统租户
+  /v1/sys/user:
+    get:
+      description: 获取用户
+      operationId: UserList
+      parameters:
+      - description: 页码，从1开始
+        in: query
+        name: current
+        type: integer
+      - description: 用户邮箱
+        in: query
+        name: email
+        type: string
+      - description: 用户姓名
+        in: query
+        name: name
+        type: string
+      - description: 用户手机号
+        in: query
+        name: phone
+        type: string
+      - description: 页码大小，最大100
+        in: query
+        name: size
+        type: integer
+      - description: 角色状态（禁用、启用）
+        in: query
+        name: status
+        type: integer
+      - description: 登录用户名
+        in: query
+        name: username
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.UserDto'
+                  type: array
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取用户
+      tags:
+      - 系统用户
+    post:
+      description: 添加用户
+      operationId: AddUser
+      parameters:
+      - description: 属性说明请在对应model中查看
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.CreateUserCommand'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 添加用户
+      tags:
+      - 系统用户
+    put:
+      consumes:
+      - application/json
+      description: 更新用户信息，包括基本信息和角色关联
+      operationId: UpdateUser
+      parameters:
+      - description: 用户更新信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.UpdateUserCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 更新用户
+      tags:
+      - 系统用户
+  /v1/sys/user/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定ID的用户
+      operationId: DeleteUser
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 删除用户
+      tags:
+      - 系统用户
+  /v1/sys/user/status:
+    put:
+      consumes:
+      - application/json
+      description: 更新用户的启用/禁用状态
+      operationId: UpdateUserStatus
+      parameters:
+      - description: 用户状态更新信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.UpdateUserStatusCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 更新用户状态
+      tags:
+      - 系统用户
+schemes:
+- http
+swagger: "2.0"

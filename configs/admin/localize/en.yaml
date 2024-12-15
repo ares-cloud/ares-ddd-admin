@@ -1,0 +1,144 @@
+ServerBusy: Server busy
+Success: Success
+GetUserProfileErr: Error in getting user information
+UserNotFind: User does not exist
+StatusInvalidParam: Parameter error
+tokenEmpty: Token cannot be empty, please log in again
+tokenVerifyFail: Token is invalid, please log in again
+RPC_CALL_ERROR: Service call exception
+UNKNOWN: Unknown error
+PLEASE_DO_NOT_RESUBMIT: Do not submit repeatedly
+isNotAdminAccount: Not an administrative account
+STATUS_INTERNAL_SERVER_ERROR: Server error
+PARAMETER_ERROR: Parameter error
+sqlInjectionDetected: sql injection
+#General
+QUERY_FAIL: Query failed
+CREATE_FAIL: Create failed
+UPDATE_FAIL: Update failed
+DELETE_FAIL: Delete failed
+PARAMETER_TRANSFER_FAIL: Parameter conversion failed
+RESULT_TRANSFER_FAIL: Result conversion failed
+
+#Authentication
+PasswordsDoNotMatch: Two passwords do not match
+IncorrectAccountOrPassword: Account or password is incorrect
+IncorrectVerificationCode: Verification code is incorrect
+AccountAlreadyExists: Account already exists
+ErrorGetTokenError: Failed to generate token
+OldPasswordFail: Old password is incorrect
+VerifiedError: Real-name authentication failed
+IDCardFailed: ID card number is incorrect
+GetUserRolesError: Failed to get user roles
+
+#Announcement
+AddAnnouncementFail: Failed to add an announcement
+EditAnnouncementFail: Failed to modify an announcement
+DeleteAnnouncementFail: Failed to delete an announcement
+GetAnnouncementFail: Failed to get an announcement
+
+#Application
+HandleMaterialApplication: Failed to handle material application
+AddMaterialApplication: Failed to add a material application
+GetMaterialApplicationFail: Failed to get a material application
+NotMeetingApplicationRequirements: Application conditions are not met
+
+PendingApplications: There are requests being processed
+ApplicationApproved: The application has been approved
+#Group leader application
+HandleHeadOfGroupApplication: Failed to process the group leader application
+AddHeadOfGroupApplication: Failed to add a group leader application
+GetHeadOfGroupApplicationFail: Failed to get the group leader application
+#Bank card
+ChickBankCardField: Card number verification failed
+BankCardField: Card number error
+AddBankField: Add a new bank card, right?
+SetDefaultBankCardField: Failed to set the default bank card
+DeleteBankCardField: Failed to delete a bank card
+GetBankListField: Failed to get the bank card list
+TheCardNumberHasBeenBound: The card number has been bound
+UpToThreeBankCardsCanBeBound: Up to three bank cards can be bound
+UserIsNotRealName: User is not real-named
+GetBankCardField: Failed to get a bank card
+#Order
+CreateOrderFailed: Failed to create an order
+EditOrderFailed: Failed to edit an order
+GetOrderFailed: Failed to get the order
+AmountIsEmpty: The order amount cannot be empty
+AmountFailed: The amount format is incorrect
+ProductIsNotAvailable: The product is not available
+LessThanTheMinimumPurchaseAmount: Less than the minimum purchase amount
+GreaterThanTheMaximumPurchaseAmount: Greater than the maximum purchase amount
+ItemSoldOut: The product has been sold out
+TheProductHasNotYetBeenSold: The product has not started selling
+
+#Product
+AddProductFail: Failed to add the product
+EditProductFail: Failed to edit the product
+GetProductFail: Failed to get the product
+ProductNotExist: The product does not exist
+AddProductClassFail: Failed to add a new category
+GetProductClassFail: Failed to get the product category
+EditProductClassFail: Failed to edit the product category
+DeleteProductFail: Failed to delete the product
+
+#rbac
+RbacPhoneOrNameIsExistError: Add user, the user's mobile number already exists error
+RbacMenuNameIsExistError: Menu name already exists
+RbacRoleNameIsExistError: Role name already exists
+AddMenuError: Add menu failed
+DeleteMenuError: Delete menu failed
+EditMenuError: Change menu failed
+GetMenuError: Get menu failed
+NameRealNameInconsistentErr: Name or iocn is empty
+AddUserError: Add user failed
+UpdatePasswordError: Update password failed
+
+#Sign in
+SignInFail: Sign in failed
+GetSignInFail: Get sign in record failed
+SignInCompletedToday: You have completed sign in
+
+#System configuration
+SysConfigurationTypeIsExist: Configuration type already exists
+CreateConfigurationFiled: Create system configuration error
+UpdateConfigurationFiled: Modify system configuration error
+SysConfigurationNotExist: Configuration does not exist
+GetConfigurationFile: Get system configuration error
+
+#User
+AddUserFailed: Add user failed
+DelUserFailed: Failed to delete user
+EditUserFailed: Failed to edit user
+GetUserFailed: Failed to get user
+UserNotFond: User does not exist
+InvitationCodeFailed: Invalid promotion code
+PersonIdIsInvalid: ID card error
+GetUserNumberOfInvitations: Failed to get promotion number
+GetUserApplicationFailed: Failed to get user application
+RealApplicationHasBeenProcessed: Real-name authentication has been processed
+RealApplicationProcessedFail: Real-name authentication failed
+PasswordGenerateFailed: Password generation failed
+#Wallet
+OpenWalletError: Failed to open wallet
+GetUserWalletError: Failed to get wallet
+ChangeWalletStatusError: Failed to change wallet status
+PleaseDoNotResubmit: Please do not submit repeatedly
+WithdrawalPermissionIsNotEnabled: No withdrawal permission
+AmountCanNotBetLessThan: The amount is less than the minimum amount
+WithdrawalField: Withdrawal error
+WithdrawalAmountField: Request amount error
+TodayWithdrawalNumUsed: The number of withdrawals for the day has been used up
+InsufficientAccountBalance: Insufficient account balance
+GetAccountRequestLogField: or request information failed
+AccountWalletFrozen: Account frozen
+HandleApplicationField: Failed to process the request
+ApplicationHasBeenProcessed: The request has been processed
+AccountUnavailable: Account unavailable
+HdbField: Hdb failed
+GetHdbLogField: Failed to get Hdb records
+
+#Assets
+TheStockIsZeroAndCannotBeExchanged: The stock quantity is zero and cannot be exchanged
+ExchangeFail: Exchange failed
+ExchangeConditionsNotMet: Exchange conditions are not met

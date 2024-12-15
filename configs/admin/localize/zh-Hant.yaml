@@ -1,0 +1,149 @@
+ServerBusy: 伺服器繁忙
+Success: 成功
+GetUserProfileErr: 取得取使用者資訊錯誤
+UserNotFind: 使用者不存在
+StatusInvalidParam: 參數錯誤
+tokenEmpty: 令牌不能為空，請重新登入
+tokenVerifyFail: 令牌無效，請重新登錄
+RPC_CALL_ERROR: 服務呼叫異常
+UNKNOWN: 未知錯誤
+PLEASE_DO_NOT_RESUBMIT: 請勿重複提交
+isNotAdminAccount: 不是管理帳號
+STATUS_INTERNAL_SERVER_ERROR: 服務端錯誤
+PARAMETER_ERROR: 參數錯誤
+sqlInjectionDetected: sql注入
+#通用
+QUERY_FAIL: 查詢失敗
+CREATE_FAIL: 建立失敗
+UPDATE_FAIL: 更新失敗
+DELETE_FAIL: 刪除失敗
+PARAMETER_TRANSFER_FAIL: 參數轉換失敗
+RESULT_TRANSFER_FAIL: 結果轉換失敗
+
+#認證
+PasswordsDoNotMatch: 兩次密碼不一致
+IncorrectAccountOrPassword: 帳號或密碼不正確
+IncorrectVerificationCode: 驗證碼不正確
+AccountAlreadyExists: 帳號已存在
+ErrorGetTokenError: 產生token失敗
+OldPasswordFail: 舊密碼不正確
+VerifiedError: 實名認證失敗
+IDCardFailed: 身分證字號不正確
+GetUserRolesError: 取得使用者角色失敗
+
+
+#公告
+AddAnnouncementFail: 新增公告失敗
+EditAnnouncementFail: 修改公告失敗
+DeleteAnnouncementFail: 刪除公告失敗
+GetAnnouncementFail: 取得公告是失敗
+
+#申請
+HandleMaterialApplication: 處理物資申請失敗
+AddMaterialApplication: 新增物資申請失敗
+GetMaterialApplicationFail: 取得物資申請失敗
+NotMeetingApplicationRequirements: 未符合申請條件
+
+PendingApplications: 有正在處理的請求
+ApplicationApproved: 申請已批准
+
+#團長申請
+HandleHeadOfGroupApplication: 處理團長申請失敗
+AddHeadOfGroupApplication: 新增團長申請失敗
+GetHeadOfGroupApplicationFail: 取得團長申請失敗
+
+#金融卡
+ChickBankCardField: 卡號校驗失敗
+BankCardField: 卡號錯誤
+AddBankField: 新增銀行卡是吧
+SetDefaultBankCardField: 設定預設銀行卡失敗
+DeleteBankCardField: 刪除銀行卡失敗
+GetBankListField: 取得銀行卡清單失敗
+TheCardNumberHasBeenBound: 卡號已綁定
+UpToThreeBankCardsCanBeBound: 最多只能綁定三張銀行卡
+UserIsNotRealName: 使用者未實名
+GetBankCardField: 取得銀行卡失敗
+
+# 訂單
+CreateOrderFailed: 建立訂單失敗
+EditOrderFailed: 編輯訂單失敗
+GetOrderFailed: 取得訂單失敗
+AmountIsEmpty: 訂單金額不能為空
+AmountFailed: 金額格式不正確
+ProductIsNotAvailable: 產品未上架
+LessThanTheMinimumPurchaseAmount: 小於最小購買金額
+GreaterThanTheMaximumPurchaseAmount: 大於最大購買金額
+ItemSoldOut: 產品已售空
+TheProductHasNotYetBeenSold: 商品未開始販售
+
+#商品
+AddProductFail: 新增商品失敗
+EditProductFail: 編輯商品失敗
+GetProductFail: 取得商品失敗
+ProductNotExist: 商品不存在
+AddProductClassFail: 新增分類失敗
+GetProductClassFail: 取得商品分類失敗
+EditProductClassFail: 編輯商品分類失敗
+DeleteProductFail: 刪除商品失敗
+
+#rbac
+RbacPhoneOrNameIsExistError: 新增用戶，用戶手機號碼已存在錯誤
+RbacMenuNameIsExistError: 選單名稱已存在
+RbacRoleNameIsExistError: 角色名稱已存在
+AddMenuError: 新增選單失敗
+DeleteMenuError: 刪除選單失敗
+EditMenuError: 更改選單失敗
+GetMenuError: 取得才選單失敗
+NameRealNameInconsistentErr: 名稱或iocn為空
+AddUserError: 新增使用者失敗
+UpdatePasswordError: 更新密碼失敗
+
+#簽到
+SignInFail: 簽到失敗
+GetSignInFail: 取得簽到記錄失敗
+SignInCompletedToday: 你已完成簽到
+
+#系統配置
+SysConfigurationTypeIsExist: 設定類型已存在
+CreateConfigurationFiled: 建立系統設定錯誤
+UpdateConfigurationFiled: 修改系統設定錯誤
+SysConfigurationNotExist: 設定不存在
+GetConfigurationFile: 取得系統設定錯誤
+
+#用戶
+AddUserFailed: 新增使用者失敗
+DelUserFailed: 刪除使用者失敗
+EditUserFailed: 編輯使用者失敗
+GetUserFailed: 取得使用者失敗
+UserNotFond: 使用者不存在
+InvitationCodeFailed: 推廣嗎無效
+PersonIdIsInvalid: 身分證有錯誤
+GetUserNumberOfInvitations: 取得推廣數量失敗
+GetUserApplicationFailed: 取得使用者申請失敗
+RealApplicationHasBeenProcessed: 實名認證已處理
+RealApplicationProcessedFail: 實名認證失敗
+PasswordGenerateFailed: 密碼產生失敗
+
+#錢包
+OpenWalletError: 開通錢包失敗
+GetUserWalletError: 取得錢包失敗
+ChangeWalletStatusError: 更改錢包狀態失敗
+PleaseDoNotResubmit: 請勿重複提交
+WithdrawalPermissionIsNotEnabled: 沒有提現權限
+AmountCanNotBetLessThan: 金額低於最小金額
+WithdrawalField: 提現錯誤
+WithdrawalAmountField: 請求金額錯誤
+TodayWithdrawalNumUsed: 當天提領次數用完
+InsufficientAccountBalance: 帳戶餘額不足
+GetAccountRequestLogField: 或請求資訊失敗
+AccountWalletFrozen: 帳戶凍結
+HandleApplicationField: 處理請求失敗
+ApplicationHasBeenProcessed: 請求已處理
+AccountUnavailable: 帳戶不可用
+HdbField: 交易失敗
+GetHdbLogField: 取得交易記錄失敗
+
+#資產
+TheStockIsZeroAndCannotBeExchanged: 庫存數量為零不能兌換
+ExchangeFail: 兌換失敗
+ExchangeConditionsNotMet: 不符合兌換條件

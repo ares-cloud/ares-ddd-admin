@@ -1,0 +1,1791 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a demo using go-server-template-admin.",
+        "title": "ares-ddd-admin",
+        "contact": {
+            "name": "go-server-template-admin"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8858",
+    "basePath": "/api/admin",
+    "paths": {
+        "/v1/sys/permissions": {
+            "get": {
+                "description": "获取权限列表",
+                "tags": [
+                    "系统权限"
+                ],
+                "summary": "获取权限列表",
+                "operationId": "PermissionsList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "编码",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码，从1开始",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "名称",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码大小，最大100",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "角色状态（禁用、启用）",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.PermissionsDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新权限信息，包括基本信息和资源关联",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统权限"
+                ],
+                "summary": "更新权限",
+                "operationId": "UpdatePermissions",
+                "parameters": [
+                    {
+                        "description": "权限更新信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.UpdatePermissionsCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "添加权限",
+                "tags": [
+                    "系统权限"
+                ],
+                "summary": "添加权限",
+                "operationId": "AddPermissions",
+                "parameters": [
+                    {
+                        "description": "属性说明请在对应model中查看",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.CreatePermissionsCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/permissions/tree": {
+            "get": {
+                "description": "获取权限树形结构",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统权限"
+                ],
+                "summary": "获取权限树",
+                "operationId": "GetPermissionsTree",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "权限类型",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.PermissionsDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/permissions/{id}": {
+            "delete": {
+                "description": "删除指定ID的权限",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统权限"
+                ],
+                "summary": "删除权限",
+                "operationId": "DeletePermissions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "权限ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/role": {
+            "get": {
+                "description": "获取角色",
+                "tags": [
+                    "系统角色"
+                ],
+                "summary": "获取角色",
+                "operationId": "RoleList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "编码",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码，从1开始",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "名称",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码大小，最大100",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "角色状态（禁用、启用）",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.RoleDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新角色信息，包括基本信息和权限关联",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统角色"
+                ],
+                "summary": "更新角色",
+                "operationId": "UpdateRole",
+                "parameters": [
+                    {
+                        "description": "角色更新信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.UpdateRoleCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "添加角色",
+                "tags": [
+                    "系统角色"
+                ],
+                "summary": "添加角色",
+                "operationId": "AddRole",
+                "parameters": [
+                    {
+                        "description": "属性说明请在对应model中查看",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.CreateRoleCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/role/{id}": {
+            "delete": {
+                "description": "删除指定ID的角色",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统角色"
+                ],
+                "summary": "删除角色",
+                "operationId": "DeleteRole",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "角色ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/tenant": {
+            "get": {
+                "description": "获取租户列表，支持分页和条件查询",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统租户"
+                ],
+                "summary": "获取租户列表",
+                "operationId": "TenantList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码，从1开始",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码大小，最大100",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.PageRes-dto_TenantDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新租户信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统租户"
+                ],
+                "summary": "更新租户",
+                "operationId": "UpdateTenant",
+                "parameters": [
+                    {
+                        "description": "租户更新信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.UpdateTenantCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "添加租户，包括管理员用户信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统租户"
+                ],
+                "summary": "添加租户",
+                "operationId": "AddTenant",
+                "parameters": [
+                    {
+                        "description": "租户创建信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.CreateTenantCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/tenant/permissions": {
+            "get": {
+                "description": "获取指定租户的权限列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统租户"
+                ],
+                "summary": "获取租户权限",
+                "operationId": "GetTenantPermissions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "租户ID",
+                        "name": "tenant_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.PermissionsDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "为指定租户分配权限",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统租户"
+                ],
+                "summary": "分配权限给租户",
+                "operationId": "AssignTenantPermissions",
+                "parameters": [
+                    {
+                        "description": "权限分配信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.AssignTenantPermissionsCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/tenant/{id}": {
+            "delete": {
+                "description": "删除指定ID的租户",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统租户"
+                ],
+                "summary": "删除租户",
+                "operationId": "DeleteTenant",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "租户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/user": {
+            "get": {
+                "description": "获取用户",
+                "tags": [
+                    "系统用户"
+                ],
+                "summary": "获取用户",
+                "operationId": "UserList",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码，从1开始",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户邮箱",
+                        "name": "email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户姓名",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户手机号",
+                        "name": "phone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码大小，最大100",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "角色状态（禁用、启用）",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "登录用户名",
+                        "name": "username",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.UserDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新用户信息，包括基本信息和角色关联",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统用户"
+                ],
+                "summary": "更新用户",
+                "operationId": "UpdateUser",
+                "parameters": [
+                    {
+                        "description": "用户更新信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.UpdateUserCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "添加用户",
+                "tags": [
+                    "系统用户"
+                ],
+                "summary": "添加用户",
+                "operationId": "AddUser",
+                "parameters": [
+                    {
+                        "description": "属性说明请在对应model中查看",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.CreateUserCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/user/status": {
+            "put": {
+                "description": "更新用户的启用/禁用状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统用户"
+                ],
+                "summary": "更新用户状态",
+                "operationId": "UpdateUserStatus",
+                "parameters": [
+                    {
+                        "description": "用户状态更新信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.UpdateUserStatusCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/user/{id}": {
+            "delete": {
+                "description": "删除指定ID的用户",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统用户"
+                ],
+                "summary": "删除用户",
+                "operationId": "DeleteUser",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "base_info.Success": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {},
+                "msg": {
+                    "type": "string",
+                    "example": "err msg"
+                },
+                "reason": {
+                    "description": "错误原因，定义为业务判定错误码",
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "base_info.Swagger400Resp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "msg": {
+                    "type": "string",
+                    "example": "err msg"
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "err_reason"
+                }
+            }
+        },
+        "base_info.Swagger401Resp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 401
+                },
+                "msg": {
+                    "type": "string",
+                    "example": "err msg"
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "err_reason"
+                }
+            }
+        },
+        "base_info.Swagger500Resp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 500
+                },
+                "msg": {
+                    "type": "string",
+                    "example": "err msg"
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "err_reason"
+                }
+            }
+        },
+        "commands.AssignTenantPermissionsCommand": {
+            "type": "object",
+            "required": [
+                "permission_ids",
+                "tenant_id"
+            ],
+            "properties": {
+                "permission_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "tenant_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "commands.CreatePermissionsCommand": {
+            "type": "object",
+            "required": [
+                "code",
+                "name",
+                "type"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "localize": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parent_id": {
+                    "type": "integer"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "properties": {
+                    "type": "string"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/commands.CreatePermissionsResourceCommand"
+                    }
+                },
+                "sequence": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "integer"
+                }
+            }
+        },
+        "commands.CreatePermissionsResourceCommand": {
+            "type": "object",
+            "required": [
+                "method",
+                "path"
+            ],
+            "properties": {
+                "method": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "commands.CreateRoleCommand": {
+            "type": "object",
+            "required": [
+                "code",
+                "name"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "localize": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "perm_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "sequence": {
+                    "type": "integer"
+                }
+            }
+        },
+        "commands.CreateTenantCommand": {
+            "type": "object",
+            "required": [
+                "admin_user",
+                "code",
+                "name"
+            ],
+            "properties": {
+                "admin_user": {
+                    "$ref": "#/definitions/commands.CreateUserCommand"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "commands.CreateUserCommand": {
+            "type": "object",
+            "required": [
+                "name",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "invitation_code": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "commands.UpdatePermissionsCommand": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "properties": {
+                    "type": "string"
+                },
+                "sequence": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "commands.UpdateRoleCommand": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "perm_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "sequence": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "commands.UpdateTenantCommand": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "commands.UpdateUserCommand": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "faceUrl": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "roleIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "commands.UpdateUserStatusCommand": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PermissionsDto": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "编码",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "integer"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "icon": {
+                    "description": "图标",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "integer"
+                },
+                "localize": {
+                    "description": "本地化",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "名称",
+                    "type": "string"
+                },
+                "parentId": {
+                    "description": "父级ID",
+                    "type": "integer"
+                },
+                "parentPath": {
+                    "description": "父级路径",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "路径",
+                    "type": "string"
+                },
+                "properties": {
+                    "description": "属性",
+                    "type": "string"
+                },
+                "resources": {
+                    "description": "资源列表",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.PermissionsResource"
+                        }
+                    ]
+                },
+                "sequence": {
+                    "description": "排序",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "类型",
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PermissionsResource": {
+            "type": "object",
+            "properties": {
+                "method": {
+                    "description": "HTTP方法",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "资源路径",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RoleDto": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "编码",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "integer"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "名称",
+                    "type": "string"
+                },
+                "permIds": {
+                    "description": "权限ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.TenantDto": {
+            "type": "object",
+            "properties": {
+                "admin_user": {
+                    "description": "管理员用户",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.UserDto"
+                        }
+                    ]
+                },
+                "code": {
+                    "description": "租户编码",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "integer"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "string"
+                },
+                "is_default": {
+                    "description": "是否默认租户",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "租户名称",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.UserDto": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "integer"
+                },
+                "email": {
+                    "description": "邮箱",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "姓名",
+                    "type": "string"
+                },
+                "phone": {
+                    "description": "手机号",
+                    "type": "string"
+                },
+                "roleIds": {
+                    "description": "角色ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "integer"
+                },
+                "username": {
+                    "description": "用户名",
+                    "type": "string"
+                }
+            }
+        },
+        "models.PageRes-dto_TenantDto": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TenantDto"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}
