@@ -91,7 +91,7 @@ func (qb *QueryBuilder) BuildWhere() (string, []interface{}) {
 		values []interface{}
 	)
 
-	where.WriteString("WHERE ")
+	// where.WriteString("WHERE ")
 	for i, cond := range qb.conditions {
 		if i > 0 {
 			where.WriteString(" AND ")
@@ -117,7 +117,8 @@ func (qb *QueryBuilder) BuildOrderBy() string {
 	if len(qb.orderBy) == 0 {
 		return ""
 	}
-	return "ORDER BY " + strings.Join(qb.orderBy, ", ")
+	return strings.Join(qb.orderBy, ", ")
+	//return "ORDER BY " + strings.Join(qb.orderBy, ", ")
 }
 
 // BuildLimit 构建LIMIT子句

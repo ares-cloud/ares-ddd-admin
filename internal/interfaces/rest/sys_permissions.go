@@ -36,6 +36,7 @@ func (c *SysPermissionsController) RegisterRouter(g *route.RouterGroup, t token.
 		ur.PUT("", hserver.NewHandlerFu[commands.UpdatePermissionsCommand](c.UpdatePermissions))
 		ur.DELETE("/:id", hserver.NewHandlerFu[models.IntIdReq](c.DeletePermissions))
 		ur.GET("/tree", hserver.NewHandlerFu[queries.GetPermissionsTreeQuery](c.GetPermissionsTree))
+		ur.GET("/simple/tree", hserver.NewNotParHandlerFu(c.GetPermissionsSimpleTree))
 	}
 }
 
@@ -139,6 +140,27 @@ func (c *SysPermissionsController) DeletePermissions(ctx context.Context, params
 func (c *SysPermissionsController) GetPermissionsTree(ctx context.Context, params *queries.GetPermissionsTreeQuery) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
 	data, err := c.queryHandel.HandleGetTree(ctx, *params)
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
+}
+
+// GetPermissionsSimpleTree 获取简化的权限树结构
+// @Summary 获取简化的权限树结构
+// @Description 获取简化的权限树结构
+// @Tags 系统权限
+// @ID GetPermissionsSimpleTree
+// @Accept json
+// @Produce json
+// @Success 200 {object} base_info.Success{data=dto.PermissionsTreeResult}
+// @Failure 400 {object} base_info.Swagger400Resp "code为400 参数输入错误"
+// @Failure 401 {object} base_info.Swagger401Resp "code为401 token未带上"
+// @Failure 500 {object} base_info.Swagger500Resp "code为500 服务端内部错误"
+// @Router /v1/sys/permissions/simple/tree [get]
+func (c *SysPermissionsController) GetPermissionsSimpleTree(ctx context.Context) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	data, err := c.queryHandel.HandleGetPermissionsTree(ctx)
 	if err != nil {
 		return result.WithError(err)
 	}

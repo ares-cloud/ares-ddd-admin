@@ -13,11 +13,13 @@ import (
 
 type TenantQueryHandler struct {
 	tenantRepo repository.ITenantRepository
+	permRepo   repository.IPermissionsRepository
 }
 
-func NewTenantQueryHandler(tenantRepo repository.ITenantRepository) *TenantQueryHandler {
+func NewTenantQueryHandler(tenantRepo repository.ITenantRepository, permRepo repository.IPermissionsRepository) *TenantQueryHandler {
 	return &TenantQueryHandler{
 		tenantRepo: tenantRepo,
+		permRepo:   permRepo,
 	}
 }
 

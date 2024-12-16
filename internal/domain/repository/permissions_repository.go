@@ -22,7 +22,7 @@ type IPermissionsRepository interface {
 	Count(ctx context.Context, qb *query.QueryBuilder) (int64, error)
 
 	// 构建权限树相关方法
-	FindAllTree(ctx context.Context) ([]*model.Permissions, error)                                         // 构建所有权限树
+	FindAllTree(ctx context.Context) ([]*model.Permissions, []int64, error)                                // 构建所有权限树
 	FindTreeByType(ctx context.Context, permType int8) ([]*model.Permissions, error)                       // 根据类型构建权限树
 	FindTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*model.Permissions, error)             // 根据查询条件构建权限树
 	FindTreeByUserAndType(ctx context.Context, userID string, permType int8) ([]*model.Permissions, error) // 根据用户和类型构建权限树

@@ -45,10 +45,23 @@ func (p *Permissions) UpdateStatus(status int8) {
 	p.Status = status
 	p.UpdatedAt = time.Now().Unix()
 }
-
+func (p *Permissions) ChangeType(tp int8) {
+	if tp > 0 && tp < 4 {
+		p.Type = tp
+	}
+}
+func (p *Permissions) ChangeParentID(pid int64) {
+	p.ParentID = pid
+}
 func (p *Permissions) AddResource(method, path string) {
 	p.Resources = append(p.Resources, &PermissionsResource{
 		Method: method,
 		Path:   path,
 	})
+}
+
+// UpdateResources 更新资源列表
+func (p *Permissions) UpdateResources(resources []*PermissionsResource) {
+	p.Resources = resources
+	p.UpdatedAt = time.Now().Unix()
 }

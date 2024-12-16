@@ -200,6 +200,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/sys/permissions/simple_tree": {
+            "get": {
+                "description": "获取简化的权限树结构",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统权限"
+                ],
+                "summary": "获取简化的权限树结构",
+                "operationId": "GetPermissionsSimpleTree",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.PermissionsTreeResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sys/permissions/tree": {
             "get": {
                 "description": "获取权限树形结构",
@@ -216,7 +270,7 @@ const docTemplate = `{
                 "operationId": "GetPermissionsTree",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "权限类型",
                         "name": "type",
                         "in": "query"
@@ -732,6 +786,59 @@ const docTemplate = `{
             }
         },
         "/v1/sys/tenant/permissions": {
+            "post": {
+                "description": "为指定租户分配权限",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统租户"
+                ],
+                "summary": "分配权限给租户",
+                "operationId": "AssignTenantPermissions",
+                "parameters": [
+                    {
+                        "description": "权限分配信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.AssignTenantPermissionsCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/tenant/permissions/:id": {
             "get": {
                 "description": "获取指定租户的权限列表",
                 "consumes": [
@@ -774,57 +881,6 @@ const docTemplate = `{
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "code为400 参数输入错误",
-                        "schema": {
-                            "$ref": "#/definitions/base_info.Swagger400Resp"
-                        }
-                    },
-                    "401": {
-                        "description": "code为401 token未带上",
-                        "schema": {
-                            "$ref": "#/definitions/base_info.Swagger401Resp"
-                        }
-                    },
-                    "500": {
-                        "description": "code为500 服务端内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/base_info.Swagger500Resp"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "为指定租户分配权限",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "系统租户"
-                ],
-                "summary": "分配权限给租户",
-                "operationId": "AssignTenantPermissions",
-                "parameters": [
-                    {
-                        "description": "权限分配信息",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/commands.AssignTenantPermissionsCommand"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/base_info.Success"
                         }
                     },
                     "400": {
@@ -1269,17 +1325,17 @@ const docTemplate = `{
         "commands.AssignTenantPermissionsCommand": {
             "type": "object",
             "required": [
-                "permission_ids",
-                "tenant_id"
+                "permissionIds",
+                "tenantId"
             ],
             "properties": {
-                "permission_ids": {
+                "permissionIds": {
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
-                "tenant_id": {
+                "tenantId": {
                     "type": "string"
                 }
             }
@@ -1307,7 +1363,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "parent_id": {
+                "parentId": {
                     "type": "integer"
                 },
                 "path": {
@@ -1364,7 +1420,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "perm_ids": {
+                "permIds": {
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -1378,12 +1434,12 @@ const docTemplate = `{
         "commands.CreateTenantCommand": {
             "type": "object",
             "required": [
-                "admin_user",
+                "adminUser",
                 "code",
                 "name"
             ],
             "properties": {
-                "admin_user": {
+                "adminUser": {
                     "$ref": "#/definitions/commands.CreateUserCommand"
                 },
                 "code": {
@@ -1392,7 +1448,10 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "is_default": {
+                "expireTime": {
+                    "type": "integer"
+                },
+                "isDefault": {
                     "type": "integer"
                 },
                 "name": {
@@ -1423,7 +1482,7 @@ const docTemplate = `{
                 "phone": {
                     "type": "string"
                 },
-                "role_ids": {
+                "roleIds": {
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -1481,7 +1540,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "perm_ids": {
+                "permIds": {
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -1504,10 +1563,13 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "expireTime": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "string"
                 },
-                "is_default": {
+                "isDefault": {
                     "type": "integer"
                 },
                 "name": {
@@ -1592,11 +1654,11 @@ const docTemplate = `{
                     "description": "名称",
                     "type": "string"
                 },
-                "parentId": {
+                "parent_id": {
                     "description": "父级ID",
                     "type": "integer"
                 },
-                "parentPath": {
+                "parent_path": {
                     "description": "父级路径",
                     "type": "string"
                 },
@@ -1610,11 +1672,10 @@ const docTemplate = `{
                 },
                 "resources": {
                     "description": "资源列表",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/dto.PermissionsResource"
-                        }
-                    ]
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionsResourceDto"
+                    }
                 },
                 "sequence": {
                     "description": "排序",
@@ -1634,7 +1695,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.PermissionsResource": {
+        "dto.PermissionsResourceDto": {
             "type": "object",
             "properties": {
                 "method": {
@@ -1644,6 +1705,52 @@ const docTemplate = `{
                 "path": {
                     "description": "资源路径",
                     "type": "string"
+                }
+            }
+        },
+        "dto.PermissionsTreeDto": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionsTreeDto"
+                    }
+                },
+                "code": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "localize": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parentId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PermissionsTreeResult": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "tree": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionsTreeDto"
+                    }
                 }
             }
         },
@@ -1690,7 +1797,7 @@ const docTemplate = `{
         "dto.TenantDto": {
             "type": "object",
             "properties": {
-                "admin_user": {
+                "adminUser": {
                     "description": "管理员用户",
                     "allOf": [
                         {
@@ -1710,11 +1817,14 @@ const docTemplate = `{
                     "description": "描述",
                     "type": "string"
                 },
+                "expireTime": {
+                    "type": "integer"
+                },
                 "id": {
                     "description": "ID",
                     "type": "string"
                 },
-                "is_default": {
+                "isDefault": {
                     "description": "是否默认租户",
                     "type": "integer"
                 },

@@ -51,6 +51,7 @@ func (h *PermissionsCommandHandler) HandleUpdate(ctx context.Context, cmd comman
 		return herrors.UpdateFail(err)
 	}
 
+	// 更新基本信息
 	perm.UpdateBasicInfo(cmd.Name, cmd.Description, cmd.Sequence)
 	if cmd.Status != nil {
 		perm.UpdateStatus(*cmd.Status)
@@ -59,6 +60,19 @@ func (h *PermissionsCommandHandler) HandleUpdate(ctx context.Context, cmd comman
 	perm.Icon = cmd.Icon
 	perm.Path = cmd.Path
 	perm.Properties = cmd.Properties
+	perm.ChangeType(cmd.Type)
+	perm.ChangeParentID(cmd.ParentID)
+	// 更新资源列表
+	if len(cmd.Resources) > 0 {
+		resources := make([]*model.PermissionsResource, len(cmd.Resources))
+		for i, r := range cmd.Resources {
+			resources[i] = &model.PermissionsResource{
+				Method: r.Method,
+				Path:   r.Path,
+			}
+		}
+		perm.UpdateResources(resources)
+	}
 
 	err = h.permRepo.Update(ctx, perm)
 	if err != nil {

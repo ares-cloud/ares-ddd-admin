@@ -23,7 +23,7 @@ type IPermissionsRepo interface {
 	GetResourceByPermissionsIds(ctx context.Context, permissionsId []int64) ([]*entity.PermissionsResource, error)
 	GetByCode(ctx context.Context, code string) (*entity.Permissions, error)
 	GetByRoleID(ctx context.Context, roleID int64) ([]*entity.Permissions, []*entity.PermissionsResource, error)
-	GetAllTree(ctx context.Context) ([]*entity.Permissions, []*entity.PermissionsResource, error)
+	GetAllTree(ctx context.Context) ([]*entity.Permissions, []int64, error)
 	GetTreeByType(ctx context.Context, permType int8) ([]*entity.Permissions, []*entity.PermissionsResource, error)
 	GetTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*entity.Permissions, []*entity.PermissionsResource, error)
 	GetTreeByUserAndType(ctx context.Context, userID string, permType int8) ([]*entity.Permissions, []*entity.PermissionsResource, error)
@@ -220,29 +220,63 @@ func (r *permissionsRepository) Count(ctx context.Context, qb *query.QueryBuilde
 	return r.repo.Count(ctx, qb)
 }
 
-func (r *permissionsRepository) FindAllTree(ctx context.Context) ([]*model.Permissions, error) {
-	permEntities, resources, err := r.repo.GetAllTree(ctx)
+func (r *permissionsRepository) FindAllTree(ctx context.Context) ([]*model.Permissions, []int64, error) {
+	// 获取权限数据
+	permEntities, ids, err := r.repo.GetAllTree(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return buildPermissionTree(r.mapper.ToDomainList(permEntities, resources)), nil
+	if len(permEntities) == 0 {
+		return []*model.Permissions{}, []int64{}, nil
+	}
+
+	// 构建ID到权限的映射
+	permMap := make(map[int64]*model.Permissions)
+	var roots []*model.Permissions
+
+	// 先转换所有权限
+	for _, entity := range permEntities {
+		perm := &model.Permissions{
+			ID:       entity.ID,
+			Code:     entity.Code,
+			Name:     entity.Name,
+			Localize: entity.Localize,
+			Icon:     entity.Icon,
+			ParentID: entity.ParentID,
+			Children: make([]*model.Permissions, 0),
+		}
+		permMap[perm.ID] = perm
+
+		// 收集根节点
+		if perm.ParentID == 0 {
+			roots = append(roots, perm)
+		}
+	}
+
+	// 构建树结构
+	for _, perm := range permMap {
+		if perm.ParentID != 0 {
+			if parent, ok := permMap[perm.ParentID]; ok {
+				parent.Children = append(parent.Children, perm)
+			}
+		}
+	}
+
+	return roots, ids, nil
 }
 
 func (r *permissionsRepository) FindTreeByType(ctx context.Context, permType int8) ([]*model.Permissions, error) {
 	var permissions []*entity.Permissions
 	var resources []*entity.PermissionsResource
 	var err error
-	if permType == 0 {
-		permissions, resources, err = r.repo.GetAllTree(ctx)
-	} else {
-		permissions, resources, err = r.repo.GetTreeByType(ctx, permType)
-		if err != nil {
-			return nil, err
-		}
+	permissions, resources, err = r.repo.GetTreeByType(ctx, permType)
+	if err != nil {
+		return nil, err
 	}
 
-	return buildPermissionTree(r.mapper.ToDomainList(permissions, resources)), nil
+	// return buildPermissionTree(r.mapper.ToDomainList(permissions, resources)), nil
+	return r.mapper.ToDomainList(permissions, resources), nil
 }
 
 func (r *permissionsRepository) FindTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*model.Permissions, error) {

@@ -34,8 +34,8 @@ func (c *SysTenantController) RegisterRouter(g *route.RouterGroup, t token.IToke
 		ur.GET("", hserver.NewHandlerFu[queries.ListTenantsQuery](c.TenantList))
 		ur.PUT("", hserver.NewHandlerFu[commands.UpdateTenantCommand](c.UpdateTenant))
 		ur.DELETE("/:id", hserver.NewHandlerFu[models.StringIdReq](c.DeleteTenant))
-		ur.POST("/permissions", hserver.NewHandlerFu[commands.AssignTenantPermissionsCommand](c.AssignPermissions))
-		ur.GET("/permissions", hserver.NewHandlerFu[queries.GetTenantPermissionsQuery](c.GetPermissions))
+		ur.PUT("/permissions", hserver.NewHandlerFu[commands.AssignTenantPermissionsCommand](c.AssignPermissions))
+		ur.GET("/permissions/:id", hserver.NewHandlerFu[models.StringIdReq](c.GetPermissions))
 	}
 }
 
@@ -139,7 +139,7 @@ func (c *SysTenantController) DeleteTenant(ctx context.Context, params *models.S
 // @Failure 400 {object} base_info.Swagger400Resp "code为400 参数输入错误"
 // @Failure 401 {object} base_info.Swagger401Resp "code为401 token未带上"
 // @Failure 500 {object} base_info.Swagger500Resp "code为500 服务端内部错误"
-// @Router /v1/sys/tenant/permissions [post]
+// @Router /v1/sys/tenant/permissions [put]
 func (c *SysTenantController) AssignPermissions(ctx context.Context, params *commands.AssignTenantPermissionsCommand) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
 	err := c.cmdHandel.HandleAssignPermissions(ctx, *params)
@@ -161,10 +161,10 @@ func (c *SysTenantController) AssignPermissions(ctx context.Context, params *com
 // @Failure 400 {object} base_info.Swagger400Resp "code为400 参数输入错误"
 // @Failure 401 {object} base_info.Swagger401Resp "code为401 token未带上"
 // @Failure 500 {object} base_info.Swagger500Resp "code为500 服务端内部错误"
-// @Router /v1/sys/tenant/permissions [get]
-func (c *SysTenantController) GetPermissions(ctx context.Context, params *queries.GetTenantPermissionsQuery) *hserver.ResponseResult {
+// @Router /v1/sys/tenant/permissions/:id [get]
+func (c *SysTenantController) GetPermissions(ctx context.Context, params *models.StringIdReq) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
-	data, err := c.queryHandel.HandleGetPermissions(ctx, *params)
+	data, err := c.queryHandel.HandleGetPermissions(ctx, queries.GetTenantPermissionsQuery{TenantID: params.Id})
 	if err != nil {
 		return result.WithError(err)
 	}

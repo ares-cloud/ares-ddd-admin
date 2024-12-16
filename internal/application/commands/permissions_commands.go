@@ -20,14 +20,17 @@ type CreatePermissionsResourceCommand struct {
 }
 
 type UpdatePermissionsCommand struct {
-	ID          int64  `json:"id" binding:"required"`
-	Name        string `json:"name"`
-	Icon        string `json:"icon"`
-	Description string `json:"description"`
-	Sequence    int    `json:"sequence"`
-	Path        string `json:"path"`
-	Properties  string `json:"properties"`
-	Status      *int8  `json:"status"`
+	ID          int64                              `json:"id" binding:"required"`
+	Name        string                             `json:"name"`
+	Icon        string                             `json:"icon"`
+	Description string                             `json:"description"`
+	Sequence    int                                `json:"sequence"`
+	Path        string                             `json:"path"`
+	Properties  string                             `json:"properties"`
+	Status      *int8                              `json:"status"`
+	ParentID    int64                              `json:"parentId"`
+	Type        int8                               `json:"type"`
+	Resources   []CreatePermissionsResourceCommand `json:"resources"`
 }
 
 // DeletePermissionsCommand 删除权限命令

@@ -52,15 +52,15 @@ definitions:
     type: object
   commands.AssignTenantPermissionsCommand:
     properties:
-      permission_ids:
+      permissionIds:
         items:
           type: integer
         type: array
-      tenant_id:
+      tenantId:
         type: string
     required:
-    - permission_ids
-    - tenant_id
+    - permissionIds
+    - tenantId
     type: object
   commands.CreatePermissionsCommand:
     properties:
@@ -74,7 +74,7 @@ definitions:
         type: string
       name:
         type: string
-      parent_id:
+      parentId:
         type: integer
       path:
         type: string
@@ -113,7 +113,7 @@ definitions:
         type: string
       name:
         type: string
-      perm_ids:
+      permIds:
         items:
           type: integer
         type: array
@@ -125,18 +125,20 @@ definitions:
     type: object
   commands.CreateTenantCommand:
     properties:
-      admin_user:
+      adminUser:
         $ref: '#/definitions/commands.CreateUserCommand'
       code:
         type: string
       description:
         type: string
-      is_default:
+      expireTime:
+        type: integer
+      isDefault:
         type: integer
       name:
         type: string
     required:
-    - admin_user
+    - adminUser
     - code
     - name
     type: object
@@ -152,7 +154,7 @@ definitions:
         type: string
       phone:
         type: string
-      role_ids:
+      roleIds:
         items:
           type: integer
         type: array
@@ -192,7 +194,7 @@ definitions:
         type: integer
       name:
         type: string
-      perm_ids:
+      permIds:
         items:
           type: integer
         type: array
@@ -207,9 +209,11 @@ definitions:
     properties:
       description:
         type: string
+      expireTime:
+        type: integer
       id:
         type: string
-      is_default:
+      isDefault:
         type: integer
       name:
         type: string
@@ -269,10 +273,10 @@ definitions:
       name:
         description: 名称
         type: string
-      parentId:
+      parent_id:
         description: 父级ID
         type: integer
-      parentPath:
+      parent_path:
         description: 父级路径
         type: string
       path:
@@ -282,9 +286,10 @@ definitions:
         description: 属性
         type: string
       resources:
-        allOf:
-        - $ref: '#/definitions/dto.PermissionsResource'
         description: 资源列表
+        items:
+          $ref: '#/definitions/dto.PermissionsResourceDto'
+        type: array
       sequence:
         description: 排序
         type: integer
@@ -298,7 +303,7 @@ definitions:
         description: 更新时间
         type: integer
     type: object
-  dto.PermissionsResource:
+  dto.PermissionsResourceDto:
     properties:
       method:
         description: HTTP方法
@@ -306,6 +311,36 @@ definitions:
       path:
         description: 资源路径
         type: string
+    type: object
+  dto.PermissionsTreeDto:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/dto.PermissionsTreeDto'
+        type: array
+      code:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      localize:
+        type: string
+      name:
+        type: string
+      parentId:
+        type: integer
+    type: object
+  dto.PermissionsTreeResult:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+      tree:
+        items:
+          $ref: '#/definitions/dto.PermissionsTreeDto'
+        type: array
     type: object
   dto.RoleDto:
     properties:
@@ -338,7 +373,7 @@ definitions:
     type: object
   dto.TenantDto:
     properties:
-      admin_user:
+      adminUser:
         allOf:
         - $ref: '#/definitions/dto.UserDto'
         description: 管理员用户
@@ -351,10 +386,12 @@ definitions:
       description:
         description: 描述
         type: string
+      expireTime:
+        type: integer
       id:
         description: ID
         type: string
-      is_default:
+      isDefault:
         description: 是否默认租户
         type: integer
       name:
@@ -569,6 +606,39 @@ paths:
       summary: 删除权限
       tags:
       - 系统权限
+  /v1/sys/permissions/simple_tree:
+    get:
+      consumes:
+      - application/json
+      description: 获取简化的权限树结构
+      operationId: GetPermissionsSimpleTree
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.PermissionsTreeResult'
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取简化的权限树结构
+      tags:
+      - 系统权限
   /v1/sys/permissions/tree:
     get:
       consumes:
@@ -579,7 +649,7 @@ paths:
       - description: 权限类型
         in: query
         name: type
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
@@ -913,6 +983,41 @@ paths:
       tags:
       - 系统租户
   /v1/sys/tenant/permissions:
+    post:
+      consumes:
+      - application/json
+      description: 为指定租户分配权限
+      operationId: AssignTenantPermissions
+      parameters:
+      - description: 权限分配信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.AssignTenantPermissionsCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 分配权限给租户
+      tags:
+      - 系统租户
+  /v1/sys/tenant/permissions/:id:
     get:
       consumes:
       - application/json
@@ -951,40 +1056,6 @@ paths:
           schema:
             $ref: '#/definitions/base_info.Swagger500Resp'
       summary: 获取租户权限
-      tags:
-      - 系统租户
-    post:
-      consumes:
-      - application/json
-      description: 为指定租户分配权限
-      operationId: AssignTenantPermissions
-      parameters:
-      - description: 权限分配信息
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/commands.AssignTenantPermissionsCommand'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/base_info.Success'
-        "400":
-          description: code为400 参数输入错误
-          schema:
-            $ref: '#/definitions/base_info.Swagger400Resp'
-        "401":
-          description: code为401 token未带上
-          schema:
-            $ref: '#/definitions/base_info.Swagger401Resp'
-        "500":
-          description: code为500 服务端内部错误
-          schema:
-            $ref: '#/definitions/base_info.Swagger500Resp'
-      summary: 分配权限给租户
       tags:
       - 系统租户
   /v1/sys/user:

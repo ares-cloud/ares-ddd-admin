@@ -49,7 +49,7 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	iSysTenantRepo := data.NewSysTenantRepo(iDataBase)
 	iTenantRepository := repository.NewTenantRepository(iSysTenantRepo, iSysUserRepo)
 	tenantCommandHandler := handlers.NewTenantCommandHandler(iTenantRepository)
-	tenantQueryHandler := handlers.NewTenantQueryHandler(iTenantRepository)
+	tenantQueryHandler := handlers.NewTenantQueryHandler(iTenantRepository, iPermissionsRepository)
 	sysTenantController := rest.NewSysTenantController(tenantCommandHandler, tenantQueryHandler)
 	permissionsCommandHandler := handlers.NewPermissionsCommandHandler(iPermissionsRepository)
 	permissionsQueryHandler := handlers.NewPermissionsQueryHandler(iPermissionsRepository)

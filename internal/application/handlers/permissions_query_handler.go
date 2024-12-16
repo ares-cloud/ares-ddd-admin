@@ -77,3 +77,16 @@ func (h *PermissionsQueryHandler) HandleGetTree(ctx context.Context, query queri
 	}
 	return dto.ToPermissionsDtoList(perms), nil
 }
+
+func (h *PermissionsQueryHandler) HandleGetPermissionsTree(ctx context.Context) (*dto.PermissionsTreeResult, herrors.Herr) {
+	// 获取所有权限并构建树
+	permissions, ids, err := h.permRepo.FindAllTree(ctx)
+	if err != nil {
+		return nil, herrors.QueryFail(err)
+	}
+
+	return &dto.PermissionsTreeResult{
+		Tree: dto.ToPermissionsTreeDtoList(permissions),
+		Ids:  ids,
+	}, nil
+}

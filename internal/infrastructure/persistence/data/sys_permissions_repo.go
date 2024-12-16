@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence/entity"
@@ -106,26 +107,24 @@ func (r *sysMenuRepo) GetByRoleID(ctx context.Context, roleID int64) ([]*entity.
 }
 
 // GetAllTree 获取所有权限树
-func (r *sysMenuRepo) GetAllTree(ctx context.Context) ([]*entity.Permissions, []*entity.PermissionsResource, error) {
-	var permEntities []*entity.Permissions
+func (r *sysMenuRepo) GetAllTree(ctx context.Context) ([]*entity.Permissions, []int64, error) {
+	var permissions []*entity.Permissions
 
-	// 查询所有权限，按序号排序
-	err := r.Db(ctx).Order("sequence desc").Find(&permEntities).Error
+	// 只查询需要的字段
+	err := r.Db(ctx).Select("id, code, name, localize, icon, parent_id").
+		Order("sequence desc").
+		Find(&permissions).Error
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if len(permEntities) == 0 {
-		return []*entity.Permissions{}, nil, nil
+	// 收集所有ID
+	ids := make([]int64, 0, len(permissions))
+	for _, p := range permissions {
+		ids = append(ids, p.ID)
 	}
 
-	// 查询所有权限资源
-	resources, err := r.GetResourceByPermissionsIds(ctx, getPermissionIDs(permEntities))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return permEntities, resources, nil
+	return permissions, ids, nil
 }
 
 // GetTreeByType 根据类型获取权限树

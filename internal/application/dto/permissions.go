@@ -17,7 +17,7 @@ type PermissionsDto struct {
 	Path        string                    `json:"path"`        // 路径
 	Properties  string                    `json:"properties"`  // 属性
 	Status      int8                      `json:"status"`      // 状态
-	ParentID    int64                     `json:"parent_id"`   // 父级ID
+	ParentID    int64                     `json:"parentId"`    // 父级ID
 	ParentPath  string                    `json:"parent_path"` // 父级路径
 	Resources   []*PermissionsResourceDto `json:"resources"`   // 资源列表
 	CreatedAt   int64                     `json:"createdAt"`   // 创建时间

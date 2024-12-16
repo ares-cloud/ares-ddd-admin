@@ -187,6 +187,9 @@ func (r *tenantRepository) GetPermissions(ctx context.Context, tenantID string) 
 	// 获取租户权限和资源
 	permissions, resources, err := r.repo.GetPermissionsByTenantID(ctx, tenantID)
 	if err != nil {
+		if database.IfErrorNotFound(err) {
+			return make([]*model.Permissions, 0), nil
+		}
 		return nil, fmt.Errorf("get tenant permissions failed: %w", err)
 	}
 
