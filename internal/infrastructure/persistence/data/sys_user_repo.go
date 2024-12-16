@@ -42,5 +42,5 @@ func (s sysUserRepo) GetByUsername(ctx context.Context, username string) (*entit
 	return result, nil
 }
 func (s sysUserRepo) DeleteRoleByUserId(ctx context.Context, userId string) error {
-	return s.Db(ctx).Unscoped().Where("user_id = ?", userId).Delete(&entity.SysUserRole{}).Error
+	return s.Db(ctx).Where("user_id = ?", userId).Delete(&entity.SysUserRole{}).Error
 }

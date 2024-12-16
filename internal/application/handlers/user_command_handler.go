@@ -91,6 +91,8 @@ func (h *UserCommandHandler) HandleUpdate(ctx context.Context, cmd commands.Upda
 			return herrors.UpdateFail(err)
 		}
 		user.AssignRoles(roles)
+	} else {
+		user.AssignRoles(nil)
 	}
 
 	// 保存更新

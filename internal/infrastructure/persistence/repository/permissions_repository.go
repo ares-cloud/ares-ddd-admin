@@ -322,3 +322,31 @@ func buildPermissionTree(permissions []*model.Permissions) []*model.Permissions 
 
 	return roots
 }
+
+func (r *permissionsRepository) FindAllEnabled(ctx context.Context) ([]*model.Permissions, error) {
+	// 构建查询条件
+	qb := query.NewQueryBuilder()
+	qb.Where("status", query.Eq, 1)
+	qb.OrderBy("sequence", false)
+
+	// 查询权限
+	permissions, err := r.repo.Find(ctx, qb)
+	if err != nil {
+		return nil, err
+	}
+
+	// 查询权限资源
+	var resources []*entity.PermissionsResource
+	if len(permissions) > 0 {
+		permissionIds := make([]int64, 0, len(permissions))
+		for _, p := range permissions {
+			permissionIds = append(permissionIds, p.ID)
+		}
+		resources, err = r.repo.GetResourceByPermissionsIds(ctx, permissionIds)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return r.mapper.ToDomainList(permissions, resources), nil
+}

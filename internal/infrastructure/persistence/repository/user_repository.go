@@ -62,7 +62,6 @@ func (r *userRepository) Create(ctx context.Context, user *model.User) error {
 func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 	userEntity := r.mapper.ToEntity(user)
 	err := r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
-		userEntity.ID = r.repo.GenStringId()
 		err := r.repo.EditById(ctx, userEntity.ID, userEntity)
 		if err != nil {
 			return err
@@ -73,14 +72,15 @@ func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 		}
 		if len(user.Roles) > 0 {
 			// 创建用户角色关联
+			userRoles := make([]*entity.SysUserRole, 0, len(user.Roles))
 			for _, role := range user.Roles {
-				userRole := &entity.SysUserRole{
+				userRoles = append(userRoles, &entity.SysUserRole{
 					UserID: userEntity.ID,
 					RoleID: role.ID,
-				}
-				if err = r.repo.Db(ctx).Create(userRole).Error; err != nil {
-					return err
-				}
+				})
+			}
+			if err = r.repo.Db(ctx).Create(&userRoles).Error; err != nil {
+				return err
 			}
 		}
 		return nil

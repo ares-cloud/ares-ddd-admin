@@ -26,4 +26,7 @@ type IPermissionsRepository interface {
 	FindTreeByType(ctx context.Context, permType int8) ([]*model.Permissions, error)                       // 根据类型构建权限树
 	FindTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*model.Permissions, error)             // 根据查询条件构建权限树
 	FindTreeByUserAndType(ctx context.Context, userID string, permType int8) ([]*model.Permissions, error) // 根据用户和类型构建权限树
+
+	// FindAllEnabled 获取所有启用状态的权限
+	FindAllEnabled(ctx context.Context) ([]*model.Permissions, error)
 }

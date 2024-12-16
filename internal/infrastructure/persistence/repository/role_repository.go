@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/model"
 	drepository "github.com/ares-cloud/ares-ddd-admin/internal/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence/entity"
@@ -193,6 +194,21 @@ func (r *roleRepository) FindByUserID(ctx context.Context, userID string) ([]*mo
 
 	// 查询角色信息
 	roles, err := r.repo.FindByIds(ctx, roleIds)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapper.ToDomainList(roles), nil
+}
+
+func (r *roleRepository) FindAllEnabled(ctx context.Context) ([]*model.Role, error) {
+	// 构建查询条件
+	qb := query.NewQueryBuilder()
+	qb.Where("status", query.Eq, 1)
+	qb.OrderBy("sequence", false)
+
+	// 查询角色
+	roles, err := r.repo.Find(ctx, qb)
 	if err != nil {
 		return nil, err
 	}

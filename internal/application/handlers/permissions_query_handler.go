@@ -90,3 +90,12 @@ func (h *PermissionsQueryHandler) HandleGetPermissionsTree(ctx context.Context) 
 		Ids:  ids,
 	}, nil
 }
+
+// HandleGetAllEnabled 获取所有启用状态的权限
+func (h *PermissionsQueryHandler) HandleGetAllEnabled(ctx context.Context) ([]*dto.PermissionsDto, herrors.Herr) {
+	permissions, err := h.permRepo.FindAllEnabled(ctx)
+	if err != nil {
+		return nil, herrors.QueryFail(err)
+	}
+	return dto.ToPermissionsDtoList(permissions), nil
+}

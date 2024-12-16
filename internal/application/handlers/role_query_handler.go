@@ -77,3 +77,12 @@ func (h *RoleQueryHandler) HandleGetUserRoles(ctx context.Context, query queries
 	}
 	return dto.ToRoleDtoList(roles), nil
 }
+
+// HandleGetAllEnabled 获取所有启用状态的角色
+func (h *RoleQueryHandler) HandleGetAllEnabled(ctx context.Context) ([]*dto.RoleDto, herrors.Herr) {
+	roles, err := h.roleRepo.FindAllEnabled(ctx)
+	if err != nil {
+		return nil, herrors.QueryFail(err)
+	}
+	return dto.ToRoleDtoList(roles), nil
+}

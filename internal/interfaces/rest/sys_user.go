@@ -35,6 +35,7 @@ func (c *SysUserController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 		ur.PUT("", hserver.NewHandlerFu[commands.UpdateUserCommand](c.UpdateUser))
 		ur.DELETE("/:id", hserver.NewHandlerFu[models.StringIdReq](c.DeleteUser))
 		ur.PUT("/status", hserver.NewHandlerFu[commands.UpdateUserStatusCommand](c.UpdateUserStatus))
+		ur.GET("/:id", hserver.NewHandlerFu[models.StringIdReq](c.GetDetails))
 	}
 }
 
@@ -56,6 +57,28 @@ func (c *SysUserController) AddUser(ctx context.Context, params *commands.Create
 		return result.WithError(err)
 	}
 	return result
+}
+
+// GetDetails 根据id获取用户
+// @Summary 根据id获取用户
+// @Description 根据id获取用户
+// @Tags 系统用户
+// @ID GetDetails
+// @Accept json
+// @Produce json
+// @Param id path int64 true "用户ID"
+// @Success 200 {object} base_info.Success{data=dto.UserDto}
+// @Failure 400 {object} base_info.Swagger400Resp "code为400 参数输入错误"
+// @Failure 401 {object} base_info.Swagger401Resp "code为401 token未带上"
+// @Failure 500 {object} base_info.Swagger500Resp "code为500 服务端内部错误"
+// @Router /v1/sys/user/:id [get]
+func (c *SysUserController) GetDetails(ctx context.Context, params *models.StringIdReq) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	data, err := c.queryHandel.HandleGet(ctx, queries.GetUserQuery{Id: params.Id})
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
 }
 
 // UserList 获取用户
@@ -80,7 +103,7 @@ func (c *SysUserController) UserList(ctx context.Context, params *queries.ListUs
 
 // UpdateUser 更新用户
 // @Summary 更新用户
-// @Description 更新用户信息，包括基本信息和角色关联
+// @Description 更新用户信息，包括基本信息和用户关联
 // @Tags 系统用户
 // @ID UpdateUser
 // @Accept json

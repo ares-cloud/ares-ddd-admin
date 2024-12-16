@@ -79,6 +79,8 @@ func (h *RoleCommandHandler) HandleUpdate(ctx context.Context, cmd commands.Upda
 			perms = append(perms, perm)
 		}
 		role.AssignPermissions(perms)
+	} else {
+		role.AssignPermissions(nil)
 	}
 
 	err = h.roleRepo.Update(ctx, role)
