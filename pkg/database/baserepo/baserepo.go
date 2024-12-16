@@ -97,7 +97,7 @@ func (r *BaseRepo[T, I]) FindByIds(ctx context.Context, ids []I) ([]*T, error) {
 		resDb.Where("deleted_at = 0")
 	}
 	//根据id查询
-	if err := resDb.Where(fmt.Sprintf("%s in (?)", r.Model.GetPrimaryKey()), ids).First(&res).Error; err != nil {
+	if err := resDb.Where(fmt.Sprintf("%s in (?)", r.Model.GetPrimaryKey()), ids).Scan(&res).Error; err != nil {
 		return nil, err
 	}
 	return res, nil

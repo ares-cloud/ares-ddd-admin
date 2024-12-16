@@ -105,15 +105,20 @@ func (r *roleRepository) FindByID(ctx context.Context, id int64) (*model.Role, e
 	}
 	permissions := make([]*model.Permissions, 0)
 	if len(rolePerms) > 0 {
-		permIds := make([]int64, 0)
+		//permIds := make([]int64, 0)
+		//for _, perm := range rolePerms {
+		//	permIds = append(permIds, perm.PermissionID)
+		//}
+		//perms, err := r.permissionsRepo.FindByIds(ctx, permIds)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//permissions = r.permMapper.ToDomainList(perms, nil)
 		for _, perm := range rolePerms {
-			permIds = append(permIds, perm.PermissionID)
+			permissions = append(permissions, &model.Permissions{
+				ID: perm.PermissionID,
+			})
 		}
-		perms, err := r.permissionsRepo.FindByIds(ctx, permIds)
-		if err != nil {
-			return nil, err
-		}
-		permissions = r.permMapper.ToDomainList(perms, nil)
 	}
 
 	// 转换为领域模型

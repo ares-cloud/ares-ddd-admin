@@ -5,7 +5,6 @@ import (
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/queries"
-	"github.com/ares-cloud/ares-ddd-admin/internal/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
@@ -63,12 +62,12 @@ func (h *RoleQueryHandler) HandleList(ctx context.Context, q *queries.ListRolesQ
 }
 
 // HandleGet 获取单个角色
-func (h *RoleQueryHandler) HandleGet(ctx context.Context, query queries.GetRoleQuery) (*model.Role, herrors.Herr) {
+func (h *RoleQueryHandler) HandleGet(ctx context.Context, query queries.GetRoleQuery) (*dto.RoleDto, herrors.Herr) {
 	role, err := h.roleRepo.FindByID(ctx, query.Id)
 	if err != nil {
 		return nil, herrors.QueryFail(err)
 	}
-	return role, nil
+	return dto.ToRoleDto(role), nil
 }
 
 func (h *RoleQueryHandler) HandleGetUserRoles(ctx context.Context, query queries.GetUserRolesQuery) ([]*dto.RoleDto, herrors.Herr) {

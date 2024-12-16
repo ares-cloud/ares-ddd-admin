@@ -34,6 +34,7 @@ func (c *SysRoleController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 		ur.GET("", hserver.NewHandlerFu[queries.ListRolesQuery](c.RoleList))
 		ur.PUT("", hserver.NewHandlerFu[commands.UpdateRoleCommand](c.UpdateRole))
 		ur.DELETE("/:id", hserver.NewHandlerFu[models.IntIdReq](c.DeleteRole))
+		ur.GET("/:id", hserver.NewHandlerFu[models.IntIdReq](c.GetDetails))
 	}
 }
 
@@ -119,4 +120,26 @@ func (c *SysRoleController) DeleteRole(ctx context.Context, params *models.IntId
 		return result.WithError(err)
 	}
 	return result
+}
+
+// GetDetails 根据id获取角色
+// @Summary 根据id获取角色
+// @Description 根据id获取角色
+// @Tags 系统角色
+// @ID GetDetails
+// @Accept json
+// @Produce json
+// @Param id path int64 true "角色ID"
+// @Success 200 {object} base_info.Success{data=dto.RoleDto}
+// @Failure 400 {object} base_info.Swagger400Resp "code为400 参数输入错误"
+// @Failure 401 {object} base_info.Swagger401Resp "code为401 token未带上"
+// @Failure 500 {object} base_info.Swagger500Resp "code为500 服务端内部错误"
+// @Router /v1/sys/role/:id [get]
+func (c *SysRoleController) GetDetails(ctx context.Context, params *models.IntIdReq) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	data, err := c.queryHandel.HandleGet(ctx, queries.GetRoleQuery{Id: params.Id})
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
 }

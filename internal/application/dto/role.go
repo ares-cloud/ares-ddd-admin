@@ -11,9 +11,10 @@ type RoleDto struct {
 	Name        string  `json:"name"`        // 名称
 	Description string  `json:"description"` // 描述
 	Status      int8    `json:"status"`      // 状态
-	PermIds     []int64 `json:"permIds"`     // 权限ID列表
-	CreatedAt   int64   `json:"createdAt"`   // 创建时间
-	UpdatedAt   int64   `json:"updatedAt"`   // 更新时间
+	Localize    string  `json:"localize"`
+	PermIds     []int64 `json:"permIds"`   // 权限ID列表
+	CreatedAt   int64   `json:"createdAt"` // 创建时间
+	UpdatedAt   int64   `json:"updatedAt"` // 更新时间
 }
 
 // ToRoleDto 领域模型转换为DTO
@@ -33,6 +34,7 @@ func ToRoleDto(r *model.Role) *RoleDto {
 		Name:        r.Name,
 		Description: r.Description,
 		Status:      r.Status,
+		Localize:    r.Localize,
 		PermIds:     permIds,
 		CreatedAt:   r.CreatedAt,
 		UpdatedAt:   r.UpdatedAt,
