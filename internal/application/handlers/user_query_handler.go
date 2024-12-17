@@ -101,10 +101,10 @@ func (h *UserQueryHandler) HandleGetUserInfo(ctx context.Context, query queries.
 }
 
 // HandleGetUserMenus 获取用户菜单树
-func (h *UserQueryHandler) HandleGetUserMenus(ctx context.Context, query queries.GetUserMenusQuery) ([]*dto.PermissionsDto, herrors.Herr) {
+func (h *UserQueryHandler) HandleGetUserMenus(ctx context.Context, query queries.GetUserMenusQuery) ([]*dto.PermissionsTreeDto, herrors.Herr) {
 	menus, err := h.uds.GetUserMenus(ctx, query.Id) // 1表示菜单类型
 	if err != nil {
 		return nil, herrors.QueryFail(err)
 	}
-	return dto.ToPermissionsDtoList(menus), nil
+	return dto.ToPermissionsTreeDtoList(menus), nil
 }

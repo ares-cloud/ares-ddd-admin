@@ -107,7 +107,7 @@ func (s *UserService) GetUserMenus(ctx context.Context, userID string) ([]*model
 	}
 
 	// 构建菜单树
-	return menuPermissions, nil
+	return buildPermissionTree(menuPermissions), nil
 }
 
 // buildPermissionTree 构建权限树

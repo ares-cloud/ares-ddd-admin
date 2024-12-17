@@ -205,7 +205,7 @@ func (c *SysUserController) GetUserInfo(ctx context.Context) *hserver.ResponseRe
 // @ID GetUserMenus
 // @Accept json
 // @Produce json
-// @Success 200 {object} base_info.Success{data=[]dto.PermissionsDto}
+// @Success 200 {object} base_info.Success{data=[]dto.PermissionsTreeDto}
 // @Failure 401 {object} base_info.Swagger401Resp "未授权"
 // @Failure 500 {object} base_info.Swagger500Resp "服务器内部错误"
 // @Router /v1/sys/user/menus [get]
