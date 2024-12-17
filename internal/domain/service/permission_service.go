@@ -23,6 +23,6 @@ func (s *PermissionService) ValidatePermissionCode(ctx context.Context, code str
 }
 
 // GetPermissionsByType 根据类型获取权限列表
-func (s *PermissionService) GetPermissionsByType(ctx context.Context, permType string) ([]*model.Permissions, error) {
+func (s *PermissionService) GetPermissionsByType(ctx context.Context, permType int8) ([]*model.Permissions, error) {
 	return s.permissionRepo.FindByType(ctx, permType)
 }

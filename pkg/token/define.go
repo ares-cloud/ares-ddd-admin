@@ -15,15 +15,15 @@ type IToken interface {
 
 // AccessToken //token
 type AccessToken struct {
-	UserId       string `json:"userId"`                   // 刷新 token
-	Platform     string `json:"platform"`                 // 平台类型
-	TenantId     string `json:"tenantId"`                 //租户id
-	AccessToken  string `json:"access_token,omitempty"`   // 访问 token
-	ExpiresAt    int64  `json:"expires_at,omitempty"`     // 过期时间
-	RefreshToken string `json:"refresh_token,omitempty"`  // 刷新 token
-	RefExpiresAt int64  `json:"ref_expires_at,omitempty"` // refToken过期时间
-	ServerCode   string `json:"server_code"`              // 服务码
-	Role         string `json:"role"`                     // 角色CODE，例如: root
+	UserId       string   `json:"userId"`                   // 刷新 token
+	Platform     string   `json:"platform"`                 // 平台类型
+	TenantId     string   `json:"tenantId"`                 //租户id
+	AccessToken  string   `json:"access_token,omitempty"`   // 访问 token
+	ExpiresAt    int64    `json:"expires_at,omitempty"`     // 过期时间
+	RefreshToken string   `json:"refresh_token,omitempty"`  // 刷新 token
+	RefExpiresAt int64    `json:"ref_expires_at,omitempty"` // refToken过期时间
+	ServerCode   string   `json:"server_code"`              // 服务码
+	Roles        []string `json:"roles"`                    // 角色CODE，例如: root
 }
 
 func (a *AccessToken) MarshalBinary() (data []byte, err error) {
@@ -38,8 +38,8 @@ func generateTokenHash(token string) string {
 }
 
 type Token struct {
-	AccessToken           string `json:"access_token"`
-	ExpiresIn             int64  `json:"expires_in"`
+	AccessToken           string `json:"access_token"` //token
+	ExpiresIn             int64  `json:"expires_in"`   //
 	RefreshToken          string `json:"refresh_token"`
 	RefreshTokenExpiresIn int64  `json:"refresh_token_expires_in"`
 }

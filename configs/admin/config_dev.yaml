@@ -1,7 +1,7 @@
 # 服务配置
 server:
-  port: 8858
-  tracer_port: 8859
+  port: 8888
+  tracer_port: 8889
   rate_qps: 0 # 整体QPS，0表示不限流
   name: 'admin' # 当前服务
   max_request_body_size: 10 #请求体的最大大小单位M

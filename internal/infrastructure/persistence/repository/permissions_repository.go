@@ -289,12 +289,22 @@ func (r *permissionsRepository) FindTreeByQuery(ctx context.Context, qb *query.Q
 }
 
 func (r *permissionsRepository) FindTreeByUserAndType(ctx context.Context, userID string, permType int8) ([]*model.Permissions, error) {
-	permEntities, resources, err := r.repo.GetTreeByUserAndType(ctx, userID, permType)
+	// 构建查询条件
+	qb := query.NewQueryBuilder()
+	if permType > 0 {
+		qb.Where("type", query.Eq, permType)
+	}
+	qb.Where("status", query.Eq, 1)
+	qb.OrderBy("sequence", false)
+
+	// 查询用户权限
+	permissions, resources, err := r.repo.GetTreeByUserAndType(ctx, userID, permType)
 	if err != nil {
 		return nil, err
 	}
 
-	return buildPermissionTree(r.mapper.ToDomainList(permEntities, resources)), nil
+	// 转换为领域模型
+	return buildPermissionTree(r.mapper.ToDomainList(permissions, resources)), nil
 }
 
 // 辅助函数：构建权限树

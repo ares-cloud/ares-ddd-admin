@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/queries"
@@ -13,11 +14,13 @@ import (
 
 type UserQueryHandler struct {
 	userRepo repository.IUserRepository
+	uds      *service.UserService
 }
 
-func NewUserQueryHandler(userRepo repository.IUserRepository) *UserQueryHandler {
+func NewUserQueryHandler(userRepo repository.IUserRepository, uds *service.UserService) *UserQueryHandler {
 	return &UserQueryHandler{
 		userRepo: userRepo,
+		uds:      uds,
 	}
 }
 
@@ -74,4 +77,34 @@ func (h *UserQueryHandler) HandleGet(ctx context.Context, query queries.GetUserQ
 		return nil, herrors.QueryFail(err)
 	}
 	return dto.ToUserDto(user), nil
+}
+
+// HandleGetUserInfo 获取用户信息
+func (h *UserQueryHandler) HandleGetUserInfo(ctx context.Context, query queries.GetUserInfoQuery) (*dto.UserInfoDto, herrors.Herr) {
+	// 获取用户信息
+	user, err := h.userRepo.FindByID(ctx, query.Id)
+	if err != nil {
+		return nil, herrors.QueryFail(err)
+	}
+
+	// 获取用户所有权限
+	permissions, err := h.uds.GetUserPermissions(ctx, query.Id)
+	if err != nil {
+		return nil, herrors.QueryFail(err)
+	}
+
+	roles := make([]string, 0, len(user.Roles))
+	for _, role := range user.Roles {
+		roles = append(roles, role.Code)
+	}
+	return dto.ToUserInfoDto(user, permissions, roles), nil
+}
+
+// HandleGetUserMenus 获取用户菜单树
+func (h *UserQueryHandler) HandleGetUserMenus(ctx context.Context, query queries.GetUserMenusQuery) ([]*dto.PermissionsDto, herrors.Herr) {
+	menus, err := h.uds.GetUserMenus(ctx, query.Id) // 1表示菜单类型
+	if err != nil {
+		return nil, herrors.QueryFail(err)
+	}
+	return dto.ToPermissionsDtoList(menus), nil
 }

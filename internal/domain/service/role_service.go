@@ -17,7 +17,7 @@ func NewRoleService(roleRepo repository.IRoleRepository) *RoleService {
 }
 
 // CheckRolePermissions 检查角色是否具有特定权限
-func (s *RoleService) CheckRolePermissions(ctx context.Context, roleID string, permissionCode string) (bool, error) {
+func (s *RoleService) CheckRolePermissions(ctx context.Context, roleID int64, permissionCode string) (bool, error) {
 	role, err := s.roleRepo.FindByID(ctx, roleID)
 	if err != nil {
 		return false, err
@@ -33,7 +33,7 @@ func (s *RoleService) CheckRolePermissions(ctx context.Context, roleID string, p
 }
 
 // GetRolePermissionCodes 获取角色的所有权限代码
-func (s *RoleService) GetRolePermissionCodes(ctx context.Context, roleID string) ([]string, error) {
+func (s *RoleService) GetRolePermissionCodes(ctx context.Context, roleID int64) ([]string, error) {
 	role, err := s.roleRepo.FindByID(ctx, roleID)
 	if err != nil {
 		return nil, err

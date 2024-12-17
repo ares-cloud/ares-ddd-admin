@@ -1,8 +1,8 @@
 package token
 
 import (
-	"encoding/json"
 	"errors"
+	"github.com/cloudwego/hertz/pkg/common/json"
 	"github.com/golang-jwt/jwt/v5"
 	"time"
 )

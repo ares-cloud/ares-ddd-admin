@@ -46,7 +46,7 @@ func newApp(server *hserver.Serve) *app {
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host localhost:8858
+// @host localhost:8888
 // @BasePath /api/admin
 // @schemes http
 func main() {

@@ -2,6 +2,9 @@ package rest
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
+
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/commands"
@@ -28,7 +31,7 @@ func NewSysUserController(cmdHandel *handlers.UserCommandHandler, queryHandel *h
 
 func (c *SysUserController) RegisterRouter(g *route.RouterGroup, t token.IToken) {
 	v1 := g.Group("/v1")
-	ur := v1.Group("/sys/user")
+	ur := v1.Group("/sys/user", jwt.Handler(t))
 	{
 		ur.POST("", hserver.NewHandlerFu[commands.CreateUserCommand](c.AddUser))
 		ur.GET("", hserver.NewHandlerFu[queries.ListUsersQuery](c.UserList))
@@ -36,6 +39,8 @@ func (c *SysUserController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 		ur.DELETE("/:id", hserver.NewHandlerFu[models.StringIdReq](c.DeleteUser))
 		ur.PUT("/status", hserver.NewHandlerFu[commands.UpdateUserStatusCommand](c.UpdateUserStatus))
 		ur.GET("/:id", hserver.NewHandlerFu[models.StringIdReq](c.GetDetails))
+		ur.GET("/info", hserver.NewNotParHandlerFu(c.GetUserInfo))
+		ur.GET("/menus", hserver.NewNotParHandlerFu(c.GetUserMenus))
 	}
 }
 
@@ -63,7 +68,7 @@ func (c *SysUserController) AddUser(ctx context.Context, params *commands.Create
 // @Summary 根据id获取用户
 // @Description 根据id获取用户
 // @Tags 系统用户
-// @ID GetDetails
+// @ID GetUserDetails
 // @Accept json
 // @Produce json
 // @Param id path int64 true "用户ID"
@@ -103,7 +108,7 @@ func (c *SysUserController) UserList(ctx context.Context, params *queries.ListUs
 
 // UpdateUser 更新用户
 // @Summary 更新用户
-// @Description 更新用户信息，包括基本信息和用户关联
+// @Description 更���用户信息，包括基本信息和用户关联
 // @Tags 系统用户
 // @ID UpdateUser
 // @Accept json
@@ -165,4 +170,56 @@ func (c *SysUserController) UpdateUserStatus(ctx context.Context, params *comman
 		return result.WithError(err)
 	}
 	return result
+}
+
+// GetUserInfo 获取用户信息
+// @Summary 获取用户信息
+// @Description 获取当前登录用户的详细信息，包括权限和菜单
+// @Tags 系统用户
+// @ID GetUserInfo
+// @Accept json
+// @Produce json
+// @Success 200 {object} base_info.Success{data=dto.UserInfoDto}
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "服务器内部错误"
+// @Router /v1/sys/user/info [get]
+func (c *SysUserController) GetUserInfo(ctx context.Context) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+
+	// 从上下文获取用户ID
+	userId := actx.GetUserId(ctx)
+
+	data, err := c.queryHandel.HandleGetUserInfo(ctx, queries.GetUserInfoQuery{
+		Id: userId,
+	})
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
+}
+
+// GetUserMenus 获取用户菜单树
+// @Summary 获取用户菜单树
+// @Description 获取当前登录用户的菜单树
+// @Tags 系统用户
+// @ID GetUserMenus
+// @Accept json
+// @Produce json
+// @Success 200 {object} base_info.Success{data=[]dto.PermissionsDto}
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "服务器内部错误"
+// @Router /v1/sys/user/menus [get]
+func (c *SysUserController) GetUserMenus(ctx context.Context) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+
+	// 从上下文获取用户ID
+	userId := actx.GetUserId(ctx)
+
+	data, err := c.queryHandel.HandleGetUserMenus(ctx, queries.GetUserMenusQuery{
+		Id: userId,
+	})
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
 }

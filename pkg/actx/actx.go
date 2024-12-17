@@ -44,7 +44,7 @@ func GetToken(ctx context.Context) string {
 	return fmt.Sprintf("%v", ctx.Value(KeyToken))
 }
 
-func WithRole(ctx context.Context, role string) context.Context {
+func WithRole(ctx context.Context, role []string) context.Context {
 	return context.WithValue(ctx, KeyRole, role)
 }
 
@@ -125,10 +125,12 @@ func IsAdmin(ctx context.Context) bool {
 	}
 }
 
-func Store(ctx context.Context, accessToken token.AccessToken) {
+func Store(ctx context.Context, accessToken token.AccessToken) context.Context {
 	ctx = WithUserId(ctx, accessToken.UserId)
 	ctx = WithPlatform(ctx, accessToken.Platform)
 	ctx = WithToken(ctx, accessToken.AccessToken)
-	ctx = WithRole(ctx, accessToken.Role)
+	ctx = WithRole(ctx, accessToken.Roles)
 	ctx = WithTenantId(ctx, accessToken.TenantId)
+
+	return ctx
 }

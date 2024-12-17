@@ -23,6 +23,7 @@ RESULT_TRANSFER_FAIL: 结果转换失败
 #认证
 PasswordsDoNotMatch: 两次密码不一致
 IncorrectAccountOrPassword: 账号或密码不正确
+PasswordError: 密码错误
 IncorrectVerificationCode: 验证码不正确
 AccountAlreadyExists: 账号已存在
 ErrorGetTokenError: 生成token失败

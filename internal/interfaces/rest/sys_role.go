@@ -128,7 +128,7 @@ func (c *SysRoleController) DeleteRole(ctx context.Context, params *models.IntId
 // @Summary 根据id获取角色
 // @Description 根据id获取角色
 // @Tags 系统角色
-// @ID GetDetails
+// @ID GetRoleDetails
 // @Accept json
 // @Produce json
 // @Param id path int64 true "角色ID"

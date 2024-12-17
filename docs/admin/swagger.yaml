@@ -165,6 +165,32 @@ definitions:
     - password
     - username
     type: object
+  commands.LoginCommand:
+    properties:
+      captchaCode:
+        type: string
+      captchaKey:
+        type: string
+      password:
+        type: string
+      platform:
+        type: string
+      username:
+        type: string
+    required:
+    - captchaCode
+    - captchaKey
+    - password
+    - platform
+    - username
+    type: object
+  commands.RefreshTokenCommand:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
   commands.UpdatePermissionsCommand:
     properties:
       description:
@@ -175,13 +201,21 @@ definitions:
         type: integer
       name:
         type: string
+      parentId:
+        type: integer
       path:
         type: string
       properties:
         type: string
+      resources:
+        items:
+          $ref: '#/definitions/commands.CreatePermissionsResourceCommand'
+        type: array
       sequence:
         type: integer
       status:
+        type: integer
+      type:
         type: integer
     required:
     - id
@@ -250,6 +284,24 @@ definitions:
       status:
         type: integer
     type: object
+  dto.AuthDto:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      refresh_token_expires_in:
+        type: integer
+    type: object
+  dto.CaptchaDto:
+    properties:
+      image:
+        type: string
+      key:
+        type: string
+    type: object
   dto.PermissionsDto:
     properties:
       code:
@@ -273,12 +325,12 @@ definitions:
       name:
         description: 名称
         type: string
-      parent_id:
-        description: 父级ID
-        type: integer
       parent_path:
         description: 父级路径
         type: string
+      parentId:
+        description: 父级ID
+        type: integer
       path:
         description: 路径
         type: string
@@ -319,16 +371,43 @@ definitions:
           $ref: '#/definitions/dto.PermissionsTreeDto'
         type: array
       code:
+        description: 编码
+        type: string
+      description:
+        description: 描述
         type: string
       icon:
+        description: 图标
         type: string
       id:
+        description: ID
         type: integer
       localize:
+        description: 本地化
         type: string
       name:
+        description: 名称
+        type: string
+      parent_path:
+        description: 父级路径
         type: string
       parentId:
+        description: 父级ID
+        type: integer
+      path:
+        description: 路径
+        type: string
+      properties:
+        description: 属性
+        type: string
+      sequence:
+        description: 排序
+        type: integer
+      status:
+        description: 状态
+        type: integer
+      type:
+        description: 类型
         type: integer
     type: object
   dto.PermissionsTreeResult:
@@ -356,6 +435,8 @@ definitions:
       id:
         description: ID
         type: integer
+      localize:
+        type: string
       name:
         description: 名称
         type: string
@@ -436,6 +517,21 @@ definitions:
         description: 用户名
         type: string
     type: object
+  dto.UserInfoDto:
+    properties:
+      permissions:
+        description: 所有权限列表
+        items:
+          type: string
+        type: array
+      roles:
+        description: 角色列表
+        items:
+          type: string
+        type: array
+      user:
+        $ref: '#/definitions/dto.UserDto'
+    type: object
   models.PageRes-dto_TenantDto:
     properties:
       list:
@@ -456,6 +552,120 @@ info:
   title: ares-ddd-admin
   version: "1.0"
 paths:
+  /v1/auth/captcha:
+    get:
+      consumes:
+      - application/json
+      description: 获取图形验证码
+      operationId: GetCaptcha
+      parameters:
+      - description: 验证码宽度
+        in: query
+        name: width
+        type: integer
+      - description: 验证码高度
+        in: query
+        name: height
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CaptchaDto'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取验证码
+      tags:
+      - 认证
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录接口
+      operationId: Login
+      parameters:
+      - description: 登录信息
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.LoginCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AuthDto'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: 认证失败
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 用户登录
+      tags:
+      - 认证
+  /v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用旧令牌获取新的访问令牌
+      operationId: RefreshToken
+      parameters:
+      - description: 刷新令牌请求
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/commands.RefreshTokenCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AuthDto'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: 认证失败
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 刷新令牌
+      tags:
+      - 认证
   /v1/sys/permissions:
     get:
       description: 获取权限列表
@@ -606,7 +816,42 @@ paths:
       summary: 删除权限
       tags:
       - 系统权限
-  /v1/sys/permissions/simple_tree:
+  /v1/sys/permissions/enabled:
+    get:
+      consumes:
+      - application/json
+      description: 获取系统中所有启用状态的权限列表
+      operationId: GetAllEnabledPermissions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.PermissionsDto'
+                  type: array
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取所有启用状态的权限
+      tags:
+      - 系统权限
+  /v1/sys/permissions/simple/tree:
     get:
       consumes:
       - application/json
@@ -795,11 +1040,50 @@ paths:
       summary: 更新角色
       tags:
       - 系统角色
+  /v1/sys/role/:id:
+    get:
+      consumes:
+      - application/json
+      description: 根据id获取角色
+      operationId: GetRoleDetails
+      parameters:
+      - description: 角色ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RoleDto'
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 根据id获取角色
+      tags:
+      - 系统角色
   /v1/sys/role/{id}:
     delete:
       consumes:
       - application/json
-      description: 删除指定ID的角色
+      description: 删除指定ID��角色
       operationId: DeleteRole
       parameters:
       - description: 角色ID
@@ -827,6 +1111,41 @@ paths:
           schema:
             $ref: '#/definitions/base_info.Swagger500Resp'
       summary: 删除角色
+      tags:
+      - 系统角色
+  /v1/sys/role/enabled:
+    get:
+      consumes:
+      - application/json
+      description: 获取系统中所有启用状态的角色列表
+      operationId: GetAllEnabledRoles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.RoleDto'
+                  type: array
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取所有启用状态的角色
       tags:
       - 系统角色
   /v1/sys/tenant:
@@ -983,7 +1302,7 @@ paths:
       tags:
       - 系统租户
   /v1/sys/tenant/permissions:
-    post:
+    put:
       consumes:
       - application/json
       description: 为指定租户分配权限
@@ -1151,7 +1470,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: 更新用户信息，包括基本信息和角色关联
+      description: 更���用户信息，包括基本信息和用户关联
       operationId: UpdateUser
       parameters:
       - description: 用户更新信息
@@ -1180,6 +1499,45 @@ paths:
           schema:
             $ref: '#/definitions/base_info.Swagger500Resp'
       summary: 更新用户
+      tags:
+      - 系统用户
+  /v1/sys/user/:id:
+    get:
+      consumes:
+      - application/json
+      description: 根据id获取用户
+      operationId: GetUserDetails
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserDto'
+              type: object
+        "400":
+          description: code为400 参数输入错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: code为401 token未带上
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: code为500 服务端内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 根据id获取用户
       tags:
       - 系统用户
   /v1/sys/user/{id}:
@@ -1214,6 +1572,66 @@ paths:
           schema:
             $ref: '#/definitions/base_info.Swagger500Resp'
       summary: 删除用户
+      tags:
+      - 系统用户
+  /v1/sys/user/info:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前登录用户的详细信息，包括权限和菜单
+      operationId: GetUserInfo
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserInfoDto'
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取用户信息
+      tags:
+      - 系统用户
+  /v1/sys/user/menus:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前登录用户的菜单树
+      operationId: GetUserMenus
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.PermissionsDto'
+                  type: array
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 获取用户菜单树
       tags:
       - 系统用户
   /v1/sys/user/status:

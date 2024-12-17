@@ -42,7 +42,7 @@ func Handler(tokenizer token.IToken) app.HandlerFunc {
 			return
 		}
 		accessToken.AccessToken = parts[1]
-		actx.Store(ctx, accessToken)
+		ctx = actx.Store(ctx, accessToken)
 		// 将身份信息缓存到Context
 		c.Set(constant.KeyAccessToken, accessToken)
 		c.Next(ctx)

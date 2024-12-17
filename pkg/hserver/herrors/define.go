@@ -30,13 +30,17 @@ func NewBusinessServerError(reason string) *HError {
 	return &HError{Code: DefaultServerErrorCode, Reason: reason, DefMessage: reason, BusinessError: errors.New(reason)}
 }
 
-func NewParameterError(reason string) func(error) *HError {
+func NewParameterError(reason string) func(error) Herr {
 	return func(err error) *HError {
 		if err == nil {
 			return &HError{Code: DefaultParameterError, Reason: reason, DefMessage: reason, BusinessError: errors.New(reason)}
 		}
 		return &HError{Code: DefaultParameterError, Reason: reason, DefMessage: err.Error(), BusinessError: err}
 	}
+}
+
+func NewBadReqError(reason string) Herr {
+	return &HError{Code: DefaultParameterError, Reason: reason, DefMessage: reason, BusinessError: errors.New(reason)}
 }
 
 func NewAsServerError(err error, def *HError) *HError {

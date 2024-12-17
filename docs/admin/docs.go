@@ -21,6 +21,192 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/auth/captcha": {
+            "get": {
+                "description": "获取图形验证码",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "认证"
+                ],
+                "summary": "获取验证码",
+                "operationId": "GetCaptcha",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "验证码宽度",
+                        "name": "width",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "验证码高度",
+                        "name": "height",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.CaptchaDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/login": {
+            "post": {
+                "description": "用户登录接口",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "认证"
+                ],
+                "summary": "用户登录",
+                "operationId": "Login",
+                "parameters": [
+                    {
+                        "description": "登录信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.LoginCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.AuthDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "认证失败",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/refresh": {
+            "post": {
+                "description": "使用旧令牌获取新的访问令牌",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "认证"
+                ],
+                "summary": "刷新令牌",
+                "operationId": "RefreshToken",
+                "parameters": [
+                    {
+                        "description": "刷新令牌请求",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.RefreshTokenCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.AuthDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "认证失败",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sys/permissions": {
             "get": {
                 "description": "获取权限列表",
@@ -200,7 +386,64 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/sys/permissions/simple_tree": {
+        "/v1/sys/permissions/enabled": {
+            "get": {
+                "description": "获取系统中所有启用状态的权限列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统权限"
+                ],
+                "summary": "获取所有启用状态的权限",
+                "operationId": "GetAllEnabledPermissions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.PermissionsDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/permissions/simple/tree": {
             "get": {
                 "description": "获取简化的权限树结构",
                 "consumes": [
@@ -549,9 +792,129 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/sys/role/:id": {
+            "get": {
+                "description": "根据id获取角色",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统角色"
+                ],
+                "summary": "根据id获取角色",
+                "operationId": "GetRoleDetails",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "角色ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.RoleDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/role/enabled": {
+            "get": {
+                "description": "获取系统中所有启用状态的角色列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统角色"
+                ],
+                "summary": "获取所有启用状态的角色",
+                "operationId": "GetAllEnabledRoles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.RoleDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sys/role/{id}": {
             "delete": {
-                "description": "删除指定ID的角色",
+                "description": "删除指定ID��角色",
                 "consumes": [
                     "application/json"
                 ],
@@ -786,7 +1149,7 @@ const docTemplate = `{
             }
         },
         "/v1/sys/tenant/permissions": {
-            "post": {
+            "put": {
                 "description": "为指定租户分配权限",
                 "consumes": [
                     "application/json"
@@ -1050,7 +1413,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "更新用户信息，包括基本信息和角色关联",
+                "description": "更���用户信息，包括基本信息和用户关联",
                 "consumes": [
                     "application/json"
                 ],
@@ -1139,6 +1502,168 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/user/:id": {
+            "get": {
+                "description": "根据id获取用户",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统用户"
+                ],
+                "summary": "根据id获取用户",
+                "operationId": "GetUserDetails",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "code为400 参数输入错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "code为401 token未带上",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "code为500 服务端内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/user/info": {
+            "get": {
+                "description": "获取当前登录用户的详细信息，包括权限和菜单",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统用户"
+                ],
+                "summary": "获取用户信息",
+                "operationId": "GetUserInfo",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserInfoDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/user/menus": {
+            "get": {
+                "description": "获取当前登录用户的菜单树",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统用户"
+                ],
+                "summary": "获取用户菜单树",
+                "operationId": "GetUserMenus",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.PermissionsDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
                         "schema": {
                             "$ref": "#/definitions/base_info.Swagger500Resp"
                         }
@@ -1493,6 +2018,44 @@ const docTemplate = `{
                 }
             }
         },
+        "commands.LoginCommand": {
+            "type": "object",
+            "required": [
+                "captchaCode",
+                "captchaKey",
+                "password",
+                "platform",
+                "username"
+            ],
+            "properties": {
+                "captchaCode": {
+                    "type": "string"
+                },
+                "captchaKey": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "commands.RefreshTokenCommand": {
+            "type": "object",
+            "required": [
+                "token"
+            ],
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "commands.UpdatePermissionsCommand": {
             "type": "object",
             "required": [
@@ -1511,16 +2074,28 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "parentId": {
+                    "type": "integer"
+                },
                 "path": {
                     "type": "string"
                 },
                 "properties": {
                     "type": "string"
                 },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/commands.CreatePermissionsResourceCommand"
+                    }
+                },
                 "sequence": {
                     "type": "integer"
                 },
                 "status": {
+                    "type": "integer"
+                },
+                "type": {
                     "type": "integer"
                 }
             }
@@ -1623,6 +2198,34 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AuthDto": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "refresh_token_expires_in": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.CaptchaDto": {
+            "type": "object",
+            "properties": {
+                "image": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.PermissionsDto": {
             "type": "object",
             "properties": {
@@ -1654,7 +2257,7 @@ const docTemplate = `{
                     "description": "名称",
                     "type": "string"
                 },
-                "parent_id": {
+                "parentId": {
                     "description": "父级ID",
                     "type": "integer"
                 },
@@ -1718,21 +2321,55 @@ const docTemplate = `{
                     }
                 },
                 "code": {
+                    "description": "编码",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "描述",
                     "type": "string"
                 },
                 "icon": {
+                    "description": "图标",
                     "type": "string"
                 },
                 "id": {
+                    "description": "ID",
                     "type": "integer"
                 },
                 "localize": {
+                    "description": "本地化",
                     "type": "string"
                 },
                 "name": {
+                    "description": "名称",
                     "type": "string"
                 },
                 "parentId": {
+                    "description": "父级ID",
+                    "type": "integer"
+                },
+                "parent_path": {
+                    "description": "父级路径",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "路径",
+                    "type": "string"
+                },
+                "properties": {
+                    "description": "属性",
+                    "type": "string"
+                },
+                "sequence": {
+                    "description": "排序",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "类型",
                     "type": "integer"
                 }
             }
@@ -1772,6 +2409,9 @@ const docTemplate = `{
                 "id": {
                     "description": "ID",
                     "type": "integer"
+                },
+                "localize": {
+                    "type": "string"
                 },
                 "name": {
                     "description": "名称",
@@ -1883,6 +2523,28 @@ const docTemplate = `{
                 "username": {
                     "description": "用户名",
                     "type": "string"
+                }
+            }
+        },
+        "dto.UserInfoDto": {
+            "type": "object",
+            "properties": {
+                "permissions": {
+                    "description": "所有权限列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "roles": {
+                    "description": "角色列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.UserDto"
                 }
             }
         },

@@ -19,15 +19,17 @@ var ProviderSet = wire.NewSet(
 	rest.NewSysUserController,
 	rest.NewSysTenantController,
 	rest.NewSysPermissionsController,
+	rest.NewAuthController,
 )
 
-func NewServer(config *configs.Bootstrap, hclient *h_redis.RedisClient,
+func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 	rc *rest.SysRoleController,
 	uc *rest.SysUserController,
 	ts *rest.SysTenantController,
 	ps *rest.SysPermissionsController,
+	as *rest.AuthController,
 ) *hserver.Serve {
-	tk := token.NewRdbToken(hclient.GetClient(), config.JWT.Issuer, config.JWT.SigningKey, config.JWT.ExpirationToken, config.JWT.ExpirationRefresh)
+	tk := token.NewRdbToken(hc.GetClient(), config.JWT.Issuer, config.JWT.SigningKey, config.JWT.ExpirationToken, config.JWT.ExpirationRefresh)
 	svr := hserver.NewServe(&hserver.ServerConfig{
 		Port:               config.Server.Port,
 		RateQPS:            config.Server.RateQPS,
@@ -42,6 +44,7 @@ func NewServer(config *configs.Bootstrap, hclient *h_redis.RedisClient,
 	uc.RegisterRouter(rg, tk)
 	ts.RegisterRouter(rg, tk)
 	ps.RegisterRouter(rg, tk)
+	as.RegisterRouter(rg, tk)
 	return svr
 }
 

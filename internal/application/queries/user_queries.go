@@ -14,3 +14,11 @@ type ListUsersQuery struct {
 	Email    string `json:"email" query:"email"`       // 用户邮箱
 	Status   int8   `json:"status" query:"status"`     // 角色状态（禁用、启用）
 }
+
+type GetUserInfoQuery struct {
+	Id string `json:"id" query:"id"` // 用户ID
+}
+
+type GetUserMenusQuery struct {
+	Id string `json:"id" query:"id"` // 用户ID
+}

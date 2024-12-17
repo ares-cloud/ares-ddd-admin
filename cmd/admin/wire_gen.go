@@ -8,6 +8,7 @@ package main
 
 import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/handlers"
+	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence/data"
@@ -44,7 +45,8 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	iSysUserRepo := data.NewSysUserRepo(iDataBase)
 	iUserRepository := repository.NewUserRepository(iSysUserRepo, iSysRoleRepo)
 	userCommandHandler := handlers.NewUserCommandHandler(iUserRepository, iRoleRepository)
-	userQueryHandler := handlers.NewUserQueryHandler(iUserRepository)
+	userService := service.NewUserService(iUserRepository, iPermissionsRepository, iRoleRepository)
+	userQueryHandler := handlers.NewUserQueryHandler(iUserRepository, userService)
 	sysUserController := rest.NewSysUserController(userCommandHandler, userQueryHandler)
 	iSysTenantRepo := data.NewSysTenantRepo(iDataBase)
 	iTenantRepository := repository.NewTenantRepository(iSysTenantRepo, iSysUserRepo)
@@ -54,7 +56,10 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	permissionsCommandHandler := handlers.NewPermissionsCommandHandler(iPermissionsRepository)
 	permissionsQueryHandler := handlers.NewPermissionsQueryHandler(iPermissionsRepository)
 	sysPermissionsController := rest.NewSysPermissionsController(permissionsCommandHandler, permissionsQueryHandler)
-	serve := admin.NewServer(bootstrap, redisClient, sysRoleController, sysUserController, sysTenantController, sysPermissionsController)
+	iAuthRepository := repository.NewAuthRepository(iUserRepository, redisClient)
+	authHandler := handlers.NewAuthHandler(iAuthRepository)
+	authController := rest.NewAuthController(authHandler)
+	serve := admin.NewServer(bootstrap, redisClient, sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController)
 	mainApp := newApp(serve)
 	return mainApp, func() {
 		cleanup()
