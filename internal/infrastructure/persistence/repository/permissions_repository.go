@@ -337,7 +337,7 @@ func (r *permissionsRepository) FindAllEnabled(ctx context.Context) ([]*model.Pe
 	// 构建查询条件
 	qb := query.NewQueryBuilder()
 	qb.Where("status", query.Eq, 1)
-	qb.OrderBy("sequence", false)
+	qb.OrderBy("sequence", true)
 
 	// 查询权限
 	permissions, err := r.repo.Find(ctx, qb)

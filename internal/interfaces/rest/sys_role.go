@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 
@@ -29,7 +30,7 @@ func NewSysRoleController(cmdHandel *handlers.RoleCommandHandler, queryHandel *h
 
 func (c *SysRoleController) RegisterRouter(g *route.RouterGroup, t token.IToken) {
 	v1 := g.Group("/v1")
-	ur := v1.Group("/sys/role")
+	ur := v1.Group("/sys/role", jwt.Handler(t))
 	{
 		ur.POST("", hserver.NewHandlerFu[commands.CreateRoleCommand](c.AddRole))
 		ur.GET("", hserver.NewHandlerFu[queries.ListRolesQuery](c.RoleList))

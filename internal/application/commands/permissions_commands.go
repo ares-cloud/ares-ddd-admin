@@ -29,6 +29,7 @@ type UpdatePermissionsCommand struct {
 	Properties  string                             `json:"properties"`
 	Status      *int8                              `json:"status"`
 	ParentID    int64                              `json:"parentId"`
+	Localize    string                             `json:"localize"`
 	Type        int8                               `json:"type"`
 	Resources   []CreatePermissionsResourceCommand `json:"resources"`
 }

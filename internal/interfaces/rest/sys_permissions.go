@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 
@@ -29,7 +30,7 @@ func NewSysPermissionsController(cmdHandel *handlers.PermissionsCommandHandler, 
 
 func (c *SysPermissionsController) RegisterRouter(g *route.RouterGroup, t token.IToken) {
 	v1 := g.Group("/v1")
-	ur := v1.Group("/sys/permissions")
+	ur := v1.Group("/sys/permissions", jwt.Handler(t))
 	{
 		ur.POST("", hserver.NewHandlerFu[commands.CreatePermissionsCommand](c.AddPermissions))
 		ur.GET("", hserver.NewHandlerFu[queries.ListPermissionsQuery](c.PermissionsList))

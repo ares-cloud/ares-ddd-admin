@@ -38,6 +38,12 @@ func (r *Role) UpdateBasicInfo(name, description string, sequence int) {
 	r.UpdatedAt = time.Now().Unix()
 }
 
+func (r *Role) UpdateLocalize(localize string) {
+	if r.Localize != "" {
+		r.Localize = localize
+	}
+}
+
 func (r *Role) UpdateStatus(status int8) {
 	r.Status = status
 	r.UpdatedAt = time.Now().Unix()

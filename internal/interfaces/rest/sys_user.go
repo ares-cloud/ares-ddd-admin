@@ -189,7 +189,7 @@ func (c *SysUserController) GetUserInfo(ctx context.Context) *hserver.ResponseRe
 	// 从上下文获取用户ID
 	userId := actx.GetUserId(ctx)
 
-	data, err := c.queryHandel.HandleGetUserInfo(ctx, queries.GetUserInfoQuery{
+	data, err := c.queryHandel.HandleGetUserInfo(context.Background(), queries.GetUserInfoQuery{
 		Id: userId,
 	})
 	if err != nil {
@@ -215,7 +215,7 @@ func (c *SysUserController) GetUserMenus(ctx context.Context) *hserver.ResponseR
 	// 从上下文获取用户ID
 	userId := actx.GetUserId(ctx)
 
-	data, err := c.queryHandel.HandleGetUserMenus(ctx, queries.GetUserMenusQuery{
+	data, err := c.queryHandel.HandleGetUserMenus(context.Background(), queries.GetUserMenusQuery{
 		Id: userId,
 	})
 	if err != nil {

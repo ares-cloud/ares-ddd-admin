@@ -82,7 +82,7 @@ func (h *RoleCommandHandler) HandleUpdate(ctx context.Context, cmd commands.Upda
 	} else {
 		role.AssignPermissions(nil)
 	}
-
+	role.UpdateLocalize(cmd.Localize)
 	err = h.roleRepo.Update(ctx, role)
 	if err != nil {
 		hlog.CtxErrorf(ctx, "failed to update role: %s", err)

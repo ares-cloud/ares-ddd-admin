@@ -36,7 +36,8 @@ func (h *PermissionsQueryHandler) HandleList(ctx context.Context, q *queries.Lis
 	if q.Status != 0 {
 		qb.Where("status", query.Eq, q.Status)
 	}
-
+	// 排序
+	qb.OrderBy("sequence", true)
 	// 设置分页
 	qb.WithPage(&q.Page)
 

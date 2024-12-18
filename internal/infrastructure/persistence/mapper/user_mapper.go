@@ -22,6 +22,7 @@ func (m *UserMapper) ToDomain(e *entity.SysUser, roles []*model.Role) *model.Use
 		Roles:          roles,
 		CreatedAt:      e.CreatedAt,
 		UpdatedAt:      e.UpdatedAt,
+		TenantID:       e.TenantID,
 	}
 }
 

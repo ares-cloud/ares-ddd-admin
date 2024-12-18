@@ -31,8 +31,8 @@ func GetMathCaptcha(width, height int64) (string, string, string, error) {
 	}
 	// 配置算术验证码
 	driver := base64Captcha.NewDriverMath(
-		60,                                 // 高度
-		200,                                // 宽度
+		int(height),                        // 高度
+		int(width),                         // 宽度
 		2,                                  // 噪声数量
 		base64Captcha.OptionShowHollowLine, // 干扰线选项
 		&color.RGBA{R: 99, G: 253, B: 124, A: 100}, // 背景颜色
@@ -47,9 +47,15 @@ func GetMathCaptcha(width, height int64) (string, string, string, error) {
 }
 
 // GetDigitCaptcha create return id, b64s, err
-func GetDigitCaptcha() (string, string, string, error) {
+func GetDigitCaptcha(width, height, size int64) (string, string, string, error) {
+	if width <= 0 {
+		width = 200
+	}
+	if height <= 0 {
+		height = 60
+	}
 	// 配置算术验证码
-	driver := base64Captcha.NewDriverDigit(80, 240, 3, 0.5, 80)
+	driver := base64Captcha.NewDriverDigit(int(height), int(width), int(size), 0.5, 80)
 	// 生成验证码实例
 	captcha := base64Captcha.NewCaptcha(driver, store)
 

@@ -62,6 +62,7 @@ func (h *PermissionsCommandHandler) HandleUpdate(ctx context.Context, cmd comman
 	perm.Properties = cmd.Properties
 	perm.ChangeType(cmd.Type)
 	perm.ChangeParentID(cmd.ParentID)
+	perm.Localize = cmd.Localize
 	// 更新资源列表
 	if len(cmd.Resources) > 0 {
 		resources := make([]*model.PermissionsResource, len(cmd.Resources))

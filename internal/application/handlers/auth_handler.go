@@ -87,7 +87,7 @@ func (h *AuthHandler) HandleRefreshToken(ctx context.Context, cmd commands.Refre
 // HandleGetCaptcha 处理获取验证码请求
 func (h *AuthHandler) HandleGetCaptcha(ctx context.Context, query queries.GetCaptchaQuery) (*dto.CaptchaDto, herrors.Herr) {
 	// 生成验证码
-	id, image, code, err := captcha.GetMathCaptcha(query.Width, query.Height)
+	id, image, code, err := captcha.GetDigitCaptcha(query.Width, query.Height, 3)
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}

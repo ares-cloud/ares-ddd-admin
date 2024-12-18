@@ -2,11 +2,10 @@ package handlers
 
 import (
 	"context"
-	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
-
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/queries"
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/repository"
+	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
@@ -14,12 +13,14 @@ import (
 
 type UserQueryHandler struct {
 	userRepo repository.IUserRepository
+	parRepo  repository.IPermissionsRepository
 	uds      *service.UserService
 }
 
-func NewUserQueryHandler(userRepo repository.IUserRepository, uds *service.UserService) *UserQueryHandler {
+func NewUserQueryHandler(userRepo repository.IUserRepository, uds *service.UserService, parRepo repository.IPermissionsRepository) *UserQueryHandler {
 	return &UserQueryHandler{
 		userRepo: userRepo,
+		parRepo:  parRepo,
 		uds:      uds,
 	}
 }
@@ -97,7 +98,10 @@ func (h *UserQueryHandler) HandleGetUserInfo(ctx context.Context, query queries.
 	for _, role := range user.Roles {
 		roles = append(roles, role.Code)
 	}
-	return dto.ToUserInfoDto(user, permissions, roles), nil
+	infoDto := dto.ToUserInfoDto(user, permissions, roles)
+	// todo 可以让用户自己设置，默认取系统的
+	infoDto.HomePage = "User"
+	return infoDto, nil
 }
 
 // HandleGetUserMenus 获取用户菜单树

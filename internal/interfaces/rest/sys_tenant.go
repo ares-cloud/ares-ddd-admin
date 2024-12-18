@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/commands"
 	_ "github.com/ares-cloud/ares-ddd-admin/internal/application/dto"
@@ -28,7 +29,7 @@ func NewSysTenantController(cmdHandel *handlers.TenantCommandHandler, queryHande
 
 func (c *SysTenantController) RegisterRouter(g *route.RouterGroup, t token.IToken) {
 	v1 := g.Group("/v1")
-	ur := v1.Group("/sys/tenant")
+	ur := v1.Group("/sys/tenant", jwt.Handler(t))
 	{
 		ur.POST("", hserver.NewHandlerFu[commands.CreateTenantCommand](c.AddTenant))
 		ur.GET("", hserver.NewHandlerFu[queries.ListTenantsQuery](c.TenantList))

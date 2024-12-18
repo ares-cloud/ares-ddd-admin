@@ -46,7 +46,7 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	iUserRepository := repository.NewUserRepository(iSysUserRepo, iSysRoleRepo)
 	userCommandHandler := handlers.NewUserCommandHandler(iUserRepository, iRoleRepository)
 	userService := service.NewUserService(iUserRepository, iPermissionsRepository, iRoleRepository)
-	userQueryHandler := handlers.NewUserQueryHandler(iUserRepository, userService)
+	userQueryHandler := handlers.NewUserQueryHandler(iUserRepository, userService, iPermissionsRepository)
 	sysUserController := rest.NewSysUserController(userCommandHandler, userQueryHandler)
 	iSysTenantRepo := data.NewSysTenantRepo(iDataBase)
 	iTenantRepository := repository.NewTenantRepository(iSysTenantRepo, iSysUserRepo)

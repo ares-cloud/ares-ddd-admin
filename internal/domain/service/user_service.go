@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sort"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/model"
 
@@ -105,7 +106,10 @@ func (s *UserService) GetUserMenus(ctx context.Context, userID string) ([]*model
 			}
 		}
 	}
-
+	// 排序
+	sort.Slice(menuPermissions, func(i, j int) bool {
+		return menuPermissions[i].Sequence < menuPermissions[j].Sequence
+	})
 	// 构建菜单树
 	return buildPermissionTree(menuPermissions), nil
 }
