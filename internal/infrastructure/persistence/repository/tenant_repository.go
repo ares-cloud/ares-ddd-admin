@@ -52,6 +52,7 @@ func NewTenantRepository(repo ISysTenantRepo, userRepo ISysUserRepo) drepository
 
 func (r *tenantRepository) Create(ctx context.Context, tenant *model.Tenant) error {
 	tenantEntity := r.mapper.ToEntity(tenant)
+	ctx = context.Background()
 	return r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
 		// 生成ID
 		tenantEntity.ID = r.repo.GenStringId()
@@ -179,13 +180,13 @@ func (r *tenantRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]
 func (r *tenantRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
 	return r.repo.Count(ctx, qb)
 }
-func (r *tenantRepository) AssignPermissions(ctx context.Context, tenantID string, permissionIDs []int64) error {
-	return r.repo.AssignPermissions(ctx, tenantID, permissionIDs)
+func (r *tenantRepository) AssignPermissions(_ context.Context, tenantID string, permissionIDs []int64) error {
+	return r.repo.AssignPermissions(context.Background(), tenantID, permissionIDs)
 }
 
-func (r *tenantRepository) GetPermissions(ctx context.Context, tenantID string) ([]*model.Permissions, error) {
+func (r *tenantRepository) GetPermissions(_ context.Context, tenantID string) ([]*model.Permissions, error) {
 	// 获取租户权限和资源
-	permissions, resources, err := r.repo.GetPermissionsByTenantID(ctx, tenantID)
+	permissions, resources, err := r.repo.GetPermissionsByTenantID(context.Background(), tenantID)
 	if err != nil {
 		if database.IfErrorNotFound(err) {
 			return make([]*model.Permissions, 0), nil
@@ -197,6 +198,6 @@ func (r *tenantRepository) GetPermissions(ctx context.Context, tenantID string) 
 	return r.permMapper.ToDomainList(permissions, resources), nil
 }
 
-func (r *tenantRepository) HasPermission(ctx context.Context, tenantID string, permissionID int64) (bool, error) {
-	return r.repo.HasPermission(ctx, tenantID, permissionID)
+func (r *tenantRepository) HasPermission(_ context.Context, tenantID string, permissionID int64) (bool, error) {
+	return r.repo.HasPermission(context.Background(), tenantID, permissionID)
 }

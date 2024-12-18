@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"sort"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/model"
@@ -10,16 +11,18 @@ import (
 )
 
 type UserService struct {
-	userRepo repository.IUserRepository
-	permRepo repository.IPermissionsRepository
-	roleRepo repository.IRoleRepository
+	userRepo   repository.IUserRepository
+	permRepo   repository.IPermissionsRepository
+	roleRepo   repository.IRoleRepository
+	tenantRepo repository.ITenantRepository
 }
 
-func NewUserService(userRepo repository.IUserRepository, permRepo repository.IPermissionsRepository, roleRepo repository.IRoleRepository) *UserService {
+func NewUserService(userRepo repository.IUserRepository, permRepo repository.IPermissionsRepository, roleRepo repository.IRoleRepository, tenantRepo repository.ITenantRepository) *UserService {
 	return &UserService{
-		userRepo: userRepo,
-		roleRepo: roleRepo,
-		permRepo: permRepo,
+		userRepo:   userRepo,
+		roleRepo:   roleRepo,
+		permRepo:   permRepo,
+		tenantRepo: tenantRepo,
 	}
 }
 
@@ -77,22 +80,46 @@ func (s *UserService) GetUserMenus(ctx context.Context, userID string) ([]*model
 	if err != nil {
 		return nil, err
 	}
-
-	// 如果用户没有角色，返回空菜单
-	if len(user.Roles) == 0 {
-		return []*model.Permissions{}, nil
-	}
-
 	// 获取用户所有角色的权限
 	var allPermissions []*model.Permissions
-	for _, role := range user.Roles {
-		permissions, err := s.permRepo.FindByRoleID(ctx, role.ID)
-		if err != nil {
-			return nil, err
+	// 有没有分配角色
+	if len(user.Roles) > 0 {
+		for _, role := range user.Roles {
+			permissions, err := s.permRepo.FindByRoleID(context.Background(), role.ID)
+			if err != nil {
+				return nil, err
+			}
+			allPermissions = append(allPermissions, permissions...)
 		}
-		allPermissions = append(allPermissions, permissions...)
+	} else {
+		tenantId := actx.GetTenantId(ctx)
+		if tenantId != "" {
+			tenant, err := s.tenantRepo.FindByID(context.Background(), tenantId)
+			if err != nil {
+				return nil, err
+			}
+			//租户管理处理
+			if tenant.AdminUser.ID == user.ID {
+				if tenant.IsDefaultTenant() {
+					permissions, err := s.permRepo.FindAllEnabled(context.Background())
+					if err != nil {
+						return nil, err
+					}
+					allPermissions = append(allPermissions, permissions...)
+				} else {
+					permissions, err := s.tenantRepo.GetPermissions(context.Background(), tenantId)
+					if err != nil {
+						return nil, err
+					}
+					allPermissions = append(allPermissions, permissions...)
+				}
+			}
+		}
 	}
 
+	if len(allPermissions) == 0 {
+		return []*model.Permissions{}, nil
+	}
 	// 过滤出类型为1(页面)的权限
 	menuPermissions := make([]*model.Permissions, 0)
 	permMap := make(map[int64]bool) // 用于去重

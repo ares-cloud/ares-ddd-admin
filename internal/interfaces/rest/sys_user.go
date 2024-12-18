@@ -215,7 +215,7 @@ func (c *SysUserController) GetUserMenus(ctx context.Context) *hserver.ResponseR
 	// 从上下文获取用户ID
 	userId := actx.GetUserId(ctx)
 
-	data, err := c.queryHandel.HandleGetUserMenus(context.Background(), queries.GetUserMenusQuery{
+	data, err := c.queryHandel.HandleGetUserMenus(ctx, queries.GetUserMenusQuery{
 		Id: userId,
 	})
 	if err != nil {

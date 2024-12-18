@@ -54,6 +54,12 @@ func GetDigitCaptcha(width, height, size int64) (string, string, string, error) 
 	if height <= 0 {
 		height = 60
 	}
+	if width < 120 {
+		width = 120
+	}
+	if height < 32 {
+		height = 32
+	}
 	// 配置算术验证码
 	driver := base64Captcha.NewDriverDigit(int(height), int(width), int(size), 0.5, 80)
 	// 生成验证码实例
