@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
@@ -20,12 +21,14 @@ import (
 type SysUserController struct {
 	cmdHandel   *handlers.UserCommandHandler
 	queryHandel *handlers.UserQueryHandler
+	ef          *casbin.Enforcer
 }
 
-func NewSysUserController(cmdHandel *handlers.UserCommandHandler, queryHandel *handlers.UserQueryHandler) *SysUserController {
+func NewSysUserController(cmdHandel *handlers.UserCommandHandler, queryHandel *handlers.UserQueryHandler, ef *casbin.Enforcer) *SysUserController {
 	return &SysUserController{
 		cmdHandel:   cmdHandel,
 		queryHandel: queryHandel,
+		ef:          ef,
 	}
 }
 
@@ -33,12 +36,12 @@ func (c *SysUserController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 	v1 := g.Group("/v1")
 	ur := v1.Group("/sys/user", jwt.Handler(t))
 	{
-		ur.POST("", hserver.NewHandlerFu[commands.CreateUserCommand](c.AddUser))
-		ur.GET("", hserver.NewHandlerFu[queries.ListUsersQuery](c.UserList))
-		ur.PUT("", hserver.NewHandlerFu[commands.UpdateUserCommand](c.UpdateUser))
-		ur.DELETE("/:id", hserver.NewHandlerFu[models.StringIdReq](c.DeleteUser))
-		ur.PUT("/status", hserver.NewHandlerFu[commands.UpdateUserStatusCommand](c.UpdateUserStatus))
-		ur.GET("/:id", hserver.NewHandlerFu[models.StringIdReq](c.GetDetails))
+		ur.POST("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.CreateUserCommand](c.AddUser))
+		ur.GET("", casbin.Handler(c.ef), hserver.NewHandlerFu[queries.ListUsersQuery](c.UserList))
+		ur.PUT("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.UpdateUserCommand](c.UpdateUser))
+		ur.DELETE("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.DeleteUser))
+		ur.PUT("/status", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.UpdateUserStatusCommand](c.UpdateUserStatus))
+		ur.GET("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.GetDetails))
 		ur.GET("/info", hserver.NewNotParHandlerFu(c.GetUserInfo))
 		ur.GET("/menus", hserver.NewNotParHandlerFu(c.GetUserMenus))
 	}

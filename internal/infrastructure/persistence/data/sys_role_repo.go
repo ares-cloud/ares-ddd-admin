@@ -82,3 +82,12 @@ func (r *sysRoleRepo) DelById(ctx context.Context, id int64) error {
 		return r.Db(ctx).Delete(&entity.Role{}, "id = ?", id).Error
 	})
 }
+
+func (r *sysRoleRepo) FindAllEnabled(ctx context.Context) ([]*entity.Role, error) {
+	var list []*entity.Role
+	err := r.Db(ctx).Where("status = 1 and deleted_at = 0").Find(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}

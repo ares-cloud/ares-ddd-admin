@@ -59,6 +59,7 @@ func main() {
 	if flagLog != "" {
 		bootstrap.Log.OutPath = flagLog
 	}
+	bootstrap.ConfPath = &flagConf
 	application, cleanup, err := wireApp(bootstrap, bootstrap.Data)
 	if err != nil {
 		panic(err)

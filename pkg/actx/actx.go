@@ -3,8 +3,8 @@ package actx
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/ares-cloud/ares-ddd-admin/pkg/constant"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/token"
 )
 
@@ -45,11 +45,15 @@ func GetToken(ctx context.Context) string {
 }
 
 func WithRole(ctx context.Context, role []string) context.Context {
-	return context.WithValue(ctx, KeyRole, role)
+	return context.WithValue(ctx, KeyRole, strings.Join(role, ","))
 }
 
-func GetRole(ctx context.Context) string {
-	return fmt.Sprintf("%v", ctx.Value(KeyRole))
+func GetRoles(ctx context.Context) []string {
+	value := fmt.Sprintf("%v", ctx.Value(KeyRole))
+	if value == "" {
+		return []string{}
+	}
+	return strings.Split(value, ",")
 }
 func WithTenantId(ctx context.Context, tenantId string) context.Context {
 	return context.WithValue(ctx, KeyTenantId, tenantId)
@@ -107,22 +111,6 @@ func IsIgnoreTenantId(ctx context.Context) bool {
 // BuildIgnoreTenantCtx 构建忽略租户的ctx
 func BuildIgnoreTenantCtx(ctx context.Context) context.Context {
 	return WithIgnoreTenantId(ctx)
-}
-
-func IsAdmin(ctx context.Context) bool {
-	role := GetRole(ctx)
-	switch role {
-	case constant.RoleAdmin:
-		return true
-	case constant.RoleSuperAdmin:
-		return true
-	case constant.RoleAgent:
-		return true
-	case constant.RoleUser:
-		return false
-	default:
-		return false
-	}
 }
 
 func Store(ctx context.Context, accessToken token.AccessToken) context.Context {

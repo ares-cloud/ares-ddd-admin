@@ -27,6 +27,9 @@ type IPermissionsRepo interface {
 	GetTreeByType(ctx context.Context, permType int8) ([]*entity.Permissions, []*entity.PermissionsResource, error)
 	GetTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*entity.Permissions, []*entity.PermissionsResource, error)
 	GetTreeByUserAndType(ctx context.Context, userID string, permType int8) ([]*entity.Permissions, []*entity.PermissionsResource, error)
+	GetResourcesByRoles(ctx context.Context, roles []int64) ([]*entity.PermissionsResource, error)
+	GetByRoles(ctx context.Context, roles []int64) ([]*entity.Permissions, error)
+	GetResourcesByRolesGrouped(ctx context.Context, roles []int64) (map[int64][]*entity.PermissionsResource, error)
 }
 
 type permissionsRepository struct {
@@ -359,4 +362,34 @@ func (r *permissionsRepository) FindAllEnabled(ctx context.Context) ([]*model.Pe
 	}
 
 	return r.mapper.ToDomainList(permissions, resources), nil
+}
+
+func (r *permissionsRepository) GetResourcesByRoles(ctx context.Context, roles []string) ([]*entity.PermissionsResource, error) {
+	var resources []*entity.PermissionsResource
+
+	// 1. 先查询角色对应的权限ID
+	var permissionIDs []int64
+	err := r.repo.Db(ctx).Model(&entity.RolePermissions{}).
+		Joins("JOIN sys_role ON sys_role.id = sys_role_permissions.role_id").
+		Where("sys_role.code IN ? AND sys_role.status = ?", roles, 1).
+		Pluck("permission_id", &permissionIDs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(permissionIDs) == 0 {
+		return []*entity.PermissionsResource{}, nil
+	}
+
+	// 2. 查询启用的权限资源
+	err = r.repo.Db(ctx).Model(&entity.PermissionsResource{}).
+		Joins("JOIN sys_permissions ON sys_permissions.id = sys_permissions_resource.permissions_id").
+		Where("sys_permissions.id IN ? AND sys_permissions.status = ? AND sys_permissions.type = ?",
+			permissionIDs, 1, 3). // type=3 表示API类型
+		Find(&resources).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return resources, nil
 }

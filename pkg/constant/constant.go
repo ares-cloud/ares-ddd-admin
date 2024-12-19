@@ -11,6 +11,7 @@ const (
 	SQLInjectionDetected  = "sqlInjectionDetected"
 	ReasonSuccess         = "Success"
 	PleaseDoNotResubmit   = "PleaseDoNotResubmit"
+	ReasonNoAccess        = "noAccess"
 )
 const (
 	RespCode      = "code"

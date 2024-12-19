@@ -50,18 +50,18 @@ func Handler(tokenizer token.IToken) app.HandlerFunc {
 }
 
 // AdminChickHandler 管理校验
-func AdminChickHandler() app.HandlerFunc {
-	return func(ctx context.Context, c *app.RequestContext) {
-		role := actx.GetRole(ctx)
-		if role == "" {
-			i18Mag := hertzI18n.MustGetMessage(ctx, constant.IsNotAdminAccount)
-			c.JSON(http.StatusOK, utils.H{constant.RespCode: 401, constant.RespMsg: i18Mag, constant.RespReason: constant.IsNotAdminAccount, constant.RespData: utils.H{}})
-			c.Abort()
-			return
-		}
-		if role == constant.RoleSuperAdmin {
-			ctx = actx.BuildIgnoreTenantCtx(ctx)
-		}
-		c.Next(ctx)
-	}
-}
+//func AdminChickHandler() app.HandlerFunc {
+//	return func(ctx context.Context, c *app.RequestContext) {
+//		role := actx.GetRole(ctx)
+//		if role == "" {
+//			i18Mag := hertzI18n.MustGetMessage(ctx, constant.IsNotAdminAccount)
+//			c.JSON(http.StatusOK, utils.H{constant.RespCode: 401, constant.RespMsg: i18Mag, constant.RespReason: constant.IsNotAdminAccount, constant.RespData: utils.H{}})
+//			c.Abort()
+//			return
+//		}
+//		if role == constant.RoleSuperAdmin {
+//			ctx = actx.BuildIgnoreTenantCtx(ctx)
+//		}
+//		c.Next(ctx)
+//	}
+//}

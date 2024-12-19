@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
@@ -14,11 +15,13 @@ import (
 
 type PermissionsCommandHandler struct {
 	permRepo repository.IPermissionsRepository
+	ef       *casbin.Enforcer
 }
 
-func NewPermissionsCommandHandler(permRepo repository.IPermissionsRepository) *PermissionsCommandHandler {
+func NewPermissionsCommandHandler(permRepo repository.IPermissionsRepository, ef *casbin.Enforcer) *PermissionsCommandHandler {
 	return &PermissionsCommandHandler{
 		permRepo: permRepo,
+		ef:       ef,
 	}
 }
 
@@ -80,6 +83,12 @@ func (h *PermissionsCommandHandler) HandleUpdate(ctx context.Context, cmd comman
 		hlog.CtxErrorf(ctx, "permission update failed %s", err)
 		return herrors.UpdateFail(err)
 	}
+
+	// 发布权限更新消息
+	if err := h.ef.PublishUpdate(ctx); err != nil {
+		hlog.CtxErrorf(ctx, "publish permission update error: %v", err)
+	}
+
 	return nil
 }
 

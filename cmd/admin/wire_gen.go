@@ -9,6 +9,7 @@ package main
 import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
+	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/auth/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence/data"
@@ -41,7 +42,13 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	iPermissionsRepository := repository.NewPermissionsRepository(iPermissionsRepo)
 	roleCommandHandler := handlers.NewRoleCommandHandler(iRoleRepository, iPermissionsRepository)
 	roleQueryHandler := handlers.NewRoleQueryHandler(iRoleRepository)
-	sysRoleController := rest.NewSysRoleController(roleCommandHandler, roleQueryHandler)
+	casbinIPermissionsRepository := casbin.NewRepositoryImpl(iSysRoleRepo, iPermissionsRepo)
+	enforcer, err := admin.NewCasBinEnforcer(redisClient, casbinIPermissionsRepository)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	sysRoleController := rest.NewSysRoleController(roleCommandHandler, roleQueryHandler, enforcer)
 	iSysUserRepo := data.NewSysUserRepo(iDataBase)
 	iUserRepository := repository.NewUserRepository(iSysUserRepo, iSysRoleRepo)
 	userCommandHandler := handlers.NewUserCommandHandler(iUserRepository, iRoleRepository)
@@ -49,13 +56,13 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	iTenantRepository := repository.NewTenantRepository(iSysTenantRepo, iSysUserRepo)
 	userService := service.NewUserService(iUserRepository, iPermissionsRepository, iRoleRepository, iTenantRepository)
 	userQueryHandler := handlers.NewUserQueryHandler(iUserRepository, userService, iPermissionsRepository)
-	sysUserController := rest.NewSysUserController(userCommandHandler, userQueryHandler)
+	sysUserController := rest.NewSysUserController(userCommandHandler, userQueryHandler, enforcer)
 	tenantCommandHandler := handlers.NewTenantCommandHandler(iTenantRepository)
 	tenantQueryHandler := handlers.NewTenantQueryHandler(iTenantRepository, iPermissionsRepository)
-	sysTenantController := rest.NewSysTenantController(tenantCommandHandler, tenantQueryHandler)
-	permissionsCommandHandler := handlers.NewPermissionsCommandHandler(iPermissionsRepository)
+	sysTenantController := rest.NewSysTenantController(tenantCommandHandler, tenantQueryHandler, enforcer)
+	permissionsCommandHandler := handlers.NewPermissionsCommandHandler(iPermissionsRepository, enforcer)
 	permissionsQueryHandler := handlers.NewPermissionsQueryHandler(iPermissionsRepository)
-	sysPermissionsController := rest.NewSysPermissionsController(permissionsCommandHandler, permissionsQueryHandler)
+	sysPermissionsController := rest.NewSysPermissionsController(permissionsCommandHandler, permissionsQueryHandler, enforcer)
 	iAuthRepository := repository.NewAuthRepository(iUserRepository, redisClient)
 	authHandler := handlers.NewAuthHandler(iAuthRepository)
 	authController := rest.NewAuthController(authHandler)

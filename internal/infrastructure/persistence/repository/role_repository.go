@@ -19,6 +19,7 @@ type ISysRoleRepo interface {
 	DeletePermissionsByRoleId(ctx context.Context, roleId int64) error
 	GetByUserId(ctx context.Context, userId string) ([]*entity.SysUserRole, error)
 	FindByIds(ctx context.Context, ids []int64) ([]*entity.Role, error)
+	FindAllEnabled(ctx context.Context) ([]*entity.Role, error)
 }
 
 type roleRepository struct {

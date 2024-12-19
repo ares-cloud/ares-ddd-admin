@@ -244,6 +244,62 @@ func (r *sysMenuRepo) GetTreeByUserAndType(ctx context.Context, userID string, p
 
 	return permEntities, resources, nil
 }
+func (r *sysMenuRepo) GetResourcesByRoles(ctx context.Context, roles []int64) ([]*entity.PermissionsResource, error) {
+	var resources []*entity.PermissionsResource
+
+	// 1. 先查询角色对应的权限ID
+	var permissionIDs []int64
+	err := r.Db(ctx).Model(&entity.RolePermissions{}).
+		Joins("JOIN sys_role ON sys_role.id = sys_role_permissions.role_id").
+		Where("sys_role.code IN ? AND sys_role.status = ?", roles, 1).
+		Pluck("permission_id", &permissionIDs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(permissionIDs) == 0 {
+		return []*entity.PermissionsResource{}, nil
+	}
+
+	// 2. 查询启用的权限资源
+	err = r.Db(ctx).Model(&entity.PermissionsResource{}).
+		Joins("JOIN sys_permissions ON sys_permissions.id = sys_permissions_resource.permissions_id").
+		Where("sys_permissions.id IN ? AND sys_permissions.status = ? AND sys_permissions.type = ?",
+			permissionIDs, 1, 3). // type=3 表示API类型的权限
+		Find(&resources).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return resources, nil
+}
+func (r *sysMenuRepo) GetByRoles(ctx context.Context, roles []int64) ([]*entity.Permissions, error) {
+	var permissions []*entity.Permissions
+
+	// 1. 查询角色关联的权限ID
+	var permissionIDs []int64
+	err := r.Db(ctx).Model(&entity.RolePermissions{}).
+		Where("role_id IN ?", roles).
+		Pluck("permission_id", &permissionIDs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(permissionIDs) == 0 {
+		return []*entity.Permissions{}, nil
+	}
+
+	// 2. 查询启用的权限
+	err = r.Db(ctx).Where("id IN ? AND status = ? ",
+		permissionIDs, 1). // status=1 表示启用
+		Order("sequence desc").
+		Find(&permissions).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return permissions, nil
+}
 
 // 辅助函数：获取权限ID列表
 func getPermissionIDs(permissions []*entity.Permissions) []int64 {
@@ -252,4 +308,47 @@ func getPermissionIDs(permissions []*entity.Permissions) []int64 {
 		ids = append(ids, p.ID)
 	}
 	return ids
+}
+
+// GetResourcesByRolesGrouped 根据角色ID获取分组的权限资源
+func (r *sysMenuRepo) GetResourcesByRolesGrouped(ctx context.Context, roles []int64) (map[int64][]*entity.PermissionsResource, error) {
+	// 结果map: roleID -> resources
+	resourceMap := make(map[int64][]*entity.PermissionsResource)
+
+	// 1. 先查询角色权限关联和权限资源
+	var results []struct {
+		RoleID       int64  `gorm:"column:role_id"`
+		Method       string `gorm:"column:method"`
+		Path         string `gorm:"column:path"`
+		PermissionID int64  `gorm:"column:permissions_id"`
+	}
+
+	err := r.Db(ctx).Table("sys_role_permissions").
+		Select("sys_role_permissions.role_id, pr.method, pr.path, pr.permissions_id").
+		Joins("JOIN sys_permissions p ON p.id = sys_role_permissions.permission_id").
+		Joins("JOIN sys_permissions_resource pr ON pr.permissions_id = p.id").
+		Where("sys_role_permissions.role_id IN ? AND p.status = ?", roles, 1).
+		Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. 组织数据到map中
+	for _, result := range results {
+		resource := &entity.PermissionsResource{
+			PermissionsID: result.PermissionID,
+			Method:        result.Method,
+			Path:          result.Path,
+		}
+		resourceMap[result.RoleID] = append(resourceMap[result.RoleID], resource)
+	}
+
+	// 3. 确保所有角色都有对应的切片(即使是空的)
+	for _, roleID := range roles {
+		if _, exists := resourceMap[roleID]; !exists {
+			resourceMap[roleID] = []*entity.PermissionsResource{}
+		}
+	}
+
+	return resourceMap, nil
 }

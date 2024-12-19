@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
@@ -19,12 +20,14 @@ import (
 type SysPermissionsController struct {
 	cmdHandel   *handlers.PermissionsCommandHandler
 	queryHandel *handlers.PermissionsQueryHandler
+	ef          *casbin.Enforcer
 }
 
-func NewSysPermissionsController(cmdHandel *handlers.PermissionsCommandHandler, queryHandel *handlers.PermissionsQueryHandler) *SysPermissionsController {
+func NewSysPermissionsController(cmdHandel *handlers.PermissionsCommandHandler, queryHandel *handlers.PermissionsQueryHandler, ef *casbin.Enforcer) *SysPermissionsController {
 	return &SysPermissionsController{
 		cmdHandel:   cmdHandel,
 		queryHandel: queryHandel,
+		ef:          ef,
 	}
 }
 
@@ -32,10 +35,10 @@ func (c *SysPermissionsController) RegisterRouter(g *route.RouterGroup, t token.
 	v1 := g.Group("/v1")
 	ur := v1.Group("/sys/permissions", jwt.Handler(t))
 	{
-		ur.POST("", hserver.NewHandlerFu[commands.CreatePermissionsCommand](c.AddPermissions))
-		ur.GET("", hserver.NewHandlerFu[queries.ListPermissionsQuery](c.PermissionsList))
+		ur.POST("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.CreatePermissionsCommand](c.AddPermissions))
+		ur.GET("", casbin.Handler(c.ef), hserver.NewHandlerFu[queries.ListPermissionsQuery](c.PermissionsList))
 		ur.PUT("", hserver.NewHandlerFu[commands.UpdatePermissionsCommand](c.UpdatePermissions))
-		ur.DELETE("/:id", hserver.NewHandlerFu[models.IntIdReq](c.DeletePermissions))
+		ur.DELETE("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.DeletePermissions))
 		ur.GET("/tree", hserver.NewHandlerFu[queries.GetPermissionsTreeQuery](c.GetPermissionsTree))
 		ur.GET("/simple/tree", hserver.NewNotParHandlerFu(c.GetPermissionsSimpleTree))
 		ur.GET("/enabled", hserver.NewNotParHandlerFu(c.GetAllEnabled))

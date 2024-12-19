@@ -23,7 +23,7 @@ type AccessToken struct {
 	RefreshToken string   `json:"refresh_token,omitempty"`  // 刷新 token
 	RefExpiresAt int64    `json:"ref_expires_at,omitempty"` // refToken过期时间
 	ServerCode   string   `json:"server_code"`              // 服务码
-	Roles        []string `json:"roles"`                    // 角色CODE，例如: root
+	Roles        []string `json:"roles"`                    // 角色CODE列表
 }
 
 func (a *AccessToken) MarshalBinary() (data []byte, err error) {

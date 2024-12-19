@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
@@ -19,12 +20,14 @@ import (
 type SysRoleController struct {
 	cmdHandel   *handlers.RoleCommandHandler
 	queryHandel *handlers.RoleQueryHandler
+	ef          *casbin.Enforcer
 }
 
-func NewSysRoleController(cmdHandel *handlers.RoleCommandHandler, queryHandel *handlers.RoleQueryHandler) *SysRoleController {
+func NewSysRoleController(cmdHandel *handlers.RoleCommandHandler, queryHandel *handlers.RoleQueryHandler, ef *casbin.Enforcer) *SysRoleController {
 	return &SysRoleController{
 		cmdHandel:   cmdHandel,
 		queryHandel: queryHandel,
+		ef:          ef,
 	}
 }
 
@@ -32,11 +35,11 @@ func (c *SysRoleController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 	v1 := g.Group("/v1")
 	ur := v1.Group("/sys/role", jwt.Handler(t))
 	{
-		ur.POST("", hserver.NewHandlerFu[commands.CreateRoleCommand](c.AddRole))
-		ur.GET("", hserver.NewHandlerFu[queries.ListRolesQuery](c.RoleList))
-		ur.PUT("", hserver.NewHandlerFu[commands.UpdateRoleCommand](c.UpdateRole))
-		ur.DELETE("/:id", hserver.NewHandlerFu[models.IntIdReq](c.DeleteRole))
-		ur.GET("/:id", hserver.NewHandlerFu[models.IntIdReq](c.GetDetails))
+		ur.POST("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.CreateRoleCommand](c.AddRole))
+		ur.GET("", casbin.Handler(c.ef), hserver.NewHandlerFu[queries.ListRolesQuery](c.RoleList))
+		ur.PUT("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.UpdateRoleCommand](c.UpdateRole))
+		ur.DELETE("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.DeleteRole))
+		ur.GET("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.GetDetails))
 		ur.GET("/enabled", hserver.NewNotParHandlerFu(c.GetAllEnabled))
 	}
 }

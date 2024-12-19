@@ -5,6 +5,7 @@ UserNotFind: 用户不存在
 StatusInvalidParam: 参数错误
 tokenEmpty: 令牌不能为空，请重新登录
 tokenVerifyFail: 令牌无效，请重新登录
+noAccess: 无权访问
 RPC_CALL_ERROR: 服务调用异常
 UNKNOWN: 未知错误
 PLEASE_DO_NOT_RESUBMIT: 请勿重复提交

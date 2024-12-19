@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/commands"
@@ -18,12 +19,14 @@ import (
 type SysTenantController struct {
 	cmdHandel   *handlers.TenantCommandHandler
 	queryHandel *handlers.TenantQueryHandler
+	ef          *casbin.Enforcer
 }
 
-func NewSysTenantController(cmdHandel *handlers.TenantCommandHandler, queryHandel *handlers.TenantQueryHandler) *SysTenantController {
+func NewSysTenantController(cmdHandel *handlers.TenantCommandHandler, queryHandel *handlers.TenantQueryHandler, ef *casbin.Enforcer) *SysTenantController {
 	return &SysTenantController{
 		cmdHandel:   cmdHandel,
 		queryHandel: queryHandel,
+		ef:          ef,
 	}
 }
 
@@ -31,12 +34,12 @@ func (c *SysTenantController) RegisterRouter(g *route.RouterGroup, t token.IToke
 	v1 := g.Group("/v1")
 	ur := v1.Group("/sys/tenant", jwt.Handler(t))
 	{
-		ur.POST("", hserver.NewHandlerFu[commands.CreateTenantCommand](c.AddTenant))
-		ur.GET("", hserver.NewHandlerFu[queries.ListTenantsQuery](c.TenantList))
-		ur.PUT("", hserver.NewHandlerFu[commands.UpdateTenantCommand](c.UpdateTenant))
-		ur.DELETE("/:id", hserver.NewHandlerFu[models.StringIdReq](c.DeleteTenant))
-		ur.PUT("/permissions", hserver.NewHandlerFu[commands.AssignTenantPermissionsCommand](c.AssignPermissions))
-		ur.GET("/permissions/:id", hserver.NewHandlerFu[models.StringIdReq](c.GetPermissions))
+		ur.POST("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.CreateTenantCommand](c.AddTenant))
+		ur.GET("", casbin.Handler(c.ef), hserver.NewHandlerFu[queries.ListTenantsQuery](c.TenantList))
+		ur.PUT("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.UpdateTenantCommand](c.UpdateTenant))
+		ur.DELETE("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.DeleteTenant))
+		ur.PUT("/permissions", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.AssignTenantPermissionsCommand](c.AssignPermissions))
+		ur.GET("/permissions/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.GetPermissions))
 	}
 }
 
