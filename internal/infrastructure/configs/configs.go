@@ -32,7 +32,9 @@ func Load(path, lcp, env, logPath string) (*Bootstrap, error) {
 		lcp = path + "/localize"
 	}
 	LocalizePath = lcp
-	bc.Log.OutPath = logPath
+	if logPath != "" {
+		bc.Log.OutPath = logPath
+	}
 	return &bc, nil
 }
 

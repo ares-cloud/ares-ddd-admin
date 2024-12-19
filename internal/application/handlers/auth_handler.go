@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"time"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/commands"
@@ -15,11 +18,13 @@ import (
 
 type AuthHandler struct {
 	authRepo repository.IAuthRepository
+	uds      *service.UserService
 }
 
-func NewAuthHandler(authRepo repository.IAuthRepository) *AuthHandler {
+func NewAuthHandler(authRepo repository.IAuthRepository, uds *service.UserService) *AuthHandler {
 	return &AuthHandler{
 		authRepo: authRepo,
+		uds:      uds,
 	}
 }
 
@@ -41,18 +46,18 @@ func (h *AuthHandler) HandleLogin(ctx context.Context, cmd commands.LoginCommand
 	if err := auth.Login(cmd.Password, valid); err != nil {
 		return nil, err
 	}
-
-	// 获取角色编码列表
-	roleCodes := make([]string, 0, len(auth.User.Roles))
-	for _, role := range auth.User.Roles {
-		roleCodes = append(roleCodes, role.Code)
+	ctx = actx.WithTenantId(ctx, auth.User.TenantID)
+	roles, e := h.uds.GetUserRoles(ctx, auth.User)
+	if e != nil {
+		hlog.CtxErrorf(ctx, "get user roles failed: %v", e)
+		return nil, herrors.QueryFail(e)
 	}
 
 	// 生成token
 	tokenData, err := tk.GenerateToken(auth.User.ID, &token.AccessToken{
 		UserId:   auth.User.ID,
 		TenantId: auth.User.TenantID,
-		Roles:    roleCodes,
+		Roles:    roles,
 		Platform: cmd.Platform,
 	})
 	if err != nil {

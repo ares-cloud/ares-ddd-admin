@@ -9,6 +9,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/i18n"
 	psb "github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/cors"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/oplog"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/sql_injection"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/token"
 	"github.com/cloudwego/hertz/pkg/app/server"
@@ -76,4 +77,16 @@ func registerMiddleware(con *configs.Bootstrap, server *server.Hertz) {
 	// server.Use(ratelimit.RateLimitMiddleware(10))
 	// 防止sql注入
 	server.Use(sql_injection.PreventSQLInjection())
+
+	// 操作日志
+	initOpLog(con.Log)
+}
+
+func initOpLog(con *configs.Log) {
+	path := con.OutPath
+	if path == "" {
+		panic(fmt.Errorf("not config log out path"))
+	}
+	writer := oplog.NewFileWriter(path)
+	oplog.Init(writer)
 }

@@ -64,7 +64,7 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	permissionsQueryHandler := handlers.NewPermissionsQueryHandler(iPermissionsRepository)
 	sysPermissionsController := rest.NewSysPermissionsController(permissionsCommandHandler, permissionsQueryHandler, enforcer)
 	iAuthRepository := repository.NewAuthRepository(iUserRepository, redisClient)
-	authHandler := handlers.NewAuthHandler(iAuthRepository)
+	authHandler := handlers.NewAuthHandler(iAuthRepository, userService)
 	authController := rest.NewAuthController(authHandler)
 	serve := admin.NewServer(bootstrap, redisClient, sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController)
 	mainApp := newApp(serve)

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"sort"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/model"
@@ -55,13 +56,31 @@ func (s *UserService) GetUserPermissions(ctx context.Context, userID string) ([]
 	}
 
 	permissionMap := make(map[string]struct{})
-	for _, role := range user.Roles {
-		role, err := s.roleRepo.FindByID(ctx, role.ID)
-		if err != nil {
-			continue
+	if len(user.Roles) > 0 {
+		for _, role := range user.Roles {
+			role, err := s.roleRepo.FindByID(ctx, role.ID)
+			if err != nil {
+				continue
+			}
+			for _, perm := range role.Permissions {
+				permissionMap[perm.Code] = struct{}{}
+			}
 		}
-		for _, perm := range role.Permissions {
-			permissionMap[perm.Code] = struct{}{}
+	} else {
+		isTenantAdmin, tenant, err := s.IsTenantAdmin(ctx, user)
+		if err != nil {
+			hlog.CtxErrorf(ctx, "isTenantAdmin err: %v", err)
+			return nil, err
+		}
+		if isTenantAdmin {
+			permissions, err := s.tenantRepo.GetPermissions(ctx, tenant.ID)
+			if err != nil {
+				hlog.CtxErrorf(ctx, "tenantRepo.GetPermissions err: %v", err)
+				return nil, err
+			}
+			for _, perm := range permissions {
+				permissionMap[perm.Code] = struct{}{}
+			}
 		}
 	}
 
@@ -70,6 +89,23 @@ func (s *UserService) GetUserPermissions(ctx context.Context, userID string) ([]
 		permissions = append(permissions, code)
 	}
 	return permissions, nil
+}
+
+func (s *UserService) GetUserRoles(ctx context.Context, user *model.User) ([]string, error) {
+	if len(user.Roles) == 0 {
+		admin, _, err := s.IsTenantAdmin(ctx, user)
+		if err != nil {
+			return []string{}, err
+		}
+		if admin {
+			return []string{"superAdmin"}, nil
+		}
+	}
+	roles := make([]string, 0, len(user.Roles))
+	for _, role := range user.Roles {
+		roles = append(roles, role.Code)
+	}
+	return roles, nil
 }
 
 // GetUserMenus 获取用户菜单
@@ -92,27 +128,24 @@ func (s *UserService) GetUserMenus(ctx context.Context, userID string) ([]*model
 			allPermissions = append(allPermissions, permissions...)
 		}
 	} else {
-		tenantId := actx.GetTenantId(ctx)
-		if tenantId != "" {
-			tenant, err := s.tenantRepo.FindByID(context.Background(), tenantId)
-			if err != nil {
-				return nil, err
-			}
-			//租户管理处理
-			if tenant.AdminUser.ID == user.ID {
-				if tenant.IsDefaultTenant() {
-					permissions, err := s.permRepo.FindAllEnabled(context.Background())
-					if err != nil {
-						return nil, err
-					}
-					allPermissions = append(allPermissions, permissions...)
-				} else {
-					permissions, err := s.tenantRepo.GetPermissions(context.Background(), tenantId)
-					if err != nil {
-						return nil, err
-					}
-					allPermissions = append(allPermissions, permissions...)
+		isTenantAdmin, tenant, err := s.IsTenantAdmin(ctx, user)
+		if err != nil {
+			hlog.CtxErrorf(ctx, "isTenantAdmin err: %v", err)
+			return nil, err
+		}
+		if isTenantAdmin {
+			if tenant.IsDefaultTenant() {
+				permissions, err := s.permRepo.FindAllEnabled(context.Background())
+				if err != nil {
+					return nil, err
 				}
+				allPermissions = append(allPermissions, permissions...)
+			} else {
+				permissions, err := s.tenantRepo.GetPermissions(context.Background(), tenant.ID)
+				if err != nil {
+					return nil, err
+				}
+				allPermissions = append(allPermissions, permissions...)
 			}
 		}
 	}
@@ -139,6 +172,21 @@ func (s *UserService) GetUserMenus(ctx context.Context, userID string) ([]*model
 	})
 	// 构建菜单树
 	return buildPermissionTree(menuPermissions), nil
+}
+
+func (s *UserService) IsTenantAdmin(ctx context.Context, user *model.User) (bool, *model.Tenant, error) {
+	tenantId := actx.GetTenantId(ctx)
+	if tenantId != "" {
+		tenant, err := s.tenantRepo.FindByID(context.Background(), tenantId)
+		if err != nil {
+			return false, nil, err
+		}
+		//租户管理处理
+		if tenant.AdminUser.ID == user.ID {
+			return true, tenant, nil
+		}
+	}
+	return false, nil, nil
 }
 
 // buildPermissionTree 构建权限树

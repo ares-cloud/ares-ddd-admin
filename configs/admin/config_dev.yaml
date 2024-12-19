@@ -24,7 +24,7 @@ data:
 
 # 日志配置
 log:
-  output_dir: './logs/'
+  output_dir: '/Users/hg/workspace/go/ares-ddd-admin/'
   file_prefix: 'user'
   level: 1
   max_size: 20 #单位m

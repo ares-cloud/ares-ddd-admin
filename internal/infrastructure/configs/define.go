@@ -29,9 +29,9 @@ type Server struct {
 }
 
 type Log struct {
-	OutPath    string `mapstructure:"out_path"`
+	OutPath    string `mapstructure:"output_dir"`
 	FilePrefix string `mapstructure:"file_prefix"`
-	Level      int64  `mapstructure:"max_size"`
+	Level      int64  `mapstructure:"level"`
 	MaxSize    int64  `mapstructure:"max_size"`
 	MaxBackups int64  `mapstructure:"max_backups"`
 	MaxAge     int64  `mapstructure:"max_age"`

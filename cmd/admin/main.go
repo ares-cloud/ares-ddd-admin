@@ -24,7 +24,7 @@ func init() {
 	flag.StringVar(&flagConf, "conf", "../configs", "config path, eg: -conf config.yaml")
 	flag.StringVar(&env, "env", "dev", "Operating environment, eg: -env dev")
 	flag.StringVar(&env, "lc", "", "localize config path, eg: -lc localize")
-	flag.StringVar(&flagLog, "log", "../logs", "Operating environment, eg: -log app.log")
+	flag.StringVar(&flagLog, "log", "", "Operating environment, eg: -log app.log")
 }
 
 type app struct {
@@ -55,9 +55,6 @@ func main() {
 	bootstrap, err := configs.Load(flagConf, flagLocalize, env, flagLog)
 	if err != nil {
 		panic(err)
-	}
-	if flagLog != "" {
-		bootstrap.Log.OutPath = flagLog
 	}
 	bootstrap.ConfPath = &flagConf
 	application, cleanup, err := wireApp(bootstrap, bootstrap.Data)

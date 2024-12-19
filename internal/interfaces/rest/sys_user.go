@@ -5,6 +5,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/oplog"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 
@@ -38,7 +39,11 @@ func (c *SysUserController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 	{
 		ur.POST("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.CreateUserCommand](c.AddUser))
 		ur.GET("", casbin.Handler(c.ef), hserver.NewHandlerFu[queries.ListUsersQuery](c.UserList))
-		ur.PUT("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.UpdateUserCommand](c.UpdateUser))
+		ur.PUT("", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      "用户管理",
+			Action:      "修改用户",
+		}), hserver.NewHandlerFu[commands.UpdateUserCommand](c.UpdateUser))
 		ur.DELETE("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.DeleteUser))
 		ur.PUT("/status", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.UpdateUserStatusCommand](c.UpdateUserStatus))
 		ur.GET("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.GetDetails))
@@ -192,7 +197,7 @@ func (c *SysUserController) GetUserInfo(ctx context.Context) *hserver.ResponseRe
 	// 从上下文获取用户ID
 	userId := actx.GetUserId(ctx)
 
-	data, err := c.queryHandel.HandleGetUserInfo(context.Background(), queries.GetUserInfoQuery{
+	data, err := c.queryHandel.HandleGetUserInfo(ctx, queries.GetUserInfoQuery{
 		Id: userId,
 	})
 	if err != nil {

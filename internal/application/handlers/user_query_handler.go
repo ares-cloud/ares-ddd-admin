@@ -9,6 +9,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 )
 
 type UserQueryHandler struct {
@@ -93,10 +94,10 @@ func (h *UserQueryHandler) HandleGetUserInfo(ctx context.Context, query queries.
 	if err != nil {
 		return nil, herrors.QueryFail(err)
 	}
-
-	roles := make([]string, 0, len(user.Roles))
-	for _, role := range user.Roles {
-		roles = append(roles, role.Code)
+	roles, e := h.uds.GetUserRoles(ctx, user)
+	if e != nil {
+		hlog.CtxErrorf(ctx, "get user roles failed: %v", e)
+		return nil, herrors.QueryFail(e)
 	}
 	infoDto := dto.ToUserInfoDto(user, permissions, roles)
 	// todo 可以让用户自己设置，默认取系统的

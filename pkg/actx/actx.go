@@ -11,6 +11,7 @@ import (
 const (
 	keyAccessToken = "access_token"
 	KeyUserId      = "userId"
+	KeyUsername    = "username"
 	KeyPlatform    = "platform"
 	KeyToken       = "token"
 	KeyRole        = "role"
@@ -28,6 +29,9 @@ func WithUserId(ctx context.Context, userId string) context.Context {
 
 func GetUserId(ctx context.Context) string {
 	return fmt.Sprintf("%v", ctx.Value(KeyUserId))
+}
+func GetUsername(ctx context.Context) string {
+	return fmt.Sprintf("%v", ctx.Value(KeyUsername))
 }
 func WithPlatform(ctx context.Context, platform string) context.Context {
 	return context.WithValue(ctx, KeyPlatform, platform)
