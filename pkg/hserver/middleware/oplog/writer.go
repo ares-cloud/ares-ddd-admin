@@ -3,11 +3,10 @@ package oplog
 import (
 	"context"
 	"fmt"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"os"
 	"path/filepath"
 	"sync"
-
-	"github.com/cloudwego/hertz/pkg/common/hlog"
 )
 
 // LogWriter 日志写入器接口
@@ -95,28 +94,8 @@ func NewDBWriter(dbWriter IDbOperationLogWrite) *DBWriter {
 }
 
 func (w *DBWriter) Write(ctx context.Context, log *OperationLog) error {
-	// 根据月份确定表名
-	tableName := fmt.Sprintf("sys_operation_log_%s", log.CreatedAt.Format("200601"))
-
-	// 确保表存在
-	if err := w.ensureTable(ctx, tableName); err != nil {
-		return err
-	}
-
 	// 写入日志
-	return w.dbWriter.Save(ctx, log, tableName)
-}
-
-func (w *DBWriter) ensureTable(ctx context.Context, tableName string) error {
-	// 实现建表逻辑
-	exist, err := w.dbWriter.ChickTableExist(ctx, tableName)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return fmt.Errorf("table %s does not exist", tableName)
-	}
-	return nil
+	return w.dbWriter.Save(ctx, log)
 }
 
 func (w *DBWriter) Close() error {

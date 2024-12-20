@@ -9,7 +9,8 @@ package main
 import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
-	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/auth/casbin"
+	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/base/casbin"
+	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/base/oplog"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence/data"
@@ -70,7 +71,11 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	authController := rest.NewAuthController(authHandler)
 	loginLogQueryHandler := handlers.NewLoginLogQueryHandler(iLoginLogRepository)
 	loginLogController := rest.NewLoginLogController(loginLogQueryHandler, enforcer)
-	serve := admin.NewServer(bootstrap, redisClient, sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController)
+	iOperationLogRepository := repository.NewOperationLogRepository(iDataBase)
+	operationLogQueryHandler := handlers.NewOperationLogQueryHandler(iOperationLogRepository)
+	operationLogController := rest.NewOperationLogController(operationLogQueryHandler, enforcer)
+	iDbOperationLogWrite := oplog.NewDbOperationLogWriter(iOperationLogRepository)
+	serve := admin.NewServer(bootstrap, redisClient, sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController, iDbOperationLogWrite)
 	mainApp := newApp(serve)
 	return mainApp, func() {
 		cleanup()

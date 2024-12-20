@@ -41,8 +41,8 @@ func (c *LoginLogController) RegisterRouter(g *route.RouterGroup, t token.IToken
 // @Accept json
 // @Produce json
 // @Param month query string true "查询月份(格式:202403)"
-// @Param page query int false "页码"
-// @Param page_size query int false "每页大小"
+// @Param current query int false "页码"
+// @Param size query int false "每页大小"
 // @Param username query string false "用户名"
 // @Param ip query string false "登录IP"
 // @Param status query int false "登录状态"

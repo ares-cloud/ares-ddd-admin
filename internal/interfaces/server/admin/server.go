@@ -26,6 +26,7 @@ var ProviderSet = wire.NewSet(
 	rest.NewSysPermissionsController,
 	rest.NewAuthController,
 	rest.NewLoginLogController,
+	rest.NewOperationLogController,
 	NewCasBinEnforcer,
 )
 
@@ -38,6 +39,8 @@ func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 	ps *rest.SysPermissionsController,
 	as *rest.AuthController,
 	lls *rest.LoginLogController,
+	ols *rest.OperationLogController,
+	oplDbWriter oplog.IDbOperationLogWrite,
 ) *hserver.Serve {
 	tk := token.NewRdbToken(hc.GetClient(), config.JWT.Issuer, config.JWT.SigningKey, config.JWT.ExpirationToken, config.JWT.ExpirationRefresh)
 	svr := hserver.NewServe(&hserver.ServerConfig{
@@ -47,7 +50,7 @@ func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 		Name:               config.Server.Name,
 		MaxRequestBodySize: config.Server.MaxRequestBodySize,
 	}, hserver.WithTokenizer(tk))
-	registerMiddleware(config, svr.GetHertz())
+	registerMiddleware(config, svr.GetHertz(), oplDbWriter)
 	//创建基础路由
 	rg := svr.GetHertz().Group(baseUrl)
 	rc.RegisterRouter(rg, tk)
@@ -56,6 +59,7 @@ func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 	ps.RegisterRouter(rg, tk)
 	as.RegisterRouter(rg, tk)
 	lls.RegisterRouter(rg, tk)
+	ols.RegisterRouter(rg, tk)
 	return svr
 }
 
@@ -67,7 +71,7 @@ func NewCasBinEnforcer(hc *h_redis.RedisClient, pr psb.IPermissionsRepository) (
 	return enforcer, nil
 }
 
-func registerMiddleware(con *configs.Bootstrap, server *server.Hertz) {
+func registerMiddleware(con *configs.Bootstrap, server *server.Hertz, oplDbWriter oplog.IDbOperationLogWrite) {
 	// Set up cross domain and flow limiting middleware
 	server.Use(cors.Handler())
 	//Use compression
@@ -82,14 +86,20 @@ func registerMiddleware(con *configs.Bootstrap, server *server.Hertz) {
 	server.Use(sql_injection.PreventSQLInjection())
 
 	// 操作日志
-	initOpLog(con.Log)
+	//initOpLog(con.Log)
+	initDbOpLog(oplDbWriter)
 }
 
-func initOpLog(con *configs.Log) {
-	path := con.OutPath
-	if path == "" {
-		panic(fmt.Errorf("not config log out path"))
-	}
-	writer := oplog.NewFileWriter(path)
+//func initOpLog(con *configs.Log) {
+//	path := con.OutPath
+//	if path == "" {
+//		panic(fmt.Errorf("not config log out path"))
+//	}
+//	writer := oplog.NewFileWriter(path)
+//	oplog.Init(writer)
+//}
+
+func initDbOpLog(oplDbWriter oplog.IDbOperationLogWrite) {
+	writer := oplog.NewDBWriter(oplDbWriter)
 	oplog.Init(writer)
 }

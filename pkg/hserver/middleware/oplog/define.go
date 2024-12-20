@@ -33,6 +33,5 @@ type LogOption struct {
 }
 
 type IDbOperationLogWrite interface {
-	Save(ctx context.Context, data *OperationLog, tableName string) error
-	ChickTableExist(ctx context.Context, tableName string) (bool, error)
+	Save(ctx context.Context, data *OperationLog) error
 }
