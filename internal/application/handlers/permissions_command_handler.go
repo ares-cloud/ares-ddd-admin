@@ -3,6 +3,8 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
+
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
@@ -26,6 +28,16 @@ func NewPermissionsCommandHandler(permRepo repository.IPermissionsRepository, ef
 }
 
 func (h *PermissionsCommandHandler) HandleCreate(ctx context.Context, cmd commands.CreatePermissionsCommand) herrors.Herr {
+	// 检查权限编码是否已存在
+	exists, err := h.permRepo.ExistsByCode(ctx, cmd.Code)
+	if err != nil {
+		hlog.CtxErrorf(ctx, "check permission code exists failed: %s", err)
+		return herrors.CreateFail(err)
+	}
+	if exists {
+		return herrors.CreateFail(fmt.Errorf("permission code %s already exists", cmd.Code))
+	}
+
 	perm := model.NewPermissions(cmd.Code, cmd.Name, cmd.Type, cmd.Sequence)
 	perm.Localize = cmd.Localize
 	perm.Icon = cmd.Icon
@@ -39,7 +51,7 @@ func (h *PermissionsCommandHandler) HandleCreate(ctx context.Context, cmd comman
 		perm.AddResource(resource.Method, resource.Path)
 	}
 
-	err := h.permRepo.Create(ctx, perm)
+	err = h.permRepo.Create(ctx, perm)
 	if err != nil {
 		hlog.CtxErrorf(ctx, "permission create failed: %s", err)
 		return herrors.CreateFail(err)

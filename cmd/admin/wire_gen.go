@@ -40,14 +40,14 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	iPermissionsRepo := data.NewSysMenuRepo(iDataBase)
 	iRoleRepository := repository.NewRoleRepository(iSysRoleRepo, iPermissionsRepo)
 	iPermissionsRepository := repository.NewPermissionsRepository(iPermissionsRepo)
-	roleCommandHandler := handlers.NewRoleCommandHandler(iRoleRepository, iPermissionsRepository)
-	roleQueryHandler := handlers.NewRoleQueryHandler(iRoleRepository)
 	casbinIPermissionsRepository := casbin.NewRepositoryImpl(iSysRoleRepo, iPermissionsRepo)
 	enforcer, err := admin.NewCasBinEnforcer(redisClient, casbinIPermissionsRepository)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
+	roleCommandHandler := handlers.NewRoleCommandHandler(iRoleRepository, iPermissionsRepository, enforcer)
+	roleQueryHandler := handlers.NewRoleQueryHandler(iRoleRepository)
 	sysRoleController := rest.NewSysRoleController(roleCommandHandler, roleQueryHandler, enforcer)
 	iSysUserRepo := data.NewSysUserRepo(iDataBase)
 	iUserRepository := repository.NewUserRepository(iSysUserRepo, iSysRoleRepo)
@@ -61,7 +61,8 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	tenantQueryHandler := handlers.NewTenantQueryHandler(iTenantRepository, iPermissionsRepository)
 	sysTenantController := rest.NewSysTenantController(tenantCommandHandler, tenantQueryHandler, enforcer)
 	permissionsCommandHandler := handlers.NewPermissionsCommandHandler(iPermissionsRepository, enforcer)
-	permissionsQueryHandler := handlers.NewPermissionsQueryHandler(iPermissionsRepository)
+	permissionService := service.NewPermissionService(iPermissionsRepository, iTenantRepository)
+	permissionsQueryHandler := handlers.NewPermissionsQueryHandler(iPermissionsRepository, permissionService)
 	sysPermissionsController := rest.NewSysPermissionsController(permissionsCommandHandler, permissionsQueryHandler, enforcer)
 	iAuthRepository := repository.NewAuthRepository(iUserRepository, redisClient)
 	authHandler := handlers.NewAuthHandler(iAuthRepository, userService)

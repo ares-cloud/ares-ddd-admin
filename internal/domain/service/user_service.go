@@ -73,7 +73,12 @@ func (s *UserService) GetUserPermissions(ctx context.Context, userID string) ([]
 			return nil, err
 		}
 		if isTenantAdmin {
-			permissions, err := s.tenantRepo.GetPermissions(ctx, tenant.ID)
+			var permissions []*model.Permissions
+			if tenant.IsDefaultTenant() {
+				permissions, err = s.permRepo.FindAllEnabled(context.Background())
+			} else {
+				permissions, err = s.tenantRepo.GetPermissions(ctx, tenant.ID)
+			}
 			if err != nil {
 				hlog.CtxErrorf(ctx, "tenantRepo.GetPermissions err: %v", err)
 				return nil, err

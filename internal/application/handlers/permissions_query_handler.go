@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/queries"
@@ -13,11 +14,13 @@ import (
 
 type PermissionsQueryHandler struct {
 	permRepo repository.IPermissionsRepository
+	pds      *service.PermissionService
 }
 
-func NewPermissionsQueryHandler(permRepo repository.IPermissionsRepository) *PermissionsQueryHandler {
+func NewPermissionsQueryHandler(permRepo repository.IPermissionsRepository, pds *service.PermissionService) *PermissionsQueryHandler {
 	return &PermissionsQueryHandler{
 		permRepo: permRepo,
+		pds:      pds,
 	}
 }
 
@@ -94,7 +97,7 @@ func (h *PermissionsQueryHandler) HandleGetPermissionsTree(ctx context.Context) 
 
 // HandleGetAllEnabled 获取所有启用状态的权限
 func (h *PermissionsQueryHandler) HandleGetAllEnabled(ctx context.Context) ([]*dto.PermissionsDto, herrors.Herr) {
-	permissions, err := h.permRepo.FindAllEnabled(ctx)
+	permissions, err := h.pds.FindAllEnabled(ctx)
 	if err != nil {
 		return nil, herrors.QueryFail(err)
 	}

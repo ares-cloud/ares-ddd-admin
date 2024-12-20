@@ -3,6 +3,8 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
+
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 
@@ -14,21 +16,26 @@ import (
 type RoleCommandHandler struct {
 	roleRepo repository.IRoleRepository
 	permRepo repository.IPermissionsRepository
+	ef       *casbin.Enforcer
 }
 
-func NewRoleCommandHandler(roleRepo repository.IRoleRepository, permRepo repository.IPermissionsRepository) *RoleCommandHandler {
+func NewRoleCommandHandler(roleRepo repository.IRoleRepository, permRepo repository.IPermissionsRepository, ef *casbin.Enforcer) *RoleCommandHandler {
 	return &RoleCommandHandler{
 		roleRepo: roleRepo,
 		permRepo: permRepo,
+		ef:       ef,
 	}
 }
 
 func (h *RoleCommandHandler) HandleCreate(ctx context.Context, cmd *commands.CreateRoleCommand) herrors.Herr {
-	// 检查角色代码是否已存在
-	existingRole, _ := h.roleRepo.FindByCode(ctx, cmd.Code)
-	if existingRole != nil {
-		hlog.CtxErrorf(ctx, "role with code %s already exists", cmd.Code)
-		return herrors.CreateFail(fmt.Errorf("role with code %s already exists", cmd.Code))
+	// 检查角色编码是否已存在
+	exists, err := h.roleRepo.ExistsByCode(ctx, cmd.Code)
+	if err != nil {
+		hlog.CtxErrorf(ctx, "check role code exists failed: %s", err)
+		return herrors.CreateFail(err)
+	}
+	if exists {
+		return herrors.CreateFail(fmt.Errorf("role code %s already exists", cmd.Code))
 	}
 
 	role := model.NewRole(cmd.Code, cmd.Name, cmd.Sequence)
@@ -48,11 +55,17 @@ func (h *RoleCommandHandler) HandleCreate(ctx context.Context, cmd *commands.Cre
 		role.AssignPermissions(perms)
 	}
 
-	err := h.roleRepo.Create(ctx, role)
+	err = h.roleRepo.Create(ctx, role)
 	if err != nil {
 		hlog.CtxErrorf(ctx, "failed to create role: %s", err)
 		return herrors.CreateFail(err)
 	}
+
+	// 发布权限更新消息
+	if err := h.ef.PublishUpdate(ctx); err != nil {
+		hlog.CtxErrorf(ctx, "publish permission update error: %v", err)
+	}
+
 	return nil
 }
 
