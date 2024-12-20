@@ -21,7 +21,7 @@ type OperationLogDto struct {
 	Duration  int64  `json:"duration"`   // 执行时长(ms)
 	Module    string `json:"module"`     // 模块名称
 	Action    string `json:"action"`     // 操作类型
-	CreatedAt int64  `json:"created_at"` // 创建时间
+	CreatedAt int64  `json:"createdAt"`  // 创建时间
 }
 
 // ToOperationLogDto 转换为DTO
