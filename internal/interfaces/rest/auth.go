@@ -2,11 +2,11 @@ package rest
 
 import (
 	"context"
-
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/commands"
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/queries"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/device"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/token"
 	"github.com/cloudwego/hertz/pkg/route"
 )
@@ -27,7 +27,7 @@ func (c *AuthController) RegisterRouter(g *route.RouterGroup, t token.IToken) {
 	v1 := g.Group("/v1")
 	auth := v1.Group("/auth")
 	{
-		auth.POST("/login", hserver.NewHandlerFu[commands.LoginCommand](c.Login))
+		auth.POST("/login", device.Handler(), hserver.NewHandlerFu[commands.LoginCommand](c.Login))
 		auth.POST("/refresh", hserver.NewHandlerFu[commands.RefreshTokenCommand](c.RefreshToken))
 		auth.GET("/captcha", hserver.NewHandlerFu[queries.GetCaptchaQuery](c.GetCaptcha))
 	}
@@ -40,15 +40,15 @@ func (c *AuthController) RegisterRouter(g *route.RouterGroup, t token.IToken) {
 // @ID Login
 // @Accept json
 // @Produce json
-// @Param req body commands.LoginCommand true "登录信息"
+// @Param data body commands.LoginCommand true "登录参数"
 // @Success 200 {object} base_info.Success{data=dto.AuthDto}
 // @Failure 400 {object} base_info.Swagger400Resp "参数错误"
 // @Failure 401 {object} base_info.Swagger401Resp "认证失败"
 // @Failure 500 {object} base_info.Swagger500Resp "服务器内部错误"
 // @Router /v1/auth/login [post]
-func (c *AuthController) Login(ctx context.Context, params *commands.LoginCommand) *hserver.ResponseResult {
+func (c *AuthController) Login(ctx context.Context, req *commands.LoginCommand) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
-	data, err := c.authHandler.HandleLogin(ctx, *params, c.t)
+	data, err := c.authHandler.HandleLogin(ctx, *req, c.t)
 	if err != nil {
 		return result.WithError(err)
 	}

@@ -7,6 +7,14 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/pkg/password"
 )
 
+// UserType 用户类型
+type UserType int8
+
+const (
+	UserTypeAdmin  UserType = 1 // 管理员
+	UserTypeMember UserType = 2 // 普通用户
+)
+
 type User struct {
 	ID             string
 	TenantID       string // 租户ID
@@ -22,6 +30,7 @@ type User struct {
 	Roles          []*Role
 	CreatedAt      int64
 	UpdatedAt      int64
+	UserType       UserType // 用户类型
 }
 
 // NewUser 创建新用户
@@ -139,4 +148,9 @@ func (u *User) GetRoleIDs() []int64 {
 func (u *User) SetInvitationCode(code string) {
 	u.InvitationCode = code
 	u.UpdatedAt = time.Now().Unix()
+}
+
+// IsAdmin 判断是否为管理员
+func (u *User) IsAdmin() bool {
+	return u.UserType == UserTypeAdmin
 }

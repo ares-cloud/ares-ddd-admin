@@ -25,6 +25,7 @@ var ProviderSet = wire.NewSet(
 	rest.NewSysTenantController,
 	rest.NewSysPermissionsController,
 	rest.NewAuthController,
+	rest.NewLoginLogController,
 	NewCasBinEnforcer,
 )
 
@@ -36,6 +37,7 @@ func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 	ts *rest.SysTenantController,
 	ps *rest.SysPermissionsController,
 	as *rest.AuthController,
+	lls *rest.LoginLogController,
 ) *hserver.Serve {
 	tk := token.NewRdbToken(hc.GetClient(), config.JWT.Issuer, config.JWT.SigningKey, config.JWT.ExpirationToken, config.JWT.ExpirationRefresh)
 	svr := hserver.NewServe(&hserver.ServerConfig{
@@ -53,6 +55,7 @@ func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 	ts.RegisterRouter(rg, tk)
 	ps.RegisterRouter(rg, tk)
 	as.RegisterRouter(rg, tk)
+	lls.RegisterRouter(rg, tk)
 	return svr
 }
 

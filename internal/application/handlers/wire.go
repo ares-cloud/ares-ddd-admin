@@ -12,4 +12,5 @@ var ProviderSet = wire.NewSet(
 	NewTenantCommandHandler,
 	NewTenantQueryHandler,
 	NewAuthHandler,
+	NewLoginLogQueryHandler,
 )

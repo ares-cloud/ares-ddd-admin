@@ -2,15 +2,19 @@ package handlers
 
 import (
 	"context"
+	"errors"
+	"github.com/ares-cloud/ares-ddd-admin/internal/domain/model"
+	"github.com/ares-cloud/ares-ddd-admin/internal/domain/repository"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/ipcity"
+	"time"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
-	"time"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/commands"
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/queries"
-	"github.com/ares-cloud/ares-ddd-admin/internal/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/captcha"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/token"
@@ -19,12 +23,14 @@ import (
 type AuthHandler struct {
 	authRepo repository.IAuthRepository
 	uds      *service.UserService
+	llr      repository.ILoginLogRepository
 }
 
-func NewAuthHandler(authRepo repository.IAuthRepository, uds *service.UserService) *AuthHandler {
+func NewAuthHandler(authRepo repository.IAuthRepository, uds *service.UserService, llr repository.ILoginLogRepository) *AuthHandler {
 	return &AuthHandler{
 		authRepo: authRepo,
 		uds:      uds,
+		llr:      llr,
 	}
 }
 
@@ -42,9 +48,16 @@ func (h *AuthHandler) HandleLogin(ctx context.Context, cmd commands.LoginCommand
 		return nil, herrors.NewErr(err)
 	}
 
+	// 验证登录类型
+	if cmd.LoginType == commands.LoginTypeAdmin && !auth.User.IsAdmin() {
+		err = errors.New("非管理员用户不能登录管理端")
+		go h.recordLoginLog(ctx, auth.User, cmd, err)
+		return nil, herrors.NewBadReqError(err.Error())
+	}
+
 	// 执行登录
-	if err := auth.Login(cmd.Password, valid); err != nil {
-		return nil, err
+	if err1 := auth.Login(cmd.Password, valid); herrors.HaveError(err1) {
+		return nil, err1
 	}
 	ctx = actx.WithTenantId(ctx, auth.User.TenantID)
 	roles, e := h.uds.GetUserRoles(ctx, auth.User)
@@ -63,8 +76,37 @@ func (h *AuthHandler) HandleLogin(ctx context.Context, cmd commands.LoginCommand
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
-
+	// 记录登录失败日志
+	go h.recordLoginLog(ctx, auth.User, cmd, nil)
 	return dto.ToAuthDto(tokenData), nil
+}
+
+// recordLoginLog 记录登录日志
+func (h *AuthHandler) recordLoginLog(ctx context.Context, user *model.User, cmd commands.LoginCommand, loginErr error) {
+	var loginLog *model.LoginLog
+	if user != nil {
+		loginLog = model.NewLoginLog(user.ID, user.Username, user.TenantID, model.LoginType(cmd.LoginType))
+	} else {
+		loginLog = model.NewLoginLog("", cmd.Username, "", model.LoginType(cmd.LoginType))
+	}
+	address := actx.GetIpAddress(ctx)
+
+	//获取登录地
+	locationBaiDu, loginErr := ipcity.GetGetLocationBaiDu(address)
+	if loginErr != nil {
+		hlog.CtxErrorf(ctx, "get location bai du failed: %v", loginErr)
+	}
+	if loginErr != nil {
+		loginLog.SetLoginStatus(2, loginErr.Error())
+	}
+	dev := actx.GetDeviceId(ctx)
+	os := actx.GetDeviceName(ctx)
+	bro := actx.GetUserAgent(ctx)
+	loginLog.SetLoginInfo(address, locationBaiDu, dev, os, bro)
+	loginErr = h.llr.Create(ctx, loginLog)
+	if loginErr != nil {
+		hlog.CtxErrorf(ctx, "create login failed: %v", loginErr)
+	}
 }
 
 // HandleRefreshToken 处理刷新token请求

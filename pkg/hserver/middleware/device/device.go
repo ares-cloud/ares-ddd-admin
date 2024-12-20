@@ -12,8 +12,8 @@ func Handler() app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
 		ipAddress := c.ClientIP()
 		userAgent := c.UserAgent()
-		deviceId := c.Request.Header.Get("deviceId")
-		deviceName := c.Request.Header.Get("deviceName")
+		deviceId := c.Request.Header.Get("Device")
+		deviceName := c.Request.Header.Get("OS")
 		ctx = actx.WithIpAddress(ctx, ipAddress)
 		ctx = actx.WithDeviceId(ctx, deviceId)
 		ctx = actx.WithDeviceName(ctx, deviceName)
