@@ -87,11 +87,11 @@ func (w *FileWriter) Close() error {
 
 // DBWriter 数据库写入器
 type DBWriter struct {
-	db interface{} // 使用您的数据库接口
+	dbWriter IDbOperationLogWrite // 使用您的数据库接口
 }
 
-func NewDBWriter(db interface{}) *DBWriter {
-	return &DBWriter{db: db}
+func NewDBWriter(dbWriter IDbOperationLogWrite) *DBWriter {
+	return &DBWriter{dbWriter: dbWriter}
 }
 
 func (w *DBWriter) Write(ctx context.Context, log *OperationLog) error {
@@ -104,12 +104,18 @@ func (w *DBWriter) Write(ctx context.Context, log *OperationLog) error {
 	}
 
 	// 写入日志
-	// 实现数据库写入逻辑
-	return nil
+	return w.dbWriter.Save(ctx, log, tableName)
 }
 
 func (w *DBWriter) ensureTable(ctx context.Context, tableName string) error {
 	// 实现建表逻辑
+	exist, err := w.dbWriter.ChickTableExist(ctx, tableName)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return fmt.Errorf("table %s does not exist", tableName)
+	}
 	return nil
 }
 

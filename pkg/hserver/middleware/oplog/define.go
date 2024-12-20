@@ -1,6 +1,9 @@
 package oplog
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // OperationLog 操作日志结构
 type OperationLog struct {
@@ -27,4 +30,9 @@ type LogOption struct {
 	IncludeBody bool   // 是否记录请求体
 	Module      string // 模块名称
 	Action      string // 操作类型
+}
+
+type IDbOperationLogWrite interface {
+	Save(ctx context.Context, data *OperationLog, tableName string) error
+	ChickTableExist(ctx context.Context, tableName string) (bool, error)
 }
