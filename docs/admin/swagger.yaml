@@ -171,19 +171,44 @@ definitions:
         type: string
       captchaKey:
         type: string
+      ip:
+        description: 登录IP
+        type: string
+      location:
+        description: 登录地点
+        type: string
+      login_type:
+        allOf:
+        - $ref: '#/definitions/commands.LoginType'
+        description: 登录类型
       password:
         type: string
       platform:
+        type: string
+      user_agent:
+        description: User-Agent
         type: string
       username:
         type: string
     required:
     - captchaCode
     - captchaKey
+    - login_type
     - password
     - platform
     - username
     type: object
+  commands.LoginType:
+    enum:
+    - 1
+    - 2
+    type: integer
+    x-enum-comments:
+      LoginTypeAdmin: 管理端登录
+      LoginTypeMember: 前台用户登录
+    x-enum-varnames:
+    - LoginTypeAdmin
+    - LoginTypeMember
   commands.RefreshTokenCommand:
     properties:
       token:
@@ -199,6 +224,8 @@ definitions:
         type: string
       id:
         type: integer
+      localize:
+        type: string
       name:
         type: string
       parentId:
@@ -226,6 +253,8 @@ definitions:
         type: string
       id:
         type: integer
+      localize:
+        type: string
       name:
         type: string
       permIds:
@@ -300,6 +329,45 @@ definitions:
       image:
         type: string
       key:
+        type: string
+    type: object
+  dto.LoginLogDto:
+    properties:
+      browser:
+        description: 浏览器
+        type: string
+      device:
+        description: 登录设备
+        type: string
+      id:
+        description: ID
+        type: integer
+      ip:
+        description: 登录IP
+        type: string
+      location:
+        description: 登录地点
+        type: string
+      loginTime:
+        description: 登录时间
+        type: integer
+      message:
+        description: 登录消息
+        type: string
+      os:
+        description: 操作系统
+        type: string
+      status:
+        description: 登录状态
+        type: integer
+      tenant_id:
+        description: 租户ID
+        type: string
+      user_id:
+        description: 用户ID
+        type: string
+      username:
+        description: 用户名
         type: string
     type: object
   dto.PermissionsDto:
@@ -519,6 +587,9 @@ definitions:
     type: object
   dto.UserInfoDto:
     properties:
+      homePage:
+        description: 首页
+        type: string
       permissions:
         description: 所有权限列表
         items:
@@ -541,7 +612,7 @@ definitions:
       total:
         type: integer
     type: object
-host: localhost:8858
+host: localhost:8888
 info:
   contact:
     name: go-server-template-admin
@@ -593,9 +664,9 @@ paths:
       description: 用户登录接口
       operationId: Login
       parameters:
-      - description: 登录信息
+      - description: 登录参数
         in: body
-        name: req
+        name: data
         required: true
         schema:
           $ref: '#/definitions/commands.LoginCommand'
@@ -666,6 +737,144 @@ paths:
       summary: 刷新令牌
       tags:
       - 认证
+  /v1/sys/login-log/admin:
+    get:
+      consumes:
+      - application/json
+      description: 查询管理端登录日志列表
+      operationId: ListAdminLoginLogs
+      parameters:
+      - description: 查询月份(格式:202403)
+        in: query
+        name: month
+        required: true
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页大小
+        in: query
+        name: page_size
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 登录IP
+        in: query
+        name: ip
+        type: string
+      - description: 登录状态
+        in: query
+        name: status
+        type: integer
+      - description: 开始时间
+        in: query
+        name: start_time
+        type: integer
+      - description: 结束时间
+        in: query
+        name: end_time
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.LoginLogDto'
+                  type: array
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 查询管理端登录日志列表
+      tags:
+      - 登录日志
+  /v1/sys/login-log/app:
+    get:
+      consumes:
+      - application/json
+      description: 查询app登录日志列表
+      operationId: ListAppLoginLogs
+      parameters:
+      - description: 查询月份(格式:202403)
+        in: query
+        name: month
+        required: true
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页大小
+        in: query
+        name: page_size
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 登录IP
+        in: query
+        name: ip
+        type: string
+      - description: 登录状态
+        in: query
+        name: status
+        type: integer
+      - description: 开始时间
+        in: query
+        name: start_time
+        type: integer
+      - description: 结束时间
+        in: query
+        name: end_time
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.LoginLogDto'
+                  type: array
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger400Resp'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/base_info.Swagger401Resp'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/base_info.Swagger500Resp'
+      summary: 查询app登录日志列表
+      tags:
+      - 登录日志
   /v1/sys/permissions:
     get:
       description: 获取权限列表
@@ -1620,7 +1829,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.PermissionsDto'
+                    $ref: '#/definitions/dto.PermissionsTreeDto'
                   type: array
               type: object
         "401":

@@ -5,18 +5,18 @@ import (
 )
 
 type LoginLogDto struct {
-	ID        int64  `json:"id"`         // ID
-	UserID    string `json:"user_id"`    // 用户ID
-	Username  string `json:"username"`   // 用户名
-	TenantID  string `json:"tenant_id"`  // 租户ID
-	IP        string `json:"ip"`         // 登录IP
-	Location  string `json:"location"`   // 登录地点
-	Device    string `json:"device"`     // 登录设备
-	OS        string `json:"os"`         // 操作系统
-	Browser   string `json:"browser"`    // 浏览器
-	Status    int8   `json:"status"`     // 登录状态
-	Message   string `json:"message"`    // 登录消息
-	LoginTime int64  `json:"login_time"` // 登录时间
+	ID        int64  `json:"id"`        // ID
+	UserID    string `json:"user_id"`   // 用户ID
+	Username  string `json:"username"`  // 用户名
+	TenantID  string `json:"tenant_id"` // 租户ID
+	IP        string `json:"ip"`        // 登录IP
+	Location  string `json:"location"`  // 登录地点
+	Device    string `json:"device"`    // 登录设备
+	OS        string `json:"os"`        // 操作系统
+	Browser   string `json:"browser"`   // 浏览器
+	Status    int8   `json:"status"`    // 登录状态
+	Message   string `json:"message"`   // 登录消息
+	LoginTime int64  `json:"loginTime"` // 登录时间
 }
 
 func ToLoginLogDto(log *model.LoginLog) *LoginLogDto {

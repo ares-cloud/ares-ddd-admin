@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"sort"
 
@@ -67,7 +66,7 @@ func (s *UserService) GetUserPermissions(ctx context.Context, userID string) ([]
 			}
 		}
 	} else {
-		isTenantAdmin, tenant, err := s.IsTenantAdmin(ctx, user)
+		isTenantAdmin, tenant, err := IsTenantAdmin(ctx, user, s.tenantRepo)
 		if err != nil {
 			hlog.CtxErrorf(ctx, "isTenantAdmin err: %v", err)
 			return nil, err
@@ -98,7 +97,7 @@ func (s *UserService) GetUserPermissions(ctx context.Context, userID string) ([]
 
 func (s *UserService) GetUserRoles(ctx context.Context, user *model.User) ([]string, error) {
 	if len(user.Roles) == 0 {
-		admin, _, err := s.IsTenantAdmin(ctx, user)
+		admin, _, err := IsTenantAdmin(ctx, user, s.tenantRepo)
 		if err != nil {
 			return []string{}, err
 		}
@@ -133,7 +132,7 @@ func (s *UserService) GetUserMenus(ctx context.Context, userID string) ([]*model
 			allPermissions = append(allPermissions, permissions...)
 		}
 	} else {
-		isTenantAdmin, tenant, err := s.IsTenantAdmin(ctx, user)
+		isTenantAdmin, tenant, err := IsTenantAdmin(ctx, user, s.tenantRepo)
 		if err != nil {
 			hlog.CtxErrorf(ctx, "isTenantAdmin err: %v", err)
 			return nil, err
@@ -177,21 +176,6 @@ func (s *UserService) GetUserMenus(ctx context.Context, userID string) ([]*model
 	})
 	// 构建菜单树
 	return buildPermissionTree(menuPermissions), nil
-}
-
-func (s *UserService) IsTenantAdmin(ctx context.Context, user *model.User) (bool, *model.Tenant, error) {
-	tenantId := actx.GetTenantId(ctx)
-	if tenantId != "" {
-		tenant, err := s.tenantRepo.FindByID(context.Background(), tenantId)
-		if err != nil {
-			return false, nil, err
-		}
-		//租户管理处理
-		if tenant.AdminUser.ID == user.ID {
-			return true, tenant, nil
-		}
-	}
-	return false, nil, nil
 }
 
 // buildPermissionTree 构建权限树

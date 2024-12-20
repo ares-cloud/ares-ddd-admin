@@ -72,6 +72,7 @@ func (h *AuthHandler) HandleLogin(ctx context.Context, cmd commands.LoginCommand
 		TenantId: auth.User.TenantID,
 		Roles:    roles,
 		Platform: cmd.Platform,
+		UserName: auth.User.Username,
 	})
 	if err != nil {
 		return nil, herrors.NewErr(err)

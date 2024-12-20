@@ -93,8 +93,8 @@ const docTemplate = `{
                 "operationId": "Login",
                 "parameters": [
                     {
-                        "description": "登录信息",
-                        "name": "req",
+                        "description": "登录参数",
+                        "name": "data",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -194,6 +194,222 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "认证失败",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/login-log/admin": {
+            "get": {
+                "description": "查询管理端登录日志列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登录日志"
+                ],
+                "summary": "查询管理端登录日志列表",
+                "operationId": "ListAdminLoginLogs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "查询月份(格式:202403)",
+                        "name": "month",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页大小",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户名",
+                        "name": "username",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "登录IP",
+                        "name": "ip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "登录状态",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "开始时间",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "结束时间",
+                        "name": "end_time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.LoginLogDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/login-log/app": {
+            "get": {
+                "description": "查询app登录日志列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登录日志"
+                ],
+                "summary": "查询app登录日志列表",
+                "operationId": "ListAppLoginLogs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "查询月份(格式:202403)",
+                        "name": "month",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页大小",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户名",
+                        "name": "username",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "登录IP",
+                        "name": "ip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "登录状态",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "开始时间",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "结束时间",
+                        "name": "end_time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.LoginLogDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
                         "schema": {
                             "$ref": "#/definitions/base_info.Swagger401Resp"
                         }
@@ -1648,7 +1864,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.PermissionsDto"
+                                                "$ref": "#/definitions/dto.PermissionsTreeDto"
                                             }
                                         }
                                     }
@@ -2023,6 +2239,7 @@ const docTemplate = `{
             "required": [
                 "captchaCode",
                 "captchaKey",
+                "login_type",
                 "password",
                 "platform",
                 "username"
@@ -2034,16 +2251,51 @@ const docTemplate = `{
                 "captchaKey": {
                     "type": "string"
                 },
+                "ip": {
+                    "description": "登录IP",
+                    "type": "string"
+                },
+                "location": {
+                    "description": "登录地点",
+                    "type": "string"
+                },
+                "login_type": {
+                    "description": "登录类型",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/commands.LoginType"
+                        }
+                    ]
+                },
                 "password": {
                     "type": "string"
                 },
                 "platform": {
                     "type": "string"
                 },
+                "user_agent": {
+                    "description": "User-Agent",
+                    "type": "string"
+                },
                 "username": {
                     "type": "string"
                 }
             }
+        },
+        "commands.LoginType": {
+            "type": "integer",
+            "enum": [
+                1,
+                2
+            ],
+            "x-enum-comments": {
+                "LoginTypeAdmin": "管理端登录",
+                "LoginTypeMember": "前台用户登录"
+            },
+            "x-enum-varnames": [
+                "LoginTypeAdmin",
+                "LoginTypeMember"
+            ]
         },
         "commands.RefreshTokenCommand": {
             "type": "object",
@@ -2070,6 +2322,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "localize": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -2111,6 +2366,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "localize": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -2222,6 +2480,59 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "key": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.LoginLogDto": {
+            "type": "object",
+            "properties": {
+                "browser": {
+                    "description": "浏览器",
+                    "type": "string"
+                },
+                "device": {
+                    "description": "登录设备",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "integer"
+                },
+                "ip": {
+                    "description": "登录IP",
+                    "type": "string"
+                },
+                "location": {
+                    "description": "登录地点",
+                    "type": "string"
+                },
+                "loginTime": {
+                    "description": "登录时间",
+                    "type": "integer"
+                },
+                "message": {
+                    "description": "登录消息",
+                    "type": "string"
+                },
+                "os": {
+                    "description": "操作系统",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "登录状态",
+                    "type": "integer"
+                },
+                "tenant_id": {
+                    "description": "租户ID",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "用户ID",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "用户名",
                     "type": "string"
                 }
             }
@@ -2529,6 +2840,10 @@ const docTemplate = `{
         "dto.UserInfoDto": {
             "type": "object",
             "properties": {
+                "homePage": {
+                    "description": "首页",
+                    "type": "string"
+                },
                 "permissions": {
                     "description": "所有权限列表",
                     "type": "array",
@@ -2568,7 +2883,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8858",
+	Host:             "localhost:8888",
 	BasePath:         "/api/admin",
 	Schemes:          []string{"http"},
 	Title:            "ares-ddd-admin",

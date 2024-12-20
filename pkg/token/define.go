@@ -16,6 +16,7 @@ type IToken interface {
 // AccessToken //token
 type AccessToken struct {
 	UserId       string   `json:"userId"`                   // 刷新 token
+	UserName     string   `json:"userName"`                 // 用户账号
 	Platform     string   `json:"platform"`                 // 平台类型
 	TenantId     string   `json:"tenantId"`                 //租户id
 	AccessToken  string   `json:"access_token,omitempty"`   // 访问 token

@@ -37,7 +37,7 @@ func (c *LoginLogController) RegisterRouter(g *route.RouterGroup, t token.IToken
 // @Summary 查询管理端登录日志列表
 // @Description 查询管理端登录日志列表
 // @Tags 登录日志
-// @ID ListLoginLogs
+// @ID ListAdminLoginLogs
 // @Accept json
 // @Produce json
 // @Param month query string true "查询月份(格式:202403)"
@@ -48,7 +48,7 @@ func (c *LoginLogController) RegisterRouter(g *route.RouterGroup, t token.IToken
 // @Param status query int false "登录状态"
 // @Param start_time query int false "开始时间"
 // @Param end_time query int false "结束时间"
-// @Success 200 {object} base_info.Success{data=models.PageRes[dto.LoginLogDto]}
+// @Success 200 {object} base_info.Success{data=[]dto.LoginLogDto}
 // @Failure 400 {object} base_info.Swagger400Resp "参数错误"
 // @Failure 401 {object} base_info.Swagger401Resp "未授权"
 // @Failure 500 {object} base_info.Swagger500Resp "服务器内部错误"
@@ -66,7 +66,7 @@ func (c *LoginLogController) AdminLogList(ctx context.Context, params *queries.L
 // @Summary 查询app登录日志列表
 // @Description 查询app登录日志列表
 // @Tags 登录日志
-// @ID ListLoginLogs
+// @ID ListAppLoginLogs
 // @Accept json
 // @Produce json
 // @Param month query string true "查询月份(格式:202403)"
@@ -77,7 +77,7 @@ func (c *LoginLogController) AdminLogList(ctx context.Context, params *queries.L
 // @Param status query int false "登录状态"
 // @Param start_time query int false "开始时间"
 // @Param end_time query int false "结束时间"
-// @Success 200 {object} base_info.Success{data=models.PageRes[dto.LoginLogDto]}
+// @Success 200 {object} base_info.Success{data=[]dto.LoginLogDto}
 // @Failure 400 {object} base_info.Swagger400Resp "参数错误"
 // @Failure 401 {object} base_info.Swagger401Resp "未授权"
 // @Failure 500 {object} base_info.Swagger500Resp "服务器内部错误"

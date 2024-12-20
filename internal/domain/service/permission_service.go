@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/domain/repository"
@@ -33,7 +34,14 @@ func (s *PermissionService) GetPermissionsByType(ctx context.Context, permType i
 func (s *PermissionService) FindAllEnabled(ctx context.Context) ([]*model.Permissions, error) {
 	tenantId := actx.GetTenantId(ctx)
 	if tenantId != "" {
-		return s.tenantRepo.GetPermissions(ctx, tenantId)
+		_, tenant, err := IsTenantAdmin(ctx, nil, s.tenantRepo)
+		if err != nil {
+			hlog.CtxErrorf(ctx, "isTenantAdmin err: %v", err)
+			return nil, err
+		}
+		if tenant != nil && !tenant.IsDefaultTenant() {
+			return s.tenantRepo.GetPermissions(ctx, tenantId)
+		}
 	}
 	return s.permissionRepo.FindAllEnabled(ctx)
 }

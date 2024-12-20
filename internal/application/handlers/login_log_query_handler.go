@@ -38,10 +38,14 @@ func (h *LoginLogQueryHandler) HandleAdminList(ctx context.Context, q *queries.L
 }
 
 func (h *LoginLogQueryHandler) HandleList(ctx context.Context, qb *query.QueryBuilder, q *queries.ListLoginLogsQuery) (*models.PageRes[dto.LoginLogDto], herrors.Herr) {
-	// 解析查询月份
-	month, err := time.Parse("200601", q.Month)
-	if err != nil {
-		return nil, herrors.NewBadReqError("invalid month format")
+	tm := time.Now()
+	if q.Month != "" {
+		// 解析查询月份
+		month, err := time.Parse("200601", q.Month)
+		if err != nil {
+			return nil, herrors.NewBadReqError("invalid month format")
+		}
+		tm = month
 	}
 
 	if q.Username != "" {
@@ -68,13 +72,13 @@ func (h *LoginLogQueryHandler) HandleList(ctx context.Context, qb *query.QueryBu
 
 	tenant := actx.GetTenantId(ctx)
 	// 获取总数
-	total, err := h.loginLogRepo.Count(ctx, tenant, month, qb)
+	total, err := h.loginLogRepo.Count(ctx, tenant, tm, qb)
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
 
 	// 查询数据
-	logs, err := h.loginLogRepo.Find(ctx, tenant, month, qb)
+	logs, err := h.loginLogRepo.Find(ctx, tenant, tm, qb)
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}

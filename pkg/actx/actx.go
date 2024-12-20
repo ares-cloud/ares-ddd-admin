@@ -30,6 +30,9 @@ func WithUserId(ctx context.Context, userId string) context.Context {
 func GetUserId(ctx context.Context) string {
 	return fmt.Sprintf("%v", ctx.Value(KeyUserId))
 }
+func WithUsername(ctx context.Context, username string) context.Context {
+	return context.WithValue(ctx, KeyUsername, username)
+}
 func GetUsername(ctx context.Context) string {
 	return fmt.Sprintf("%v", ctx.Value(KeyUsername))
 }
@@ -123,6 +126,6 @@ func Store(ctx context.Context, accessToken token.AccessToken) context.Context {
 	ctx = WithToken(ctx, accessToken.AccessToken)
 	ctx = WithRole(ctx, accessToken.Roles)
 	ctx = WithTenantId(ctx, accessToken.TenantId)
-
+	ctx = WithUsername(ctx, accessToken.UserName)
 	return ctx
 }
