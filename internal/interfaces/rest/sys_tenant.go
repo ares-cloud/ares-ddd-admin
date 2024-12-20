@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/oplog"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/application/commands"
 	_ "github.com/ares-cloud/ares-ddd-admin/internal/application/dto"
@@ -20,6 +21,7 @@ type SysTenantController struct {
 	cmdHandel   *handlers.TenantCommandHandler
 	queryHandel *handlers.TenantQueryHandler
 	ef          *casbin.Enforcer
+	modeNma     string
 }
 
 func NewSysTenantController(cmdHandel *handlers.TenantCommandHandler, queryHandel *handlers.TenantQueryHandler, ef *casbin.Enforcer) *SysTenantController {
@@ -27,6 +29,7 @@ func NewSysTenantController(cmdHandel *handlers.TenantCommandHandler, queryHande
 		cmdHandel:   cmdHandel,
 		queryHandel: queryHandel,
 		ef:          ef,
+		modeNma:     "租户",
 	}
 }
 
@@ -34,11 +37,27 @@ func (c *SysTenantController) RegisterRouter(g *route.RouterGroup, t token.IToke
 	v1 := g.Group("/v1")
 	ur := v1.Group("/sys/tenant", jwt.Handler(t))
 	{
-		ur.POST("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.CreateTenantCommand](c.AddTenant))
+		ur.POST("", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "新增",
+		}), hserver.NewHandlerFu[commands.CreateTenantCommand](c.AddTenant))
 		ur.GET("", casbin.Handler(c.ef), hserver.NewHandlerFu[queries.ListTenantsQuery](c.TenantList))
-		ur.PUT("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.UpdateTenantCommand](c.UpdateTenant))
-		ur.DELETE("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.DeleteTenant))
-		ur.PUT("/permissions", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.AssignTenantPermissionsCommand](c.AssignPermissions))
+		ur.PUT("", casbin.Handler(c.ef), casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "修改",
+		}), hserver.NewHandlerFu[commands.UpdateTenantCommand](c.UpdateTenant))
+		ur.DELETE("/:id", casbin.Handler(c.ef), casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "删除",
+		}), hserver.NewHandlerFu[models.StringIdReq](c.DeleteTenant))
+		ur.PUT("/permissions", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "分配权限",
+		}), casbin.Handler(c.ef), hserver.NewHandlerFu[commands.AssignTenantPermissionsCommand](c.AssignPermissions))
 		ur.GET("/permissions/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.GetPermissions))
 	}
 }

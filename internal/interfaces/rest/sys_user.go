@@ -23,6 +23,7 @@ type SysUserController struct {
 	cmdHandel   *handlers.UserCommandHandler
 	queryHandel *handlers.UserQueryHandler
 	ef          *casbin.Enforcer
+	modeNma     string
 }
 
 func NewSysUserController(cmdHandel *handlers.UserCommandHandler, queryHandel *handlers.UserQueryHandler, ef *casbin.Enforcer) *SysUserController {
@@ -30,6 +31,7 @@ func NewSysUserController(cmdHandel *handlers.UserCommandHandler, queryHandel *h
 		cmdHandel:   cmdHandel,
 		queryHandel: queryHandel,
 		ef:          ef,
+		modeNma:     "系统用户",
 	}
 }
 
@@ -37,15 +39,27 @@ func (c *SysUserController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 	v1 := g.Group("/v1")
 	ur := v1.Group("/sys/user", jwt.Handler(t))
 	{
-		ur.POST("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.CreateUserCommand](c.AddUser))
+		ur.POST("", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "新增",
+		}), hserver.NewHandlerFu[commands.CreateUserCommand](c.AddUser))
 		ur.GET("", casbin.Handler(c.ef), hserver.NewHandlerFu[queries.ListUsersQuery](c.UserList))
 		ur.PUT("", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
 			IncludeBody: true,
-			Module:      "用户管理",
-			Action:      "修改用户",
+			Module:      c.modeNma,
+			Action:      "修改",
 		}), hserver.NewHandlerFu[commands.UpdateUserCommand](c.UpdateUser))
-		ur.DELETE("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.DeleteUser))
-		ur.PUT("/status", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.UpdateUserStatusCommand](c.UpdateUserStatus))
+		ur.DELETE("/:id", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "删除",
+		}), hserver.NewHandlerFu[models.StringIdReq](c.DeleteUser))
+		ur.PUT("/status", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "更新状态",
+		}), hserver.NewHandlerFu[commands.UpdateUserStatusCommand](c.UpdateUserStatus))
 		ur.GET("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.GetDetails))
 		ur.GET("/info", hserver.NewNotParHandlerFu(c.GetUserInfo))
 		ur.GET("/menus", hserver.NewNotParHandlerFu(c.GetUserMenus))

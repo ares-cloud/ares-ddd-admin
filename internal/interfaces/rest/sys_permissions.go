@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/oplog"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 
@@ -21,6 +22,7 @@ type SysPermissionsController struct {
 	cmdHandel   *handlers.PermissionsCommandHandler
 	queryHandel *handlers.PermissionsQueryHandler
 	ef          *casbin.Enforcer
+	modeNma     string
 }
 
 func NewSysPermissionsController(cmdHandel *handlers.PermissionsCommandHandler, queryHandel *handlers.PermissionsQueryHandler, ef *casbin.Enforcer) *SysPermissionsController {
@@ -28,6 +30,7 @@ func NewSysPermissionsController(cmdHandel *handlers.PermissionsCommandHandler, 
 		cmdHandel:   cmdHandel,
 		queryHandel: queryHandel,
 		ef:          ef,
+		modeNma:     "系统权限",
 	}
 }
 
@@ -35,10 +38,22 @@ func (c *SysPermissionsController) RegisterRouter(g *route.RouterGroup, t token.
 	v1 := g.Group("/v1")
 	ur := v1.Group("/sys/permissions", jwt.Handler(t))
 	{
-		ur.POST("", casbin.Handler(c.ef), hserver.NewHandlerFu[commands.CreatePermissionsCommand](c.AddPermissions))
+		ur.POST("", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "新增",
+		}), hserver.NewHandlerFu[commands.CreatePermissionsCommand](c.AddPermissions))
 		ur.GET("", casbin.Handler(c.ef), hserver.NewHandlerFu[queries.ListPermissionsQuery](c.PermissionsList))
-		ur.PUT("", hserver.NewHandlerFu[commands.UpdatePermissionsCommand](c.UpdatePermissions))
-		ur.DELETE("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.DeletePermissions))
+		ur.PUT("", oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "修改",
+		}), hserver.NewHandlerFu[commands.UpdatePermissionsCommand](c.UpdatePermissions))
+		ur.DELETE("/:id", oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "删除",
+		}), casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.DeletePermissions))
 		ur.GET("/tree", hserver.NewHandlerFu[queries.GetPermissionsTreeQuery](c.GetPermissionsTree))
 		ur.GET("/simple/tree", hserver.NewNotParHandlerFu(c.GetPermissionsSimpleTree))
 		ur.GET("/enabled", hserver.NewNotParHandlerFu(c.GetAllEnabled))
