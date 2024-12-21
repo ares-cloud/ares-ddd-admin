@@ -8,15 +8,20 @@ package main
 
 import (
 	"github.com/ares-cloud/ares-ddd-admin/cmd/admin/server"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/handlers"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base"
+	handlers2 "github.com/ares-cloud/ares-ddd-admin/internal/base/application/handlers"
+	service2 "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/oplog"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/data"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/interfaces/rest"
+	rest2 "github.com/ares-cloud/ares-ddd-admin/internal/base/interfaces/rest"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database"
+	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring"
+	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/application/handlers"
+	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/domain/service"
+	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/interfaces/rest"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/snowflake_id"
 )
 
@@ -32,11 +37,16 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	if err != nil {
 		return nil, nil, err
 	}
+	metricsService := service.NewMetricsService()
+	metricsQueryHandler := handlers.NewMetricsQueryHandler(metricsService)
+	metricsController := rest.NewMetricsController(metricsQueryHandler)
 	iIdGenerate := snowflake_id.NewSnowIdGen()
 	iDataBase, cleanup, err := database.NewDataBase(iIdGenerate, configsData)
 	if err != nil {
 		return nil, nil, err
 	}
+	iOperationLogRepository := repository.NewOperationLogRepository(iDataBase)
+	iDbOperationLogWrite := oplog.NewDbOperationLogWriter(iOperationLogRepository)
 	iSysRoleRepo := data.NewSysRoleRepo(iDataBase)
 	iPermissionsRepo := data.NewSysMenuRepo(iDataBase)
 	iRoleRepository := repository.NewRoleRepository(iSysRoleRepo, iPermissionsRepo)
@@ -47,35 +57,35 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 		cleanup()
 		return nil, nil, err
 	}
-	roleCommandHandler := handlers.NewRoleCommandHandler(iRoleRepository, iPermissionsRepository, enforcer)
-	roleQueryHandler := handlers.NewRoleQueryHandler(iRoleRepository)
-	sysRoleController := rest.NewSysRoleController(roleCommandHandler, roleQueryHandler, enforcer)
+	roleCommandHandler := handlers2.NewRoleCommandHandler(iRoleRepository, iPermissionsRepository, enforcer)
+	roleQueryHandler := handlers2.NewRoleQueryHandler(iRoleRepository)
+	sysRoleController := rest2.NewSysRoleController(roleCommandHandler, roleQueryHandler, enforcer)
 	iSysUserRepo := data.NewSysUserRepo(iDataBase)
 	iUserRepository := repository.NewUserRepository(iSysUserRepo, iSysRoleRepo)
-	userCommandHandler := handlers.NewUserCommandHandler(iUserRepository, iRoleRepository)
+	userCommandHandler := handlers2.NewUserCommandHandler(iUserRepository, iRoleRepository)
 	iSysTenantRepo := data.NewSysTenantRepo(iDataBase)
 	iTenantRepository := repository.NewTenantRepository(iSysTenantRepo, iSysUserRepo)
-	userService := service.NewUserService(iUserRepository, iPermissionsRepository, iRoleRepository, iTenantRepository)
-	userQueryHandler := handlers.NewUserQueryHandler(iUserRepository, userService, iPermissionsRepository)
-	sysUserController := rest.NewSysUserController(userCommandHandler, userQueryHandler, enforcer)
-	tenantCommandHandler := handlers.NewTenantCommandHandler(iTenantRepository)
-	tenantQueryHandler := handlers.NewTenantQueryHandler(iTenantRepository, iPermissionsRepository)
-	sysTenantController := rest.NewSysTenantController(tenantCommandHandler, tenantQueryHandler, enforcer)
-	permissionsCommandHandler := handlers.NewPermissionsCommandHandler(iPermissionsRepository, enforcer)
-	permissionService := service.NewPermissionService(iPermissionsRepository, iTenantRepository)
-	permissionsQueryHandler := handlers.NewPermissionsQueryHandler(iPermissionsRepository, permissionService)
-	sysPermissionsController := rest.NewSysPermissionsController(permissionsCommandHandler, permissionsQueryHandler, enforcer)
+	userService := service2.NewUserService(iUserRepository, iPermissionsRepository, iRoleRepository, iTenantRepository)
+	userQueryHandler := handlers2.NewUserQueryHandler(iUserRepository, userService, iPermissionsRepository)
+	sysUserController := rest2.NewSysUserController(userCommandHandler, userQueryHandler, enforcer)
+	tenantCommandHandler := handlers2.NewTenantCommandHandler(iTenantRepository)
+	tenantQueryHandler := handlers2.NewTenantQueryHandler(iTenantRepository, iPermissionsRepository)
+	sysTenantController := rest2.NewSysTenantController(tenantCommandHandler, tenantQueryHandler, enforcer)
+	permissionsCommandHandler := handlers2.NewPermissionsCommandHandler(iPermissionsRepository, enforcer)
+	permissionService := service2.NewPermissionService(iPermissionsRepository, iTenantRepository)
+	permissionsQueryHandler := handlers2.NewPermissionsQueryHandler(iPermissionsRepository, permissionService)
+	sysPermissionsController := rest2.NewSysPermissionsController(permissionsCommandHandler, permissionsQueryHandler, enforcer)
 	iAuthRepository := repository.NewAuthRepository(iUserRepository, redisClient)
 	iLoginLogRepository := repository.NewLoginLogRepository(iDataBase)
-	authHandler := handlers.NewAuthHandler(iAuthRepository, userService, iLoginLogRepository)
-	authController := rest.NewAuthController(authHandler)
-	loginLogQueryHandler := handlers.NewLoginLogQueryHandler(iLoginLogRepository)
-	loginLogController := rest.NewLoginLogController(loginLogQueryHandler, enforcer)
-	iOperationLogRepository := repository.NewOperationLogRepository(iDataBase)
-	operationLogQueryHandler := handlers.NewOperationLogQueryHandler(iOperationLogRepository)
-	operationLogController := rest.NewOperationLogController(operationLogQueryHandler, enforcer)
-	iDbOperationLogWrite := oplog.NewDbOperationLogWriter(iOperationLogRepository)
-	serve := server.NewServer(bootstrap, redisClient, sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController, iDbOperationLogWrite)
+	authHandler := handlers2.NewAuthHandler(iAuthRepository, userService, iLoginLogRepository)
+	authController := rest2.NewAuthController(authHandler)
+	loginLogQueryHandler := handlers2.NewLoginLogQueryHandler(iLoginLogRepository)
+	loginLogController := rest2.NewLoginLogController(loginLogQueryHandler, enforcer)
+	operationLogQueryHandler := handlers2.NewOperationLogQueryHandler(iOperationLogRepository)
+	operationLogController := rest2.NewOperationLogController(operationLogQueryHandler, enforcer)
+	baseServer := base.NewBaseServer(sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController)
+	monitoringServer := monitoring.NewServer(metricsController)
+	serve := server.NewServer(bootstrap, redisClient, metricsController, iDbOperationLogWrite, baseServer, monitoringServer)
 	mainApp := newApp(serve)
 	return mainApp, func() {
 		cleanup()

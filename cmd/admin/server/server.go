@@ -2,8 +2,10 @@ package server
 
 import (
 	"fmt"
-	rest2 "github.com/ares-cloud/ares-ddd-admin/internal/base/interfaces/rest"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
+	monrest "github.com/ares-cloud/ares-ddd-admin/internal/monitoring/interfaces/rest"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/h_redis"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/i18n"
@@ -16,31 +18,22 @@ import (
 	"github.com/google/wire"
 	"github.com/hertz-contrib/gzip"
 	"golang.org/x/text/language"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring"
 )
 
 var ProviderSet = wire.NewSet(
 	NewServer,
-	rest2.NewSysRoleController,
-	rest2.NewSysUserController,
-	rest2.NewSysTenantController,
-	rest2.NewSysPermissionsController,
-	rest2.NewAuthController,
-	rest2.NewLoginLogController,
-	rest2.NewOperationLogController,
 	NewCasBinEnforcer,
 )
 
 const baseUrl = "/api/admin"
 
 func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
-	rc *rest2.SysRoleController,
-	uc *rest2.SysUserController,
-	ts *rest2.SysTenantController,
-	ps *rest2.SysPermissionsController,
-	as *rest2.AuthController,
-	lls *rest2.LoginLogController,
-	ols *rest2.OperationLogController,
+	metrice *monrest.MetricsController,
 	oplDbWriter oplog.IDbOperationLogWrite,
+	bas *base.BaseServer,
+	ms *monitoring.Server,
 ) *hserver.Serve {
 	tk := token.NewRdbToken(hc.GetClient(), config.JWT.Issuer, config.JWT.SigningKey, config.JWT.ExpirationToken, config.JWT.ExpirationRefresh)
 	svr := hserver.NewServe(&hserver.ServerConfig{
@@ -53,13 +46,8 @@ func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 	registerMiddleware(config, svr.GetHertz(), oplDbWriter)
 	//创建基础路由
 	rg := svr.GetHertz().Group(baseUrl)
-	rc.RegisterRouter(rg, tk)
-	uc.RegisterRouter(rg, tk)
-	ts.RegisterRouter(rg, tk)
-	ps.RegisterRouter(rg, tk)
-	as.RegisterRouter(rg, tk)
-	lls.RegisterRouter(rg, tk)
-	ols.RegisterRouter(rg, tk)
+	bas.Init(rg, tk)
+	ms.Init(rg, tk)
 	return svr
 }
 

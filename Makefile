@@ -20,7 +20,7 @@ endif
 # swag_admin
 swag_admin:
 	go install github.com/swaggo/swag/cmd/swag@latest
-	swag init -g main.go -d ./cmd/admin,./internal/interfaces/rest --parseDependency --parseInternal -o docs/admin
+	swag init -g main.go -d ./cmd/admin,./internal/base/interfaces/rest,./internal/monitoring/interfaces/rest --parseDependency --parseInternal -o docs/admin
 
 .PHONY: swag_app
 # swag_app

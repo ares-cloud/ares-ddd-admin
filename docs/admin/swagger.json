@@ -204,6 +204,177 @@
                 }
             }
         },
+        "/v1/metrics/runtime": {
+            "get": {
+                "description": "获取Go运行时内存、GC等指标",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控指标"
+                ],
+                "summary": "获取运行时指标",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.RuntimeMetricsDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/metrics/system": {
+            "get": {
+                "description": "获取系统CPU、内存、磁盘使用率",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控指标"
+                ],
+                "summary": "获取系统指标",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.SystemMetricsDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/oplog/list": {
+            "get": {
+                "description": "查询操作日志列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "操作日志"
+                ],
+                "summary": "查询操作日志列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "租户ID",
+                        "name": "tenant_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户名",
+                        "name": "username",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "模块",
+                        "name": "module",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "操作类型",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "开始时间",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "结束时间",
+                        "name": "end_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页大小",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.OperationLogDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sys/login-log/admin": {
             "get": {
                 "description": "查询管理端登录日志列表",
@@ -229,13 +400,13 @@
                     {
                         "type": "integer",
                         "description": "页码",
-                        "name": "page",
+                        "name": "current",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "每页大小",
-                        "name": "page_size",
+                        "name": "size",
                         "in": "query"
                     },
                     {
@@ -2534,6 +2705,74 @@
                 }
             }
         },
+        "dto.OperationLogDto": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "操作类型",
+                    "type": "string"
+                },
+                "body": {
+                    "description": "请求体",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "integer"
+                },
+                "duration": {
+                    "description": "执行时长(ms)",
+                    "type": "integer"
+                },
+                "error": {
+                    "description": "错误信息",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ip": {
+                    "description": "请求IP",
+                    "type": "string"
+                },
+                "method": {
+                    "description": "请求方法",
+                    "type": "string"
+                },
+                "module": {
+                    "description": "模块名称",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "请求路径",
+                    "type": "string"
+                },
+                "query": {
+                    "description": "查询参数",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "响应状态码",
+                    "type": "integer"
+                },
+                "tenant_id": {
+                    "description": "租户ID",
+                    "type": "string"
+                },
+                "user_agent": {
+                    "description": "用户代理",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "操作人ID",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "操作人用户名",
+                    "type": "string"
+                }
+            }
+        },
         "dto.PermissionsDto": {
             "type": "object",
             "properties": {
@@ -2739,6 +2978,88 @@
                 "updatedAt": {
                     "description": "更新时间",
                     "type": "integer"
+                }
+            }
+        },
+        "dto.RuntimeMetricsDto": {
+            "type": "object",
+            "properties": {
+                "gc_cpu_fraction": {
+                    "description": "GC占用CPU时间比例",
+                    "type": "number"
+                },
+                "gc_pause_ns": {
+                    "description": "最后一次GC暂停时间(纳秒)",
+                    "type": "integer"
+                },
+                "goroutines": {
+                    "description": "Goroutine数量",
+                    "type": "integer"
+                },
+                "heap_alloc": {
+                    "description": "已分配堆内存",
+                    "type": "integer"
+                },
+                "heap_objects": {
+                    "description": "堆对象数量",
+                    "type": "integer"
+                },
+                "heap_sys": {
+                    "description": "系统预留堆内存",
+                    "type": "integer"
+                },
+                "last_gc": {
+                    "description": "上次GC时间",
+                    "type": "integer"
+                },
+                "mcache_in_use": {
+                    "description": "正在使用的MCache内存",
+                    "type": "integer"
+                },
+                "mcache_sys": {
+                    "description": "系统预留MCache内存",
+                    "type": "integer"
+                },
+                "mspan_in_use": {
+                    "description": "正在使用的MSpan内存",
+                    "type": "integer"
+                },
+                "mspan_sys": {
+                    "description": "系统预留MSpan内存",
+                    "type": "integer"
+                },
+                "num_gc": {
+                    "description": "GC次数",
+                    "type": "integer"
+                },
+                "stack_in_use": {
+                    "description": "正在使用的栈内存",
+                    "type": "integer"
+                },
+                "stack_sys": {
+                    "description": "系统预留栈内存",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.SystemMetricsDto": {
+            "type": "object",
+            "properties": {
+                "cpu_usage": {
+                    "description": "CPU使用率",
+                    "type": "number"
+                },
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "disk_usage": {
+                    "description": "磁盘使用率",
+                    "type": "number"
+                },
+                "memory_usage": {
+                    "description": "内存使用率",
+                    "type": "number"
                 }
             }
         },
