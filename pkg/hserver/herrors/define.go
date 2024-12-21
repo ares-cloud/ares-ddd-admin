@@ -38,6 +38,9 @@ func NewParameterError(reason string) func(error) Herr {
 		return &HError{Code: DefaultParameterError, Reason: reason, DefMessage: err.Error(), BusinessError: err}
 	}
 }
+func NewServerHError(err error) Herr {
+	return &HError{Code: DefaultServerErrorCode, Reason: "ServerError", DefMessage: err.Error(), BusinessError: err}
+}
 
 func NewBadReqError(reason string) Herr {
 	return &HError{Code: DefaultParameterError, Reason: reason, DefMessage: reason, BusinessError: errors.New(reason)}

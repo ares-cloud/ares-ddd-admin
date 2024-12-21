@@ -15,12 +15,17 @@ else
 	ERROR_PROTO_FILES=$(shell find . api -name *_error.proto)
 endif
 
+# admin 文件路径
+ADMIN_SWAG_PATHS=./cmd/admin,\
+    ./internal/base/interfaces/rest,\
+    ./internal/monitoring/interfaces/rest,\
+    ./internal/storage/interfaces/rest
 
 .PHONY: swag_admin
 # swag_admin
 swag_admin:
 	go install github.com/swaggo/swag/cmd/swag@latest
-	swag init -g main.go -d ./cmd/admin,./internal/base/interfaces/rest,./internal/monitoring/interfaces/rest --parseDependency --parseInternal -o docs/admin
+	swag init -g main.go -d $(shell echo $(ADMIN_SWAG_PATHS) | tr -d ' ') --parseDependency --parseInternal -o docs/admin
 
 .PHONY: swag_app
 # swag_app

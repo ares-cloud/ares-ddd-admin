@@ -57,7 +57,7 @@ func main() {
 		panic(err)
 	}
 	bootstrap.ConfPath = &flagConf
-	application, cleanup, err := wireApp(bootstrap, bootstrap.Data)
+	application, cleanup, err := wireApp(bootstrap, bootstrap.Data, bootstrap.Storage)
 	if err != nil {
 		panic(err)
 	}

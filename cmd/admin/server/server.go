@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	monrest "github.com/ares-cloud/ares-ddd-admin/internal/monitoring/interfaces/rest"
@@ -34,6 +35,7 @@ func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 	oplDbWriter oplog.IDbOperationLogWrite,
 	bas *base.BaseServer,
 	ms *monitoring.Server,
+	sms *storage.Server,
 ) *hserver.Serve {
 	tk := token.NewRdbToken(hc.GetClient(), config.JWT.Issuer, config.JWT.SigningKey, config.JWT.ExpirationToken, config.JWT.ExpirationRefresh)
 	svr := hserver.NewServe(&hserver.ServerConfig{
@@ -48,6 +50,7 @@ func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 	rg := svr.GetHertz().Group(baseUrl)
 	bas.Init(rg, tk)
 	ms.Init(rg, tk)
+	sms.Init(rg, tk)
 	return svr
 }
 

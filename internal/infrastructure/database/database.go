@@ -18,7 +18,7 @@ func NewDataBase(ig snowflake_id.IIdGenerate, conf *configs.Data) (database.IDat
 	return database.NewData(ig, conf)
 }
 
-func NewHdbClient(conf *configs.Data) (*h_redis.RedisClient, error) {
+func NewHdbClient(conf *configs.Data) (*h_redis.RedisClient, func(), error) {
 	return h_redis.NewRedisClient(h_redis.Option{
 		Addr:     conf.Redis.Addr,
 		Password: conf.Redis.Password,

@@ -62,6 +62,34 @@ definitions:
     - permissionIds
     - tenantId
     type: object
+  commands.BatchDeleteFilesCommand:
+    properties:
+      file_ids:
+        description: 文件ID列表
+        items:
+          type: string
+        type: array
+    type: object
+  commands.BatchMoveFilesCommand:
+    properties:
+      file_ids:
+        description: 文件ID列表
+        items:
+          type: string
+        type: array
+      target_folder_id:
+        description: 目标文件夹ID
+        type: string
+    type: object
+  commands.CreateFolderCommand:
+    properties:
+      name:
+        description: 文件夹名称
+        type: string
+      parent_id:
+        description: 父文件夹ID
+        type: string
+    type: object
   commands.CreatePermissionsCommand:
     properties:
       code:
@@ -216,6 +244,18 @@ definitions:
     required:
     - token
     type: object
+  commands.ShareFileCommand:
+    properties:
+      expire_time:
+        description: 过期时间
+        type: integer
+      file_id:
+        description: 文件ID
+        type: string
+      password:
+        description: 访问密码
+        type: string
+    type: object
   commands.UpdatePermissionsCommand:
     properties:
       description:
@@ -329,6 +369,110 @@ definitions:
       image:
         type: string
       key:
+        type: string
+    type: object
+  dto.FileDto:
+    properties:
+      created_at:
+        description: 创建时间
+        type: integer
+      created_by:
+        description: 创建人
+        type: string
+      deleted_at:
+        description: 删除时间
+        type: integer
+      deleted_by:
+        description: 删除人
+        type: string
+      folder_id:
+        description: 文件夹ID
+        type: string
+      id:
+        description: ID
+        type: string
+      is_deleted:
+        description: 是否已删除
+        type: boolean
+      name:
+        description: 文件名
+        type: string
+      path:
+        description: 文件路径
+        type: string
+      size:
+        description: 文件大小(字节)
+        type: integer
+      storage_type:
+        description: 存储类型
+        type: string
+      type:
+        description: 文件类型
+        type: string
+      url:
+        description: 访问URL
+        type: string
+    type: object
+  dto.FileShareDto:
+    properties:
+      created_at:
+        type: integer
+      created_by:
+        type: string
+      expire_time:
+        type: integer
+      file_id:
+        type: string
+      id:
+        type: string
+      share_code:
+        type: string
+    type: object
+  dto.FolderDto:
+    properties:
+      created_at:
+        description: 创建时间
+        type: integer
+      created_by:
+        description: 创建人
+        type: string
+      id:
+        description: ID
+        type: string
+      name:
+        description: 文件夹名
+        type: string
+      parent_id:
+        description: 父文件夹ID
+        type: string
+      path:
+        description: 文件夹路径
+        type: string
+    type: object
+  dto.FolderTreeDto:
+    properties:
+      children:
+        description: 子文件夹
+        items:
+          $ref: '#/definitions/dto.FolderTreeDto'
+        type: array
+      created_at:
+        description: 创建时间
+        type: integer
+      created_by:
+        description: 创建人
+        type: string
+      id:
+        description: ID
+        type: string
+      name:
+        description: 文件夹名
+        type: string
+      parent_id:
+        description: 父文件夹ID
+        type: string
+      path:
+        description: 文件夹路径
         type: string
     type: object
   dto.LoginLogDto:
@@ -847,7 +991,7 @@ paths:
       summary: 刷新令牌
       tags:
       - 认证
-  /v1/metrics/runtime:
+  /v1/metrics/system:
     get:
       consumes:
       - application/json
@@ -865,26 +1009,6 @@ paths:
                   $ref: '#/definitions/dto.RuntimeMetricsDto'
               type: object
       summary: 获取运行时指标
-      tags:
-      - 监控指标
-  /v1/metrics/system:
-    get:
-      consumes:
-      - application/json
-      description: 获取系统CPU、内存、磁盘使用率
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/base_info.Success'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.SystemMetricsDto'
-              type: object
-      summary: 获取系统指标
       tags:
       - 监控指标
   /v1/oplog/list:
@@ -951,6 +1075,421 @@ paths:
       summary: 查询操作日志列表
       tags:
       - 操作日志
+  /v1/storage/files:
+    get:
+      consumes:
+      - application/json
+      description: 查询文件列表
+      parameters:
+      - description: 文件夹ID
+        in: query
+        name: folder_id
+        type: integer
+      - description: 文件名
+        in: query
+        name: name
+        type: string
+      - description: 文件类型
+        in: query
+        name: type
+        type: string
+      - description: 存储类型
+        in: query
+        name: storage_type
+        type: string
+      - description: 页码
+        in: query
+        name: current
+        type: integer
+      - description: 每页数量
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.FileDto'
+                  type: array
+              type: object
+      summary: 查询文件列表
+      tags:
+      - 存储管理
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传文件
+      parameters:
+      - description: 文件夹ID,默认为根目录
+        in: formData
+        name: folder_id
+        type: integer
+      - description: 存储类型(minio/aliyun/tencent),默认为minio
+        in: formData
+        name: storage_type
+        type: string
+      - description: 文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.FileDto'
+              type: object
+      summary: 上传文件
+      tags:
+      - 存储管理
+  /v1/storage/files/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除文件
+      parameters:
+      - description: 文件ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+      summary: 删除文件
+      tags:
+      - 存储管理
+  /v1/storage/files/{id}/download:
+    get:
+      consumes:
+      - application/json
+      description: 下载文件
+      parameters:
+      - description: 文件ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses: {}
+      summary: 下载文件
+      tags:
+      - 存储管理
+  /v1/storage/files/{id}/preview:
+    get:
+      consumes:
+      - application/json
+      description: 预览文件
+      parameters:
+      - description: 文件ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 预览文件
+      tags:
+      - 存储管理
+  /v1/storage/files/{id}/recycle:
+    post:
+      consumes:
+      - application/json
+      description: 将文件移动到回收站
+      parameters:
+      - description: 文件ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+      summary: 回收文件
+      tags:
+      - 存储管理
+  /v1/storage/files/{id}/restore:
+    post:
+      consumes:
+      - application/json
+      description: 从回收站恢复文件
+      parameters:
+      - description: 文件ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+      summary: 恢复文件
+      tags:
+      - 存储管理
+  /v1/storage/files/{id}/share:
+    post:
+      consumes:
+      - application/json
+      description: 分享文件
+      parameters:
+      - description: 文件ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分享参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/commands.ShareFileCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.FileShareDto'
+              type: object
+      summary: 分享文件
+      tags:
+      - 存储管理
+  /v1/storage/files/batch/delete:
+    post:
+      consumes:
+      - application/json
+      description: 批量删除文件
+      parameters:
+      - description: 文件ID列表
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/commands.BatchDeleteFilesCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+      summary: 批量删除文件
+      tags:
+      - 存储管理
+  /v1/storage/files/batch/move:
+    post:
+      consumes:
+      - application/json
+      description: 批量移动文件
+      parameters:
+      - description: 移动参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/commands.BatchMoveFilesCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+      summary: 批量移动文件
+      tags:
+      - 存储管理
+  /v1/storage/folders:
+    get:
+      consumes:
+      - application/json
+      description: 查询文件夹列表
+      parameters:
+      - description: 父文件夹ID
+        in: query
+        name: parent_id
+        type: integer
+      - description: 文件夹名称
+        in: query
+        name: name
+        type: string
+      - description: 页码
+        in: query
+        name: current
+        type: integer
+      - description: 每页数量
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.FolderDto'
+                  type: array
+              type: object
+      summary: 查询文件夹列表
+      tags:
+      - 存储管理
+    post:
+      consumes:
+      - application/json
+      description: 创建文件夹
+      parameters:
+      - description: 创建参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/commands.CreateFolderCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/base_info.Success'
+      summary: 创建文件夹
+      tags:
+      - 存储管理
+  /v1/storage/folders/tree:
+    get:
+      consumes:
+      - application/json
+      description: 获取文件夹树形结构
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.FolderTreeDto'
+                  type: array
+              type: object
+      summary: 获取文件夹树形结构
+      tags:
+      - 存储管理
+  /v1/storage/recycle:
+    get:
+      consumes:
+      - application/json
+      description: 查询回收站文件列表
+      parameters:
+      - description: 文件名
+        in: query
+        name: name
+        type: string
+      - description: 文件类型
+        in: query
+        name: type
+        type: string
+      - description: 存储类型
+        in: query
+        name: storage_type
+        type: string
+      - description: 页码
+        in: query
+        name: current
+        type: integer
+      - description: 每页数量
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.FileDto'
+              type: object
+      summary: 查询回收��文件列表
+      tags:
+      - 存储管理
+  /v1/storage/share/{code}:
+    get:
+      consumes:
+      - application/json
+      description: 获取分享文件
+      parameters:
+      - description: 分享码
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: 访问密码
+        in: query
+        name: password
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/base_info.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.FileDto'
+              type: object
+      summary: 获取分享文件
+      tags:
+      - 存储管理
   /v1/sys/login-log/admin:
     get:
       consumes:

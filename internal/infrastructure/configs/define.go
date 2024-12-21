@@ -14,11 +14,12 @@ const (
 )
 
 type Bootstrap struct {
-	Server   *Server `mapstructure:"server"`
-	Log      *Log    `mapstructure:"log"`
-	JWT      *JWT    `mapstructure:"jwt"`
-	Data     *Data   `mapstructure:"data"`
-	ConfPath *string `mapstructure:"conf_path"`
+	Server   *Server        `mapstructure:"server"`
+	Log      *Log           `mapstructure:"log"`
+	JWT      *JWT           `mapstructure:"jwt"`
+	Data     *Data          `mapstructure:"data"`
+	ConfPath *string        `mapstructure:"conf_path"`
+	Storage  *StorageConfig `mapstructure:"storage"` // 添加存储配置
 }
 type Server struct {
 	Port               int    `mapstructure:"port"`

@@ -204,7 +204,7 @@
                 }
             }
         },
-        "/v1/metrics/runtime": {
+        "/v1/metrics/system": {
             "get": {
                 "description": "获取Go运行时内存、GC等指标",
                 "consumes": [
@@ -230,41 +230,6 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/dto.RuntimeMetricsDto"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/metrics/system": {
-            "get": {
-                "description": "获取系统CPU、内存、磁盘使用率",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "监控指标"
-                ],
-                "summary": "获取系统指标",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/base_info.Success"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.SystemMetricsDto"
                                         }
                                     }
                                 }
@@ -370,6 +335,673 @@
                         "description": "服务器内部错误",
                         "schema": {
                             "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/files": {
+            "get": {
+                "description": "查询文件列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "查询文件列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件夹ID",
+                        "name": "folder_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "文件名",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "文件类型",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储类型",
+                        "name": "storage_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.FileDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "上传文件",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "上传文件",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件夹ID,默认为根目录",
+                        "name": "folder_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储类型(minio/aliyun/tencent),默认为minio",
+                        "name": "storage_type",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.FileDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/files/batch/delete": {
+            "post": {
+                "description": "批量删除文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "批量删除文件",
+                "parameters": [
+                    {
+                        "description": "文件ID列表",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.BatchDeleteFilesCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/files/batch/move": {
+            "post": {
+                "description": "批量移动文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "批量移动文件",
+                "parameters": [
+                    {
+                        "description": "移动参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.BatchMoveFilesCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/files/{id}": {
+            "delete": {
+                "description": "删除文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "删除文件",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/files/{id}/download": {
+            "get": {
+                "description": "下载文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "下载文件",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/v1/storage/files/{id}/preview": {
+            "get": {
+                "description": "预览文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "预览文件",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/files/{id}/recycle": {
+            "post": {
+                "description": "将文件移动到回收站",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "回收文件",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/files/{id}/restore": {
+            "post": {
+                "description": "从回收站恢复文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "恢复文件",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/files/{id}/share": {
+            "post": {
+                "description": "分享文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "分享文件",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "分享参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.ShareFileCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.FileShareDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/folders": {
+            "get": {
+                "description": "查询文件夹列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "查询文件夹列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "父文件夹ID",
+                        "name": "parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "文件夹名称",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.FolderDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建文件夹",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "创建文件夹",
+                "parameters": [
+                    {
+                        "description": "创建参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.CreateFolderCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/folders/tree": {
+            "get": {
+                "description": "获取文件夹树形结构",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "获取文件夹树形结构",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.FolderTreeDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/recycle": {
+            "get": {
+                "description": "查询回收站文件列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "查询回收��文件列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "文件名",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "文件类型",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "存储类型",
+                        "name": "storage_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.FileDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/share/{code}": {
+            "get": {
+                "description": "获取分享文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "获取分享文件",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "分享码",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "访问密码",
+                        "name": "password",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.FileDto"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -2249,6 +2881,47 @@
                 }
             }
         },
+        "commands.BatchDeleteFilesCommand": {
+            "type": "object",
+            "properties": {
+                "file_ids": {
+                    "description": "文件ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "commands.BatchMoveFilesCommand": {
+            "type": "object",
+            "properties": {
+                "file_ids": {
+                    "description": "文件ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "target_folder_id": {
+                    "description": "目标文件夹ID",
+                    "type": "string"
+                }
+            }
+        },
+        "commands.CreateFolderCommand": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "文件夹名称",
+                    "type": "string"
+                },
+                "parent_id": {
+                    "description": "父文件夹ID",
+                    "type": "string"
+                }
+            }
+        },
         "commands.CreatePermissionsCommand": {
             "type": "object",
             "required": [
@@ -2476,6 +3149,23 @@
                 }
             }
         },
+        "commands.ShareFileCommand": {
+            "type": "object",
+            "properties": {
+                "expire_time": {
+                    "description": "过期时间",
+                    "type": "integer"
+                },
+                "file_id": {
+                    "description": "文件ID",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "访问密码",
+                    "type": "string"
+                }
+            }
+        },
         "commands.UpdatePermissionsCommand": {
             "type": "object",
             "required": [
@@ -2648,6 +3338,151 @@
                     "type": "string"
                 },
                 "key": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.FileDto": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "integer"
+                },
+                "created_by": {
+                    "description": "创建人",
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "description": "删除时间",
+                    "type": "integer"
+                },
+                "deleted_by": {
+                    "description": "删除人",
+                    "type": "string"
+                },
+                "folder_id": {
+                    "description": "文件夹ID",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "string"
+                },
+                "is_deleted": {
+                    "description": "是否已删除",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "文件名",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "文件路径",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "文件大小(字节)",
+                    "type": "integer"
+                },
+                "storage_type": {
+                    "description": "存储类型",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "文件类型",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "访问URL",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.FileShareDto": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "expire_time": {
+                    "type": "integer"
+                },
+                "file_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "share_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.FolderDto": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "integer"
+                },
+                "created_by": {
+                    "description": "创建人",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "文件夹名",
+                    "type": "string"
+                },
+                "parent_id": {
+                    "description": "父文件夹ID",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "文件夹路径",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.FolderTreeDto": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "description": "子文件夹",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.FolderTreeDto"
+                    }
+                },
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "integer"
+                },
+                "created_by": {
+                    "description": "创建人",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "文件夹名",
+                    "type": "string"
+                },
+                "parent_id": {
+                    "description": "父文件夹ID",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "文件夹路径",
                     "type": "string"
                 }
             }

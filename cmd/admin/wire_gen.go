@@ -22,6 +22,13 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/interfaces/rest"
+	storage2 "github.com/ares-cloud/ares-ddd-admin/internal/storage"
+	handlers3 "github.com/ares-cloud/ares-ddd-admin/internal/storage/application/handlers"
+	service3 "github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/service"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/cleaner"
+	repository2 "github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/repository"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/storage"
+	rest3 "github.com/ares-cloud/ares-ddd-admin/internal/storage/interfaces/rest"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/snowflake_id"
 )
 
@@ -32,8 +39,8 @@ import (
 // Injectors from wire.go:
 
 // wireApp init application.
-func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, func(), error) {
-	redisClient, err := database.NewHdbClient(configsData)
+func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data, storageConfig *configs.StorageConfig) (*app, func(), error) {
+	redisClient, cleanup, err := database.NewHdbClient(configsData)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -41,8 +48,9 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	metricsQueryHandler := handlers.NewMetricsQueryHandler(metricsService)
 	metricsController := rest.NewMetricsController(metricsQueryHandler)
 	iIdGenerate := snowflake_id.NewSnowIdGen()
-	iDataBase, cleanup, err := database.NewDataBase(iIdGenerate, configsData)
+	iDataBase, cleanup2, err := database.NewDataBase(iIdGenerate, configsData)
 	if err != nil {
+		cleanup()
 		return nil, nil, err
 	}
 	iOperationLogRepository := repository.NewOperationLogRepository(iDataBase)
@@ -54,6 +62,7 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	casbinIPermissionsRepository := casbin.NewRepositoryImpl(iSysRoleRepo, iPermissionsRepo)
 	enforcer, err := server.NewCasBinEnforcer(redisClient, casbinIPermissionsRepository)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -85,9 +94,24 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	operationLogController := rest2.NewOperationLogController(operationLogQueryHandler, enforcer)
 	baseServer := base.NewBaseServer(sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController)
 	monitoringServer := monitoring.NewServer(metricsController)
-	serve := server.NewServer(bootstrap, redisClient, metricsController, iDbOperationLogWrite, baseServer, monitoringServer)
+	iStorageRepository := repository2.NewStorageRepository(iDataBase)
+	storageQueryHandler := handlers3.NewStorageQueryHandler(iStorageRepository)
+	storageFactory := storage.NewStorageFactory(storageConfig, redisClient)
+	storageService := service3.NewStorageService(iStorageRepository, storageFactory)
+	storageCommandHandler := handlers3.NewStorageCommandHandler(storageService)
+	storageController := rest3.NewStorageController(storageQueryHandler, storageCommandHandler, storageService)
+	recycleCleaner := cleaner.NewRecycleCleaner(iStorageRepository, storageService, storageConfig)
+	storageServer, cleanup3, err := storage2.NewServer(storageController, recycleCleaner)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	serve := server.NewServer(bootstrap, redisClient, metricsController, iDbOperationLogWrite, baseServer, monitoringServer, storageServer)
 	mainApp := newApp(serve)
 	return mainApp, func() {
+		cleanup3()
+		cleanup2()
 		cleanup()
 	}, nil
 }

@@ -45,3 +45,44 @@ super_admin:
     nickname: 超级管理员
     phone: 15888888888
     password: Super123
+
+storage:
+  type: minio
+  preview_url: http://localhost:8888
+  cache_ttl: 24h
+  retention_days: 7
+  interval: 1h
+
+  minio:
+    endpoint: localhost:10005
+    access_key: root
+    secret_key: opeIM123
+    bucket: go-dev
+    region: us-east-1
+    public_url: http://localhost:9000
+
+  aliyun:
+    endpoint: oss-cn-hangzhou.aliyuncs.com
+    access_key_id: your-access-key-id
+    access_key_secret: your-access-key-secret
+    bucket_name: your-bucket
+    region: cn-hangzhou
+    public_url: https://your-bucket.oss-cn-hangzhou.aliyuncs.com
+
+  tencent:
+    secret_id: your-secret-id
+    secret_key: your-secret-key
+    region: ap-guangzhou
+    bucket: your-bucket
+    public_url: https://your-bucket.cos.ap-guangzhou.myqcloud.com
+
+  local:
+    root_path: /data/storage
+    public_path: /storage
+
+  qiniu:
+    access_key: your-access-key
+    secret_key: your-secret-key
+    bucket: your-bucket
+    domain: http://your-domain.com
+    zone: huadong

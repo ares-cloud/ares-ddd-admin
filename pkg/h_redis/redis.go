@@ -3,6 +3,8 @@ package h_redis
 import (
 	"context"
 	"errors"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
+	"log"
 
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
@@ -14,7 +16,7 @@ type RedisClient struct {
 	rs     *redsync.Redsync
 }
 
-func NewRedisClient(opt Option) (*RedisClient, error) {
+func NewRedisClient(opt Option) (*RedisClient, func(), error) {
 	db := redis.NewClient(&redis.Options{
 		Addr:     opt.Addr,
 		Password: opt.Password,
@@ -22,14 +24,18 @@ func NewRedisClient(opt Option) (*RedisClient, error) {
 	})
 	err := db.Ping(context.Background()).Err()
 	if err != nil {
-		return nil, err
+		log.Fatalf("failed to connect to redis: %v", err)
 	}
 	pool := goredis.NewPool(db)
+	cleanup := func() {
+		hlog.Info("closing the data resources")
+		db.Close()
+	}
 	rs := redsync.New(pool)
 	return &RedisClient{
 		client: db,
 		rs:     rs,
-	}, nil
+	}, cleanup, nil
 }
 
 // MutexWithUnlock 分布式锁，并发控制
