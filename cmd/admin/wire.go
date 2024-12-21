@@ -5,17 +5,18 @@
 package main
 
 import (
-	"github.com/ares-cloud/ares-ddd-admin/internal/application/handlers"
-	"github.com/ares-cloud/ares-ddd-admin/internal/domain"
-	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/base"
+	"github.com/ares-cloud/ares-ddd-admin/cmd/admin/server"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/handlers"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database"
-	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence"
-	"github.com/ares-cloud/ares-ddd-admin/internal/interfaces/server/admin"
 	"github.com/google/wire"
 )
 
 // wireApp init application.
 func wireApp(*configs.Bootstrap, *configs.Data) (*app, func(), error) {
-	panic(wire.Build(database.ProviderSet, base.ProviderSet, domain.ProviderSet, persistence.ProviderSet, handlers.ProviderSet, admin.ProviderSet, newApp))
+	panic(wire.Build(database.ProviderSet, base.ProviderSet, domain.ProviderSet, persistence.ProviderSet, handlers.ProviderSet, server.ProviderSet, newApp))
 }

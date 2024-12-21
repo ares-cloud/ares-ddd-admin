@@ -7,16 +7,16 @@
 package main
 
 import (
-	"github.com/ares-cloud/ares-ddd-admin/internal/application/handlers"
-	"github.com/ares-cloud/ares-ddd-admin/internal/domain/service"
-	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/base/casbin"
-	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/base/oplog"
+	"github.com/ares-cloud/ares-ddd-admin/cmd/admin/server"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/handlers"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/casbin"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/oplog"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/data"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/interfaces/rest"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database"
-	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence/data"
-	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/persistence/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/interfaces/rest"
-	"github.com/ares-cloud/ares-ddd-admin/internal/interfaces/server/admin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/snowflake_id"
 )
 
@@ -42,7 +42,7 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	iRoleRepository := repository.NewRoleRepository(iSysRoleRepo, iPermissionsRepo)
 	iPermissionsRepository := repository.NewPermissionsRepository(iPermissionsRepo)
 	casbinIPermissionsRepository := casbin.NewRepositoryImpl(iSysRoleRepo, iPermissionsRepo)
-	enforcer, err := admin.NewCasBinEnforcer(redisClient, casbinIPermissionsRepository)
+	enforcer, err := server.NewCasBinEnforcer(redisClient, casbinIPermissionsRepository)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -75,7 +75,7 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data) (*app, fun
 	operationLogQueryHandler := handlers.NewOperationLogQueryHandler(iOperationLogRepository)
 	operationLogController := rest.NewOperationLogController(operationLogQueryHandler, enforcer)
 	iDbOperationLogWrite := oplog.NewDbOperationLogWriter(iOperationLogRepository)
-	serve := admin.NewServer(bootstrap, redisClient, sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController, iDbOperationLogWrite)
+	serve := server.NewServer(bootstrap, redisClient, sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController, iDbOperationLogWrite)
 	mainApp := newApp(serve)
 	return mainApp, func() {
 		cleanup()
