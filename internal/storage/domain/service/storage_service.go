@@ -36,12 +36,11 @@ func (s *StorageService) GetDefaultStorageType(ctx context.Context) (model.Stora
 	return model.StorageTypeMinio, nil // 这里可以根据实际配置返回
 }
 
-// CreateDefaultFolder 创建默认文件夹(按日期)
+// CreateDefaultFolder 创建默认文件夹(按月份)
 func (s *StorageService) CreateDefaultFolder(ctx context.Context, tenantID, createdBy string) (*model.Folder, error) {
 	now := time.Now()
 	yearStr := now.Format("2006")
 	monthStr := now.Format("01")
-	dayStr := now.Format("02")
 
 	// 1. 获取或创建年份文件夹
 	yearFolder, err := s.getOrCreateFolder(ctx, "0", yearStr, tenantID, createdBy)
@@ -55,13 +54,7 @@ func (s *StorageService) CreateDefaultFolder(ctx context.Context, tenantID, crea
 		return nil, fmt.Errorf("create month folder error: %v", err)
 	}
 
-	// 3. 获取或创建日期文件夹
-	dayFolder, err := s.getOrCreateFolder(ctx, monthFolder.ID, dayStr, tenantID, createdBy)
-	if err != nil {
-		return nil, fmt.Errorf("create day folder error: %v", err)
-	}
-
-	return dayFolder, nil
+	return monthFolder, nil
 }
 
 // getOrCreateFolder 获取或创建文件夹
@@ -204,7 +197,7 @@ func (s *StorageService) DeleteFolder(ctx context.Context, id string) error {
 		}
 	}
 
-	// 获取��文件夹
+	// 获取文件夹
 	folders, _, err := s.repo.ListFolders(ctx, id, query.NewQueryBuilder())
 	if err != nil {
 		return err
@@ -418,7 +411,7 @@ func (s *StorageService) GetShareFile(ctx context.Context, shareCode, password s
 
 // PreviewFile 预览文件
 func (s *StorageService) PreviewFile(ctx context.Context, id string) (string, error) {
-	// 获取文件信息
+	// 获取文件信���
 	file, err := s.repo.GetFile(ctx, id)
 	if err != nil {
 		return "", err

@@ -84,11 +84,10 @@ func (h *StorageQueryHandler) HandleListFiles(ctx context.Context, q *queries.Li
 }
 
 // HandleGetFolderTree 处理获取文件夹树形结构
-func (h *StorageQueryHandler) HandleGetFolderTree(ctx context.Context, q *queries.GetFolderTreeQuery) (*models.PageRes[dto.FolderTreeDto], herrors.Herr) {
+func (h *StorageQueryHandler) HandleGetFolderTree(ctx context.Context) ([]*dto.FolderTreeDto, herrors.Herr) {
 	// 1. 获取所有文件夹
 	qb := query.NewQueryBuilder()
-	qb.Where("tenant_id", query.Eq, q.TenantID)
-	folders, total, err := h.repo.ListFolders(ctx, "", qb)
+	folders, _, err := h.repo.ListFolders(ctx, "0", qb)
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
@@ -102,7 +101,7 @@ func (h *StorageQueryHandler) HandleGetFolderTree(ctx context.Context, q *querie
 		dto := converter.ToFolderTreeDto(folder)
 		folderMap[folder.ID] = dto
 
-		if folder.ParentID == "" {
+		if folder.ParentID == "0" || folder.ParentID == "" {
 			roots = append(roots, dto)
 		} else {
 			if parent, ok := folderMap[folder.ParentID]; ok {
@@ -111,10 +110,7 @@ func (h *StorageQueryHandler) HandleGetFolderTree(ctx context.Context, q *querie
 		}
 	}
 
-	return &models.PageRes[dto.FolderTreeDto]{
-		List:  roots,
-		Total: total,
-	}, nil
+	return roots, nil
 }
 
 // HandleListRecycleFiles 处理查询回收站文件列表

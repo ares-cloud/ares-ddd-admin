@@ -214,7 +214,7 @@ func (s *StorageController) UploadFile(ctx context.Context, c *app.RequestContex
 		CreatedAt:   fileModel.CreatedAt,
 	}
 
-	c.JSON(http.StatusOK, result.WithData(fileDto))
+	hserver.ResponseSuccess(ctx, c, fileDto)
 }
 
 // DeleteFile 删除文件
@@ -272,7 +272,7 @@ func (s *StorageController) MoveFile(ctx context.Context, cmd *commands.MoveFile
 func (s *StorageController) GetFolderTree(ctx context.Context, q *queries.GetFolderTreeQuery) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
 	q.TenantID = actx.GetTenantId(ctx)
-	data, err := s.queryHandler.HandleGetFolderTree(ctx, q)
+	data, err := s.queryHandler.HandleGetFolderTree(ctx)
 	if err != nil {
 		return result.WithError(err)
 	}

@@ -131,7 +131,7 @@ func (h *StorageCommandHandler) validateCreateFolder(cmd *commands.CreateFolderC
 		return herrors.NewBadReqError("folder name is empty")
 	}
 	if cmd.ParentID == "" {
-		return herrors.NewBadReqError("invalid parent folder id")
+		cmd.ParentID = "0"
 	}
 	return nil
 }
