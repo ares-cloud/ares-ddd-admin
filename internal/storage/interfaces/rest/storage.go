@@ -183,7 +183,7 @@ func (s *StorageController) UploadFile(ctx context.Context, c *app.RequestContex
 	}
 	// 获取文件夹ID,默认为"0"(根目录)
 	folderID := "0"
-	if id := c.FormValue("folder_id"); len(id) > 0 {
+	if id := c.FormValue("folderId"); len(id) > 0 {
 		folderID = string(id)
 	}
 	// 构建上传命令
