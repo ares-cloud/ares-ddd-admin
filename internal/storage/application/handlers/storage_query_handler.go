@@ -147,3 +147,33 @@ func (h *StorageQueryHandler) HandleListRecycleFiles(ctx context.Context, q *que
 		Total: total,
 	}, nil
 }
+
+// HandleGetSubFolders 处理获取下级文件夹
+func (h *StorageQueryHandler) HandleGetSubFolders(ctx context.Context, parentID string) ([]*dto.FolderDto, herrors.Herr) {
+	// 调用服务获取文件夹列表
+	// 构建查询条件
+	qb := query.NewQueryBuilder().
+		Where("parent_id", query.Eq, parentID)
+	// 查询文件夹列表
+	folders, _, err := h.repo.ListFolders(ctx, parentID, qb)
+	if err != nil {
+		return nil, herrors.NewServerHError(err)
+	}
+	// 转换为DTO
+	return converter.ToFolderDtoList(folders), nil
+}
+
+// HandleGetRootFolders 处理获取一级文件夹
+func (h *StorageQueryHandler) HandleGetRootFolders(ctx context.Context) ([]*dto.FolderDto, herrors.Herr) {
+	// 调用服务获取文件夹列表
+	// 构建查询条件(parent_id为0表示一级文件夹)
+	qb := query.NewQueryBuilder().
+		Where("parent_id", query.Eq, "0")
+	// 查询文件夹列表
+	folders, _, err := h.repo.ListFolders(ctx, "0", qb)
+	if err != nil {
+		return nil, herrors.NewServerHError(err)
+	}
+	// 转换为DTO
+	return converter.ToFolderDtoList(folders), nil
+}

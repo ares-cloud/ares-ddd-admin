@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 	"io"
 	"net/http"
 	"net/url"
@@ -57,13 +58,15 @@ func (s *StorageController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 		storage.POST("/files", s.UploadFile)
 		storage.DELETE("/files/:id", hserver.NewHandlerFu[commands.DeleteFileCommand](s.DeleteFile))
 		storage.PUT("/files/:id/move", hserver.NewHandlerFu[commands.MoveFileCommand](s.MoveFile))
-
+		// 添加新路由
+		storage.GET("/folders/sub/:id", hserver.NewHandlerFu[models.StringIdReq](s.GetSubFolders))
+		storage.GET("/folders/root", hserver.NewNotParHandlerFu(s.GetRootFolders))
 		// 批量操作
 		storage.POST("/files/batch/delete", hserver.NewHandlerFu[commands.BatchDeleteFilesCommand](s.BatchDeleteFiles))
 		storage.POST("/files/batch/move", hserver.NewHandlerFu[commands.BatchMoveFilesCommand](s.BatchMoveFiles))
 
 		// 文件分享
-		storage.POST("/files/:id/share", hserver.NewHandlerFu[commands.ShareFileCommand](s.ShareFile))
+		storage.POST("/files/share", hserver.NewHandlerFu[commands.ShareFileCommand](s.ShareFile))
 		storage.GET("/share/:code", s.GetFileShare) // 不需要认证
 
 		// 回收站
@@ -76,6 +79,7 @@ func (s *StorageController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 
 		// 下载文件
 		storage.GET("/files/:id/download", s.DownloadFile)
+
 	}
 }
 
@@ -437,7 +441,7 @@ func (s *StorageController) MoveFolder(ctx context.Context, cmd *commands.MoveFo
 }
 
 // ListRecycleFiles 查询回收站文件列表
-// @Summary 查询回收��文件列表
+// @Summary 查询回收站文件列表
 // @Description 查询回收站文件列表
 // @Tags 存储管理
 // @Accept json
@@ -492,6 +496,44 @@ func (s *StorageController) RestoreFile(ctx context.Context, cmd *commands.Resto
 		return result.WithError(err)
 	}
 	return result
+}
+
+// GetSubFolders 获取下级文件夹
+// @Summary 获取下级文件夹
+// @Description 获取指定文件夹的下级文件夹列表
+// @Tags 存储管理
+// @Accept json
+// @Produce json
+// @Param id path string true "父文件夹ID"
+// @Success 200 {object} base_info.Success{data=[]dto.FolderDto}
+// @Router /v1/storage/folders/sub/:id [get]
+func (s *StorageController) GetSubFolders(ctx context.Context, req *models.StringIdReq) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+
+	// 调用处理器
+	data, err := s.queryHandler.HandleGetSubFolders(ctx, req.Id)
+	if herrors.HaveError(err) {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
+}
+
+// GetRootFolders 获取一级文件夹
+// @Summary 获取一级文件夹
+// @Description 获取租户的一级文件夹列表
+// @Tags 存储管理
+// @Accept json
+// @Produce json
+// @Success 200 {object} base_info.Success{data=[]dto.FolderDto}
+// @Router /v1/storage/folders/root [get]
+func (s *StorageController) GetRootFolders(ctx context.Context) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	// 调用处理器
+	data, err := s.queryHandler.HandleGetRootFolders(ctx)
+	if herrors.HaveError(err) {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
 }
 
 // ... 其他方法实现

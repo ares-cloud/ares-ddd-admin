@@ -59,7 +59,7 @@ storage:
     secret_key: opeIM123
     bucket: go-dev
     region: us-east-1
-    public_url: http://localhost:9000
+    public_url:
 
   aliyun:
     endpoint: oss-cn-hangzhou.aliyuncs.com

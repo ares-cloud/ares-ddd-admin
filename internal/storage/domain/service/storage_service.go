@@ -340,7 +340,7 @@ func (s *StorageService) RecycleFile(ctx context.Context, id string, deletedBy s
 		return err
 	}
 
-	// 更新数据库
+	// 更新��据库
 	return s.repo.UpdateFile(ctx, file)
 }
 
@@ -411,7 +411,7 @@ func (s *StorageService) GetShareFile(ctx context.Context, shareCode, password s
 
 // PreviewFile 预览文件
 func (s *StorageService) PreviewFile(ctx context.Context, id string) (string, error) {
-	// 获取文件信���
+	// 获取文件信息
 	file, err := s.repo.GetFile(ctx, id)
 	if err != nil {
 		return "", err
@@ -464,7 +464,7 @@ func (s *StorageService) CreateFolder(ctx context.Context, folder *model.Folder)
 		folder.Path = folder.Name
 	}
 
-	// 2. 检查同名文件夹是否存在
+	// 2. ���查同名文件夹是否存在
 	qb := query.NewQueryBuilder().
 		Where("parent_id", query.Eq, folder.ParentID).
 		Where("name", query.Eq, folder.Name).
