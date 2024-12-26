@@ -9,4 +9,5 @@ var ProviderSet = wire.NewSet(
 	service.NewPermissionService,
 	service.NewRoleService,
 	service.NewUserService,
+	service.NewDepartmentService,
 )

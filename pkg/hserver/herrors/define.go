@@ -45,7 +45,9 @@ func NewServerHError(err error) Herr {
 func NewBadReqError(reason string) Herr {
 	return &HError{Code: DefaultParameterError, Reason: reason, DefMessage: reason, BusinessError: errors.New(reason)}
 }
-
+func NewBadReqHError(err error) Herr {
+	return &HError{Code: DefaultParameterError, Reason: ReqParameterError, DefMessage: ReqParameterError, BusinessError: err}
+}
 func NewAsServerError(err error, def *HError) *HError {
 	if herr, is := IsHServerError(err); is {
 		return herr

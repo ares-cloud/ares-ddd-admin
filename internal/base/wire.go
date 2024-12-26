@@ -22,5 +22,6 @@ var ProviderSet = wire.NewSet(
 	rest.NewAuthController,
 	rest.NewLoginLogController,
 	rest.NewOperationLogController,
+	rest.NewDepartmentController,
 	NewBaseServer,
 )

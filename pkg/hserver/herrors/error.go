@@ -9,6 +9,7 @@ import (
 const (
 	ReasonStatusInternalHError = "STATUS_INTERNAL_SERVER_ERROR"
 	ReasonParameterError       = "PARAMETER_ERROR"
+	ReqParameterError          = "ReqParameterError"
 )
 
 type Herr = *HError
