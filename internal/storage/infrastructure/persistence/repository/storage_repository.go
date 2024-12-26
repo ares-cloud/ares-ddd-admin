@@ -45,7 +45,7 @@ func (r *storageRepository) CreateFile(ctx context.Context, file *model.File) er
 
 // UpdateFile 更新文件
 func (r *storageRepository) UpdateFile(ctx context.Context, file *model.File) error {
-	return r.db.DB(ctx).Updates(r.mapper.ToFileEntity(file)).Error
+	return r.db.DB(ctx).Save(r.mapper.ToFileEntity(file)).Error
 }
 
 // DeleteFile 删除文件
@@ -67,7 +67,7 @@ func (r *storageRepository) ListFiles(ctx context.Context, folderID string, qb *
 	db := r.db.DB(ctx).Model(&entity.File{})
 
 	// 添加文件夹条件
-	if folderID != "0" {
+	if folderID != "0" && folderID != "" {
 		db = db.Where("folder_id = ?", folderID)
 	}
 

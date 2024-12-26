@@ -126,9 +126,6 @@ func (h *StorageQueryHandler) HandleListRecycleFiles(ctx context.Context, q *que
 	if q.StorageType != "" {
 		qb.Where("storage_type", query.Eq, q.StorageType)
 	}
-	if q.TenantID != "" {
-		qb.Where("tenant_id", query.Eq, q.TenantID)
-	}
 	// 只查询已删除的文件
 	qb.Where("is_deleted", query.Eq, true)
 	qb.WithPage(&q.Page)

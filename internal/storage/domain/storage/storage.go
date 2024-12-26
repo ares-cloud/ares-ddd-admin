@@ -43,11 +43,11 @@ type Storage interface {
 	// 参数:
 	//   - ctx: 上下文
 	//   - file: 文件信息，包含新的路径
-	//   - oldPath: 原始路径
+	//   - toPath: 目标路径
 	//
 	// 返回:
 	//   - error: 错误信息，如果移动成功则为nil
-	Move(ctx context.Context, file *model.File, oldPath string) error
+	Move(ctx context.Context, file *model.File, toPath string) error
 
 	// GetURL 获取文件访问URL
 	// 获取文件的访问地址，可以是公共URL或带签名的临时URL。

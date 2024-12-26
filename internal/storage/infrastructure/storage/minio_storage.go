@@ -88,28 +88,39 @@ func (s *MinioStorage) GetURL(ctx context.Context, file *model.File) (string, er
 
 // Move 移动文件
 func (s *MinioStorage) Move(ctx context.Context, file *model.File, oldPath string) error {
-	// 1. 构建源对象路径
+	// 1. 检查源文件是否存在
+	_, err := s.client.StatObject(ctx, s.bucket, oldPath, minio.StatObjectOptions{})
+	if err != nil {
+		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
+			return herrors.NewBadReqError("source file does not exist")
+		}
+		return herrors.NewServerHError(err)
+	}
+
+	// 2. 构建源对象路径
 	srcOpts := minio.CopySrcOptions{
 		Bucket: s.bucket,
 		Object: oldPath,
 	}
 
-	// 2. 构建目标对象路径(使用生成的文件名)
+	// 3. 构建目标对象路径
 	dstOpts := minio.CopyDestOptions{
 		Bucket: s.bucket,
 		Object: file.Path,
 	}
 
-	// 3. 复制对象
-	_, err := s.client.CopyObject(ctx, dstOpts, srcOpts)
+	// 4. 复制对象
+	_, err = s.client.CopyObject(ctx, dstOpts, srcOpts)
 	if err != nil {
-		return herrors.NewServerHError(err)
+		return herrors.NewServerHError(fmt.Errorf("copy object error: %v", err))
 	}
 
-	// 4. 删除源文件
+	// 5. 删除源文件
 	err = s.client.RemoveObject(ctx, s.bucket, oldPath, minio.RemoveObjectOptions{})
 	if err != nil {
-		return herrors.NewServerHError(err)
+		// 如果删除失败，尝试回滚复制操作
+		_ = s.client.RemoveObject(ctx, s.bucket, file.Path, minio.RemoveObjectOptions{})
+		return herrors.NewServerHError(fmt.Errorf("remove source object error: %v", err))
 	}
 
 	return nil

@@ -327,7 +327,6 @@ func (s *StorageService) RecycleFile(ctx context.Context, id string, deletedBy s
 	file.DeletedAt = time.Now().Unix()
 	file.DeletedBy = deletedBy
 	file.OriginalPath = file.Path
-
 	// 移动到回收站目录
 	recyclePath := path.Join("recycle", file.Path)
 	store, err := s.storageFactory.GetStorage(file.StorageType)
@@ -335,11 +334,12 @@ func (s *StorageService) RecycleFile(ctx context.Context, id string, deletedBy s
 		return err
 	}
 
-	// 移动文件
-	if err := store.Move(ctx, file, recyclePath); err != nil {
+	//移动文件
+	oldPath := file.Path
+	file.Path = recyclePath
+	if err = store.Move(ctx, file, oldPath); err != nil {
 		return err
 	}
-
 	// 更新��据库
 	return s.repo.UpdateFile(ctx, file)
 }
@@ -360,19 +360,17 @@ func (s *StorageService) RestoreFile(ctx context.Context, id string) error {
 	file.IsDeleted = false
 	file.DeletedAt = time.Now().Unix()
 	file.DeletedBy = ""
-	file.Path = file.OriginalPath
-	file.OriginalPath = ""
-
 	// 从回收站恢复
 	store, err := s.storageFactory.GetStorage(file.StorageType)
 	if err != nil {
 		return err
 	}
-
-	if err := store.Move(ctx, file, file.Path); err != nil {
+	oldPath := file.Path
+	file.Path = file.OriginalPath
+	if err := store.Move(ctx, file, oldPath); err != nil {
 		return err
 	}
-
+	file.OriginalPath = ""
 	// 更新数据库
 	return s.repo.UpdateFile(ctx, file)
 }
