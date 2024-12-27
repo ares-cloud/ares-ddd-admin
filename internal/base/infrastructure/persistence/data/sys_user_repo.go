@@ -44,3 +44,10 @@ func (s sysUserRepo) GetByUsername(ctx context.Context, username string) (*entit
 func (s sysUserRepo) DeleteRoleByUserId(ctx context.Context, userId string) error {
 	return s.Db(ctx).Where("user_id = ?", userId).Delete(&entity.SysUserRole{}).Error
 }
+func (s sysUserRepo) BelongsToDepartment(ctx context.Context, userID string, deptID string) bool {
+	var count int64
+	err := s.Db(ctx).Model(&entity.UserDepartment{}).
+		Where("user_id = ? AND dept_id = ?", userID, deptID).
+		Count(&count).Error
+	return err == nil && count > 0
+}

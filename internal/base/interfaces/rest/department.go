@@ -65,6 +65,20 @@ func (c *DepartmentController) RegisterRouter(g *route.RouterGroup, t token.ITok
 			Module:      c.moduleName,
 			Action:      "移动",
 		}), hserver.NewHandlerFu[commands.MoveDepartmentCommand](c.MoveDepartment))
+		dept.POST("/admin", hserver.NewHandlerFu[commands.SetDepartmentAdminCommand](c.SetAdmin))
+		dept.GET("/:id/users", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.GetDepartmentUsers))
+		dept.POST("/users", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.moduleName,
+			Action:      "分配用户",
+		}), hserver.NewHandlerFu[commands.AssignUsersToDepartmentCommand](c.AssignUsers))
+		dept.DELETE("/users", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.moduleName,
+			Action:      "移除用户",
+		}), hserver.NewHandlerFu[commands.RemoveUsersFromDepartmentCommand](c.RemoveUsers))
+		dept.GET("/unassigned-users", casbin.Handler(c.ef),
+			hserver.NewHandlerFu[queries.GetUnassignedUsersQuery](c.GetUnassignedUsers))
 	}
 }
 
@@ -94,11 +108,10 @@ func (c *DepartmentController) AddDepartment(ctx context.Context, params *comman
 // @Summary 获取部门列表
 // @Description 获取部门列表
 // @Tags 系统部门
-// @ID DepartmentList
 // @Accept json
 // @Produce json
 // @Param req query queries.ListDepartmentsQuery true "查询参数"
-// @Success 200 {object} base_info.Success{data=[]model.Department}
+// @Success 200 {object} base_info.Success{data=dto.PageResult[dto.DepartmentDto]}
 // @Failure 400 {object} base_info.Swagger400Resp "参数错误"
 // @Failure 401 {object} base_info.Swagger401Resp "未授权"
 // @Failure 500 {object} base_info.Swagger500Resp "内部错误"
@@ -201,7 +214,7 @@ func (c *DepartmentController) GetDepartmentTree(ctx context.Context, params *qu
 }
 
 // MoveDepartment 移动部门
-// @Summary 移��部门
+// @Summary 移动部门
 // @Description 移动部门位置
 // @Tags 系统部门
 // @ID MoveDepartment
@@ -220,4 +233,108 @@ func (c *DepartmentController) MoveDepartment(ctx context.Context, params *comma
 		return result.WithError(err)
 	}
 	return result
+}
+
+// SetAdmin 设置部门管理员
+// @Summary 设置部门管理员
+// @Description 设置部门管理员,同时更新部门负责人信息
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param req body commands.SetDepartmentAdminCommand true "设置部门管理员参数"
+// @Success 200 {object} base_info.Success
+// @Failure 400 {object} base_info.Swagger400Resp "参数错误"
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "内部错误"
+// @Router /v1/sys/dept/admin [post]
+func (c *DepartmentController) SetAdmin(ctx context.Context, req *commands.SetDepartmentAdminCommand) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	if err := c.cmdHandler.HandleSetAdmin(ctx, req); err != nil {
+		return result.WithError(err)
+	}
+	return result
+}
+
+// GetDepartmentUsers 获取部门用户列表
+// @Summary 获取部门用户列表
+// @Description 获取部门下的用户列表(不包含管理员)
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param deptId path string true "部门ID"
+// @Success 200 {object} base_info.Success{data=[]dto.UserDto}
+// @Failure 400 {object} base_info.Swagger400Resp "参数错误"
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "内部错误"
+// @Router /v1/sys/dept/{deptId}/users [get]
+func (c *DepartmentController) GetDepartmentUsers(ctx context.Context, req *models.StringIdReq) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	data, err := c.queryHandler.HandleGetUsers(ctx, &queries.GetDepartmentUsersQuery{
+		DeptID: req.Id,
+	})
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
+}
+
+// AssignUsers 分配用户到部门
+// @Summary 分配用户到部门
+// @Description 分配用户到部门
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param req body commands.AssignUsersToDepartmentCommand true "分配用户参数"
+// @Success 200 {object} base_info.Success
+// @Failure 400 {object} base_info.Swagger400Resp "参数错误"
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "内部错误"
+// @Router /v1/sys/dept/users [post]
+func (c *DepartmentController) AssignUsers(ctx context.Context, req *commands.AssignUsersToDepartmentCommand) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	if err := c.cmdHandler.HandleAssignUsers(ctx, req); err != nil {
+		return result.WithError(err)
+	}
+	return result
+}
+
+// RemoveUsers 从部门移除用户
+// @Summary 从部门移除用户
+// @Description 从部门移除用户
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param req body commands.RemoveUsersFromDepartmentCommand true "移除用户参数"
+// @Success 200 {object} base_info.Success
+// @Failure 400 {object} base_info.Swagger400Resp "参数错误"
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "内部错误"
+// @Router /v1/sys/dept/users [delete]
+func (c *DepartmentController) RemoveUsers(ctx context.Context, req *commands.RemoveUsersFromDepartmentCommand) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	if err := c.cmdHandler.HandleRemoveUsers(ctx, req); err != nil {
+		return result.WithError(err)
+	}
+	return result
+}
+
+// GetUnassignedUsers 获取未分配部门的用户列表
+// @Summary 获取未分配部门的用户列表
+// @Description 获取未分配部门的用户列表
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param req query queries.GetUnassignedUsersQuery true "查询参数"
+// @Success 200 {object} base_info.Success{data=[]dto.UserDto}
+// @Failure 400 {object} base_info.Swagger400Resp "参数错误"
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "内部错误"
+// @Router /v1/sys/dept/unassigned-users [get]
+func (c *DepartmentController) GetUnassignedUsers(ctx context.Context, req *queries.GetUnassignedUsersQuery) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	data, err := c.queryHandler.HandleGetUnassignedUsers(ctx, req)
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
 }

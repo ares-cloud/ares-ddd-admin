@@ -3,6 +3,8 @@ package query
 import (
 	"fmt"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 // 数据权限范围枚举
@@ -46,7 +48,7 @@ type QueryBuilder struct {
 	page       *Page
 }
 
-// NewQueryBuilder 创建查询构建器
+// NewQueryBuilder 创建查询��建器
 func NewQueryBuilder() *QueryBuilder {
 	return &QueryBuilder{
 		conditions: make([]Condition, 0),
@@ -128,4 +130,40 @@ func (qb *QueryBuilder) BuildLimit() (string, []int) {
 	}
 	qb.page.Fix()
 	return "LIMIT ?, ?", []int{qb.page.Offset(), qb.page.Limit()}
+}
+
+// Build 将查询条件应用到GORM的DB对象上
+func (qb *QueryBuilder) Build(db *gorm.DB) error {
+	// 1. 应用WHERE条件
+	for _, cond := range qb.conditions {
+		switch cond.Operator {
+		case IsNull:
+			db = db.Where(fmt.Sprintf("%s IS NULL", cond.Field))
+		case IsNotNull:
+			db = db.Where(fmt.Sprintf("%s IS NOT NULL", cond.Field))
+		case In:
+			db = db.Where(fmt.Sprintf("%s IN ?", cond.Field), cond.Value)
+		case NotIn:
+			db = db.Where(fmt.Sprintf("%s NOT IN ?", cond.Field), cond.Value)
+		case Like:
+			db = db.Where(fmt.Sprintf("%s LIKE ?", cond.Field), cond.Value)
+		default:
+			db = db.Where(fmt.Sprintf("%s %s ?", cond.Field, cond.Operator), cond.Value)
+		}
+	}
+
+	// 2. 应用ORDER BY
+	if len(qb.orderBy) > 0 {
+		for _, order := range qb.orderBy {
+			db = db.Order(order)
+		}
+	}
+
+	// 3. 应用分页
+	if qb.page != nil {
+		qb.page.Fix()
+		db = db.Offset(qb.page.Offset()).Limit(qb.page.Limit())
+	}
+
+	return nil
 }

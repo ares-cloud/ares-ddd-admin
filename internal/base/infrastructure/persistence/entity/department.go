@@ -8,6 +8,7 @@ type Department struct {
 	Code        string `gorm:"column:code"`
 	Name        string `gorm:"column:name"`
 	Sort        int    `gorm:"column:sort"`
+	AdminID     string `gorm:"column:admin_id;comment:管理员ID"`
 	Leader      string `gorm:"column:leader"`
 	Phone       string `gorm:"column:phone"`
 	Email       string `gorm:"column:email"`

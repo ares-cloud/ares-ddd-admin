@@ -59,3 +59,33 @@ type MoveDepartmentCommand struct {
 func (c *MoveDepartmentCommand) Validate() herrors.Herr {
 	return validator.Validate(c)
 }
+
+// SetDepartmentAdminCommand 设置部门管理员命令
+type SetDepartmentAdminCommand struct {
+	DeptID  string `json:"deptId" validate:"required" label:"部门ID"`
+	AdminID string `json:"adminId" validate:"required" label:"管理员ID"`
+}
+
+func (c *SetDepartmentAdminCommand) Validate() herrors.Herr {
+	return validator.Validate(c)
+}
+
+// AssignUsersToDepartmentCommand 分配用户到部门命令
+type AssignUsersToDepartmentCommand struct {
+	DeptID  string   `json:"deptId" validate:"required" label:"部门ID"`
+	UserIDs []string `json:"userIds" validate:"required,min=1" label:"用户ID列表"`
+}
+
+func (c *AssignUsersToDepartmentCommand) Validate() herrors.Herr {
+	return validator.Validate(c)
+}
+
+// RemoveUsersFromDepartmentCommand 从部门移除用户命令
+type RemoveUsersFromDepartmentCommand struct {
+	DeptID  string   `json:"deptId" validate:"required" label:"部门ID"`
+	UserIDs []string `json:"userIds" validate:"required,min=1" label:"用户ID列表"`
+}
+
+func (c *RemoveUsersFromDepartmentCommand) Validate() herrors.Herr {
+	return validator.Validate(c)
+}

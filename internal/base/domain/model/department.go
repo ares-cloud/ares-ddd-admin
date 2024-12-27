@@ -10,6 +10,7 @@ type Department struct {
 	Code        string        `json:"code"`
 	Name        string        `json:"name"`
 	Sort        int           `json:"sort"`
+	AdminID     string        `json:"admin_id"`
 	Leader      string        `json:"leader"`
 	Phone       string        `json:"phone"`
 	Email       string        `json:"email"`
@@ -72,4 +73,12 @@ func (d *Department) AddChild(child *Department) {
 // IsEnabled 是否启用
 func (d *Department) IsEnabled() bool {
 	return d.Status == 1
+}
+
+// SetAdmin 设置部门管理员
+func (d *Department) SetAdmin(adminID string, leaderName string, phone string) {
+	d.AdminID = adminID
+	d.Leader = leaderName
+	d.Phone = phone
+	d.UpdatedAt = time.Now().Unix()
 }

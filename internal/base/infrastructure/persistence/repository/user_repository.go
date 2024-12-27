@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/mapper"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
@@ -16,6 +17,7 @@ type ISysUserRepo interface {
 	baserepo.IBaseRepo[entity.SysUser, string]
 	GetByUsername(ctx context.Context, username string) (*entity.SysUser, error)
 	DeleteRoleByUserId(ctx context.Context, userId string) error
+	BelongsToDepartment(ctx context.Context, userID string, deptID string) bool
 }
 
 type userRepository struct {
@@ -174,11 +176,85 @@ func (r *userRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*m
 	return users, nil
 }
 
-// Count 实现计数查询
+// Count 实现数查询
 func (r *userRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
 	return r.repo.Count(ctx, qb)
 }
 
 func (r *userRepository) Delete(ctx context.Context, id string) error {
 	return r.repo.DelById(ctx, id)
+}
+
+// BelongsToDepartment 检查用户是否属于指定部门
+func (r *userRepository) BelongsToDepartment(ctx context.Context, userID string, deptID string) bool {
+	return r.repo.BelongsToDepartment(ctx, userID, deptID)
+}
+
+// FindByDepartment 查询部门下的用户(排除管理员)
+func (r *userRepository) FindByDepartment(ctx context.Context, deptID string, excludeAdminID string) ([]*model.User, error) {
+	var users []*entity.SysUser
+
+	db := r.repo.Db(ctx).Table("sys_user").
+		Joins("INNER JOIN sys_user_dept ON sys_user.id = sys_user_dept.user_id").
+		Where("sys_user_dept.dept_id = ?", deptID).
+		Where("sys_user.status = ?", 1)
+
+	if excludeAdminID != "" {
+		db = db.Where("sys_user.id != ?", excludeAdminID)
+	}
+
+	err := db.Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapper.ToDomainList(users), nil
+}
+
+// FindUnassignedUsers 查询未分配部门的用户
+func (r *userRepository) FindUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) ([]*model.User, error) {
+	var users []*entity.SysUser
+
+	// 构建子查询
+	subQuery := r.repo.Db(ctx).Model(&entity.UserDepartment{}).
+		Select("user_id").
+		Group("user_id")
+
+	// 主查询
+	db := r.repo.Db(ctx).Model(&entity.SysUser{}).
+		Where("id NOT IN (?)", subQuery)
+
+	// 应用查询条件
+	if err := qb.Build(db); err != nil {
+		return nil, err
+	}
+
+	if err := db.Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	return r.mapper.ToDomainList(users), nil
+}
+
+// AssignUsers 分配用户到部门(修改为先删除原有关系)
+func (r *userRepository) AssignUsers(ctx context.Context, deptID string, userIDs []string) error {
+	// 开启事务
+	return r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
+		// 1. 删除用户原有的部门关系
+		if err := r.repo.Db(ctx).Where("user_id IN ?", userIDs).
+			Delete(&entity.UserDepartment{}).Error; err != nil {
+			return err
+		}
+
+		// 2. 创建新的部门关系
+		userDepts := make([]*entity.UserDepartment, 0, len(userIDs))
+		for _, userID := range userIDs {
+			userDepts = append(userDepts, &entity.UserDepartment{
+				ID:     r.repo.GenStringId(),
+				UserID: userID,
+				DeptID: deptID,
+			})
+		}
+		return r.repo.Db(ctx).Create(&userDepts).Error
+	})
 }

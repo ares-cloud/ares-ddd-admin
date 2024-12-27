@@ -96,7 +96,7 @@ func (r *departmentRepository) List(ctx context.Context, req *drepository.ListDe
 		qb.Where("status", query.Eq, *req.Status)
 	}
 	if req.ParentID != "" {
-		qb.Where("parentId", query.Eq, req.ParentID)
+		qb.Where("parent_id", query.Eq, req.ParentID)
 	}
 	qb.OrderBy("sort", false)
 
@@ -181,4 +181,41 @@ func (r *departmentRepository) GetChildrenRecursively(ctx context.Context, paren
 	}
 
 	return allChildren, nil
+}
+
+// AssignUsers 分配用户到部门
+func (r *departmentRepository) AssignUsers(ctx context.Context, deptID string, userIDs []string) error {
+	// 开启事务
+	return r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
+		// 批量创建用户部门关联
+		userDepts := make([]*entity.UserDepartment, 0, len(userIDs))
+		for _, userID := range userIDs {
+			userDepts = append(userDepts, &entity.UserDepartment{
+				ID:     r.repo.GenStringId(),
+				UserID: userID,
+				DeptID: deptID,
+			})
+		}
+		return r.repo.Db(ctx).Create(&userDepts).Error
+	})
+}
+
+// RemoveUsers 从部门移除用户
+func (r *departmentRepository) RemoveUsers(ctx context.Context, deptID string, userIDs []string) error {
+	return r.repo.Db(ctx).Where("dept_id = ? AND user_id IN ?", deptID, userIDs).
+		Delete(&entity.UserDepartment{}).Error
+}
+
+// Find 查询部门列表
+func (r *departmentRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*model.Department, error) {
+	depts, err := r.repo.Find(ctx, qb)
+	if err != nil {
+		return nil, err
+	}
+	return r.mapper.ToDomainList(depts), nil
+}
+
+// Count 查询总数
+func (r *departmentRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
+	return r.repo.Count(ctx, qb)
 }

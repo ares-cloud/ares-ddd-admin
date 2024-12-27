@@ -3,53 +3,84 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
+
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 )
 
 type DepartmentQueryHandler struct {
 	deptRepo    repository.IDepartmentRepository
+	userRepo    repository.IUserRepository
 	deptService *service.DepartmentService
 }
 
-func NewDepartmentQueryHandler(deptRepo repository.IDepartmentRepository, deptService *service.DepartmentService) *DepartmentQueryHandler {
+func NewDepartmentQueryHandler(
+	deptRepo repository.IDepartmentRepository,
+	userRepo repository.IUserRepository,
+	deptService *service.DepartmentService,
+) *DepartmentQueryHandler {
 	return &DepartmentQueryHandler{
 		deptRepo:    deptRepo,
+		userRepo:    userRepo,
 		deptService: deptService,
 	}
 }
 
 // HandleList 处理部门列表查询
-func (h *DepartmentQueryHandler) HandleList(ctx context.Context, query *queries.ListDepartmentsQuery) ([]*model.Department, herrors.Herr) {
-	if validate := query.Validate(); herrors.HaveError(validate) {
+func (h *DepartmentQueryHandler) HandleList(ctx context.Context, req *queries.ListDepartmentsQuery) (*models.PageRes[dto.DepartmentDto], herrors.Herr) {
+	if validate := req.Validate(); herrors.HaveError(validate) {
 		hlog.CtxErrorf(ctx, "Query validation error: %s", validate)
 		return nil, validate
 	}
 
 	// 构建查询条件
-	listQuery := &repository.ListDepartmentQuery{
-		Name:   query.Name,
-		Code:   query.Code,
-		Status: query.Status,
+	qb := query.NewQueryBuilder()
+	if req.Name != "" {
+		qb.Where("name", query.Like, "%"+req.Name+"%")
+	}
+	if req.Code != "" {
+		qb.Where("code", query.Like, "%"+req.Code+"%")
+	}
+	if req.Status != nil {
+		qb.Where("status", query.Eq, *req.Status)
+	}
+	if req.ParentID != "" {
+		qb.Where("parent_id", query.Eq, req.ParentID)
+	}
+	qb.OrderBy("sort", false)
+	qb.WithPage(&req.Page)
+
+	// 查询总数
+	total, err := h.deptRepo.Count(ctx, qb)
+	if err != nil {
+		hlog.CtxErrorf(ctx, "failed to count departments: %s", err)
+		return nil, herrors.QueryFail(err)
 	}
 
-	// 查询部门列表
-	depts, err := h.deptRepo.List(ctx, listQuery)
+	// 查询列表数据
+	depts, err := h.deptRepo.Find(ctx, qb)
 	if err != nil {
 		hlog.CtxErrorf(ctx, "failed to list departments: %s", err)
 		return nil, herrors.QueryFail(err)
 	}
 
-	return depts, nil
+	// 转换为DTO并返回分页结果
+	return &models.PageRes[dto.DepartmentDto]{
+		Total: total,
+		List:  dto.ToDepartmentDtoList(depts),
+	}, nil
 }
 
 // HandleGet 处理获取部门查询
-func (h *DepartmentQueryHandler) HandleGet(ctx context.Context, query *queries.GetDepartmentQuery) (*model.Department, herrors.Herr) {
+func (h *DepartmentQueryHandler) HandleGet(ctx context.Context, query *queries.GetDepartmentQuery) (*dto.DepartmentDto, herrors.Herr) {
 	if validate := query.Validate(); herrors.HaveError(validate) {
 		hlog.CtxErrorf(ctx, "Query validation error: %s", validate)
 		return nil, validate
@@ -65,11 +96,12 @@ func (h *DepartmentQueryHandler) HandleGet(ctx context.Context, query *queries.G
 		return nil, herrors.QueryFail(fmt.Errorf("department not found: %s", query.ID))
 	}
 
-	return dept, nil
+	// 转换为DTO
+	return dto.ToDepartmentDto(dept), nil
 }
 
 // HandleGetTree 处理获取部门树查询
-func (h *DepartmentQueryHandler) HandleGetTree(ctx context.Context, query *queries.GetDepartmentTreeQuery) ([]*model.Department, herrors.Herr) {
+func (h *DepartmentQueryHandler) HandleGetTree(ctx context.Context, query *queries.GetDepartmentTreeQuery) ([]*dto.DepartmentTreeDto, herrors.Herr) {
 	if validate := query.Validate(); herrors.HaveError(validate) {
 		hlog.CtxErrorf(ctx, "Query validation error: %s", validate)
 		return nil, validate
@@ -82,11 +114,12 @@ func (h *DepartmentQueryHandler) HandleGetTree(ctx context.Context, query *queri
 		return nil, herrors.QueryFail(err)
 	}
 
-	return tree, nil
+	// 转换为DTO
+	return dto.ToDepartmentTreeDtoList(tree), nil
 }
 
 // HandleGetUserDepartments 处理获取用户部门查询
-func (h *DepartmentQueryHandler) HandleGetUserDepartments(ctx context.Context, query *queries.GetUserDepartmentsQuery) ([]*model.Department, herrors.Herr) {
+func (h *DepartmentQueryHandler) HandleGetUserDepartments(ctx context.Context, query *queries.GetUserDepartmentsQuery) ([]*dto.DepartmentDto, herrors.Herr) {
 	if validate := query.Validate(); herrors.HaveError(validate) {
 		hlog.CtxErrorf(ctx, "Query validation error: %s", validate)
 		return nil, validate
@@ -99,5 +132,50 @@ func (h *DepartmentQueryHandler) HandleGetUserDepartments(ctx context.Context, q
 		return nil, herrors.QueryFail(err)
 	}
 
-	return depts, nil
+	// 转换为DTO
+	return dto.ToDepartmentDtoList(depts), nil
+}
+
+// HandleGetUsers 处理获取部门用户
+func (h *DepartmentQueryHandler) HandleGetUsers(ctx context.Context, req *queries.GetDepartmentUsersQuery) ([]*dto.UserDto, herrors.Herr) {
+	// 1. 查询部门信息
+	dept, err := h.deptRepo.GetByID(ctx, req.DeptID)
+	if err != nil {
+		return nil, herrors.NewServerHError(err)
+	}
+
+	// 2. 查询部门用户
+	users, err := h.userRepo.FindByDepartment(ctx, req.DeptID, dept.AdminID)
+	if err != nil {
+		return nil, herrors.NewServerHError(err)
+	}
+
+	// 3. 转换为DTO
+	return dto.ToUserDtoList(users), nil
+}
+
+// HandleGetUnassignedUsers ��理获取未分配部门的用户查询
+func (h *DepartmentQueryHandler) HandleGetUnassignedUsers(ctx context.Context, req *queries.GetUnassignedUsersQuery) ([]*dto.UserDto, herrors.Herr) {
+	// 构建查询条件
+	qb := query.NewQueryBuilder()
+	if req.Username != "" {
+		qb.Where("username", query.Like, "%"+req.Username+"%")
+	}
+	if req.Name != "" {
+		qb.Where("name", query.Like, "%"+req.Name+"%")
+	}
+	// 只查询启用状态的用户
+	qb.Where("status", query.Eq, 1)
+	// 添加分页
+	qb.WithPage(&req.Page)
+	qb.OrderBy("created_at", true)
+
+	// 查询用户
+	users, err := h.userRepo.FindUnassignedUsers(ctx, qb)
+	if err != nil {
+		return nil, herrors.NewServerHError(err)
+	}
+
+	// 转换为DTO
+	return dto.ToUserDtoList(users), nil
 }

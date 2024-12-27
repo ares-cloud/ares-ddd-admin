@@ -9,9 +9,10 @@ import (
 // ListDepartmentsQuery 部门列表查询
 type ListDepartmentsQuery struct {
 	query.Page
-	Name   string `json:"name" validate:"omitempty,max=50" label:"部门名称"`    // 部门名称
-	Code   string `json:"code" validate:"omitempty,max=50" label:"部门编码"`    // 部门编码
-	Status *int8  `json:"status" validate:"omitempty,oneof=0 1" label:"状态"` // 部门状态
+	Name     string `json:"name" query:"name" validate:"omitempty,max=50" label:"部门名称"`      // 部门名称
+	Code     string `json:"code" query:"code" validate:"omitempty,max=50" label:"部门编码"`      // 部门编码
+	Status   *int8  `json:"status" query:"status" validate:"omitempty,oneof=0 1" label:"状态"` // 部门状态
+	ParentID string `json:"parentId" query:"parentId"`
 }
 
 func (q *ListDepartmentsQuery) Validate() herrors.Herr {
@@ -42,5 +43,25 @@ type GetUserDepartmentsQuery struct {
 }
 
 func (q *GetUserDepartmentsQuery) Validate() herrors.Herr {
+	return validator.Validate(q)
+}
+
+// GetDepartmentUsersQuery 获取部门用户查询
+type GetDepartmentUsersQuery struct {
+	DeptID string `json:"deptId" validate:"required" label:"部门ID"`
+}
+
+func (q *GetDepartmentUsersQuery) Validate() herrors.Herr {
+	return validator.Validate(q)
+}
+
+// GetUnassignedUsersQuery 获取未分配部门的用户查询
+type GetUnassignedUsersQuery struct {
+	query.Page
+	Username string `json:"username" validate:"omitempty,max=50" label:"用户名"`
+	Name     string `json:"name" validate:"omitempty,max=50" label:"姓名"`
+}
+
+func (q *GetUnassignedUsersQuery) Validate() herrors.Herr {
 	return validator.Validate(q)
 }
