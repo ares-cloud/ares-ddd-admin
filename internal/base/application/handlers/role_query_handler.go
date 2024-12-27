@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
@@ -68,13 +69,30 @@ func (h *RoleQueryHandler) HandleList(ctx context.Context, q *queries.ListRolesQ
 	}, nil
 }
 
-// HandleGet 获取单个角色
+// HandleGet 处理获取角色查询
 func (h *RoleQueryHandler) HandleGet(ctx context.Context, query queries.GetRoleQuery) (*dto.RoleDto, herrors.Herr) {
+	// 1. 查询角色基本信息
 	role, err := h.roleRepo.FindByID(ctx, query.Id)
 	if err != nil {
+		hlog.CtxErrorf(ctx, "failed to get role: %s", err)
 		return nil, herrors.QueryFail(err)
 	}
-	return dto.ToRoleDto(role), nil
+	if role == nil {
+		return nil, herrors.QueryFail(fmt.Errorf("role not found: %d", query.Id))
+	}
+
+	// 2. 查询角色权限
+	permIDs, err := h.roleRepo.GetPermissionsByRoleID(ctx, query.Id)
+	if err != nil {
+		hlog.CtxErrorf(ctx, "failed to get role permissions: %s", err)
+		return nil, herrors.QueryFail(err)
+	}
+
+	// 3. 转换为DTO并填充权限ID
+	roleDto := dto.ToRoleDto(role)
+	roleDto.PermIds = permIDs
+
+	return roleDto, nil
 }
 
 func (h *RoleQueryHandler) HandleGetUserRoles(ctx context.Context, query queries.GetUserRolesQuery) ([]*dto.RoleDto, herrors.Herr) {

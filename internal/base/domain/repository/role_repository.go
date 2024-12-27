@@ -26,4 +26,7 @@ type IRoleRepository interface {
 
 	// FindByType 根据角色类型查询角色列表
 	FindByType(ctx context.Context, roleType int8) ([]*model.Role, error)
+
+	// GetPermissionsByRoleID 获取角色的权限ID列表
+	GetPermissionsByRoleID(ctx context.Context, roleID int64) ([]int64, error)
 }

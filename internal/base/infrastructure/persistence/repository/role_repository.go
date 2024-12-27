@@ -234,3 +234,12 @@ func (r *roleRepository) FindByType(ctx context.Context, roleType int8) ([]*mode
 	// 转换为领域模型
 	return r.mapper.ToDomainList(roles), nil
 }
+
+// GetPermissionsByRoleID 获取角色的权限ID列表
+func (r *roleRepository) GetPermissionsByRoleID(ctx context.Context, roleID int64) ([]int64, error) {
+	var permIDs []int64
+	err := r.repo.Db(ctx).Model(&entity.RolePermissions{}).
+		Where("role_id = ?", roleID).
+		Pluck("permission_id", &permIDs).Error
+	return permIDs, err
+}
