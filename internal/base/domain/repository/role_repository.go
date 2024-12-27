@@ -23,4 +23,7 @@ type IRoleRepository interface {
 
 	// FindAllEnabled 获取所有启用状态的角色
 	FindAllEnabled(ctx context.Context) ([]*model.Role, error)
+
+	// FindByType 根据角色类型查询角色列表
+	FindByType(ctx context.Context, roleType int8) ([]*model.Role, error)
 }

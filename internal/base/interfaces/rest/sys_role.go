@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/commands"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
@@ -56,6 +57,7 @@ func (c *SysRoleController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 		}), casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.DeleteRole))
 		ur.GET("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.GetDetails))
 		ur.GET("/enabled", hserver.NewNotParHandlerFu(c.GetAllEnabled))
+		ur.GET("/data-permission", hserver.NewNotParHandlerFu(c.GetAllDataPermission))
 	}
 }
 
@@ -123,7 +125,7 @@ func (c *SysRoleController) UpdateRole(ctx context.Context, params *commands.Upd
 
 // DeleteRole 删除角色
 // @Summary 删除角色
-// @Description 删除指定ID��角色
+// @Description 删除指定ID的角色
 // @Tags 系统角色
 // @ID DeleteRole
 // @Accept json
@@ -180,6 +182,27 @@ func (c *SysRoleController) GetDetails(ctx context.Context, params *models.IntId
 func (c *SysRoleController) GetAllEnabled(ctx context.Context) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
 	data, err := c.queryHandel.HandleGetAllEnabled(ctx)
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
+}
+
+// GetAllDataPermission 获取所有数据权限角色
+// @Summary 获取所有数据权限角色
+// @Description 获取系统中所有数据权限类型的角色列表
+// @Tags 系统角色
+// @ID GetAllDataPermissionRoles
+// @Accept json
+// @Produce json
+// @Success 200 {object} base_info.Success{data=[]dto.RoleDto}
+// @Failure 400 {object} base_info.Swagger400Resp "参数错误"
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "内部错误"
+// @Router /v1/sys/role/data-permission [get]
+func (c *SysRoleController) GetAllDataPermission(ctx context.Context) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	data, err := c.queryHandel.HandleGetAllDataPermission(ctx)
 	if err != nil {
 		return result.WithError(err)
 	}

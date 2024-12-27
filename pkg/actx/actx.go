@@ -21,6 +21,7 @@ const (
 	IpAddress      = "ipAddress"
 	UserAgent      = "UserAgent"
 	IgnoreTenantId = "ignore_tenant_Id"
+	KeyDeptId      = "deptId"
 )
 
 func WithUserId(ctx context.Context, userId string) context.Context {
@@ -47,10 +48,17 @@ func WithToken(ctx context.Context, token string) context.Context {
 	return context.WithValue(ctx, KeyToken, token)
 }
 
-func GetToken(ctx context.Context) string {
+func GetDeptId(ctx context.Context) string {
 	return fmt.Sprintf("%v", ctx.Value(KeyToken))
 }
 
+func WithDeptId(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, KeyDeptId, token)
+}
+
+func GetToken(ctx context.Context) string {
+	return fmt.Sprintf("%v", ctx.Value(KeyDeptId))
+}
 func WithRole(ctx context.Context, role []string) context.Context {
 	return context.WithValue(ctx, KeyRole, strings.Join(role, ","))
 }

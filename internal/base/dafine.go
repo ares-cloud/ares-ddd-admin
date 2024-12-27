@@ -15,6 +15,7 @@ type BaseServer struct {
 	lls *baserest.LoginLogController
 	ols *baserest.OperationLogController
 	des *baserest.DepartmentController
+	dps *baserest.DataPermissionController
 }
 
 func NewBaseServer(
@@ -26,6 +27,7 @@ func NewBaseServer(
 	lls *baserest.LoginLogController,
 	ols *baserest.OperationLogController,
 	des *baserest.DepartmentController,
+	dps *baserest.DataPermissionController,
 ) *BaseServer {
 	return &BaseServer{
 		rc:  rc,
@@ -36,6 +38,7 @@ func NewBaseServer(
 		lls: lls,
 		ols: ols,
 		des: des,
+		dps: dps,
 	}
 }
 
@@ -48,4 +51,5 @@ func (s *BaseServer) Init(rg *route.RouterGroup, tk token.IToken) {
 	s.lls.RegisterRouter(rg, tk)
 	s.ols.RegisterRouter(rg, tk)
 	s.des.RegisterRouter(rg, tk)
+	s.dps.RegisterRouter(rg, tk)
 }

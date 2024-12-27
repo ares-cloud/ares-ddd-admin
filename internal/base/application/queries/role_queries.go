@@ -12,6 +12,7 @@ type ListRolesQuery struct {
 	query.Page
 	Code   string `json:"code" query:"code"`    // 编码
 	Name   string `json:"name" query:"name"`    // 名称
+	Type   int    `json:"type" query:"type"`    // 类型
 	Status int8   `json:"status" query:"email"` // 角色状态（禁用、启用）
 }
 

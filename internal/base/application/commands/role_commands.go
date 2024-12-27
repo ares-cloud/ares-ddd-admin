@@ -6,6 +6,7 @@ type CreateRoleCommand struct {
 	Localize    string  `json:"localize"`
 	Description string  `json:"description"`
 	Sequence    int     `json:"sequence"`
+	Type        int8    `json:"type"`
 	PermIDs     []int64 `json:"permIds"`
 }
 
@@ -14,6 +15,7 @@ type UpdateRoleCommand struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
 	Sequence    int     `json:"sequence"`
+	Type        int8    `json:"type"`
 	Localize    string  `json:"localize"`
 	Status      *int8   `json:"status"`
 	PermIDs     []int64 `json:"permIds"`

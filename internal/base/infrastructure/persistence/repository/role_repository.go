@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/mapper"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
@@ -20,6 +21,7 @@ type ISysRoleRepo interface {
 	GetByUserId(ctx context.Context, userId string) ([]*entity.SysUserRole, error)
 	FindByIds(ctx context.Context, ids []int64) ([]*entity.Role, error)
 	FindAllEnabled(ctx context.Context) ([]*entity.Role, error)
+	Find(ctx context.Context, qb *query.QueryBuilder) ([]*entity.Role, error)
 }
 
 type roleRepository struct {
@@ -118,7 +120,7 @@ func (r *roleRepository) FindByID(ctx context.Context, id int64) (*model.Role, e
 		permissions = r.permMapper.ToDomainList(perms, nil)
 	}
 
-	// 转换为领域模型
+	// 换为领域模型
 	return r.mapper.ToDomain(roleEntity, permissions), nil
 }
 
@@ -209,5 +211,26 @@ func (r *roleRepository) FindAllEnabled(ctx context.Context) ([]*model.Role, err
 		return nil, err
 	}
 
+	return r.mapper.ToDomainList(roles), nil
+}
+
+// FindByType 根据角色类型查询角色列表
+func (r *roleRepository) FindByType(ctx context.Context, roleType int8) ([]*model.Role, error) {
+	// 构建查询条件
+	qb := query.NewQueryBuilder()
+	qb.Where("type", query.Eq, roleType)
+	qb.Where("status", query.Eq, 1) // 只查询启用状态的角色
+	qb.OrderBy("sequence", false)   // 按sequence排序
+
+	// 查询角色
+	roles, err := r.repo.Find(ctx, qb)
+	if err != nil {
+		if database.IfErrorNotFound(err) {
+			return nil, database.ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	// 转换为领域模型
 	return r.mapper.ToDomainList(roles), nil
 }

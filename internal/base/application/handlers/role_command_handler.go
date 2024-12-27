@@ -40,7 +40,7 @@ func (h *RoleCommandHandler) HandleCreate(ctx context.Context, cmd *commands.Cre
 	role := model.NewRole(cmd.Code, cmd.Name, cmd.Sequence)
 	role.Description = cmd.Description
 	role.Localize = cmd.Localize
-
+	role.Type = model.RoleType(cmd.Type)
 	if len(cmd.PermIDs) > 0 {
 		perms := make([]*model.Permissions, 0, len(cmd.PermIDs))
 		for _, permID := range cmd.PermIDs {
@@ -95,6 +95,7 @@ func (h *RoleCommandHandler) HandleUpdate(ctx context.Context, cmd commands.Upda
 		role.AssignPermissions(nil)
 	}
 	role.UpdateLocalize(cmd.Localize)
+	role.Type = model.RoleType(cmd.Type)
 	err = h.roleRepo.Update(ctx, role)
 	if err != nil {
 		hlog.CtxErrorf(ctx, "failed to update role: %s", err)

@@ -4,17 +4,19 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 )
 
-// RoleDto 角色数据传输对象
+// RoleDto 角色DTO
 type RoleDto struct {
-	ID          int64   `json:"id"`          // ID
-	Code        string  `json:"code"`        // 编码
-	Name        string  `json:"name"`        // 名称
-	Description string  `json:"description"` // 描述
-	Status      int8    `json:"status"`      // 状态
-	Localize    string  `json:"localize"`
-	PermIds     []int64 `json:"permIds"`   // 权限ID列表
-	CreatedAt   int64   `json:"createdAt"` // 创建时间
-	UpdatedAt   int64   `json:"updatedAt"` // 更新时间
+	ID          int64  `json:"id"`          // 角色ID
+	Code        string `json:"code"`        // 角色代码
+	Name        string `json:"name"`        // 角色名称
+	Type        int8   `json:"type"`        // 角色类型(1:资源角色 2:数据权限角色)
+	Localize    string `json:"localize"`    // 国际化key
+	Description string `json:"description"` // 描述
+	Sequence    int    `json:"sequence"`    // 排序
+	Status      int8   `json:"status"`      // 状态
+	TenantID    string `json:"tenantId"`    // 租户ID
+	CreatedAt   int64  `json:"createdAt"`   // 创建时间
+	UpdatedAt   int64  `json:"updatedAt"`   // 更新时间
 }
 
 // ToRoleDto 领域模型转换为DTO
@@ -23,25 +25,22 @@ func ToRoleDto(r *model.Role) *RoleDto {
 		return nil
 	}
 
-	permIds := make([]int64, 0, len(r.Permissions))
-	for _, perm := range r.Permissions {
-		permIds = append(permIds, perm.ID)
-	}
-
 	return &RoleDto{
 		ID:          r.ID,
 		Code:        r.Code,
 		Name:        r.Name,
-		Description: r.Description,
-		Status:      r.Status,
+		Type:        int8(r.Type),
 		Localize:    r.Localize,
-		PermIds:     permIds,
+		Description: r.Description,
+		Sequence:    r.Sequence,
+		Status:      r.Status,
+		TenantID:    r.TenantID,
 		CreatedAt:   r.CreatedAt,
 		UpdatedAt:   r.UpdatedAt,
 	}
 }
 
-// ToRoleDtoList 领域���型列表转换为DTO列表
+// ToRoleDtoList 领域模型列表转换为DTO列表
 func ToRoleDtoList(roles []*model.Role) []*RoleDto {
 	if roles == nil {
 		return nil
