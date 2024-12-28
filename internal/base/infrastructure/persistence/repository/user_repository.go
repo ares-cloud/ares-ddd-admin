@@ -176,7 +176,7 @@ func (r *userRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*m
 	return users, nil
 }
 
-// Count 实现数查询
+// Count 实现查询
 func (r *userRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
 	return r.repo.Count(ctx, qb)
 }
@@ -190,25 +190,55 @@ func (r *userRepository) BelongsToDepartment(ctx context.Context, userID string,
 	return r.repo.BelongsToDepartment(ctx, userID, deptID)
 }
 
-// FindByDepartment 查询部门下的用户(排除管理员)
-func (r *userRepository) FindByDepartment(ctx context.Context, deptID string, excludeAdminID string) ([]*model.User, error) {
+// FindByDepartment 查询部门下的用户
+func (r *userRepository) FindByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) ([]*model.User, error) {
 	var users []*entity.SysUser
 
-	db := r.repo.Db(ctx).Table("sys_user").
-		Joins("INNER JOIN sys_user_dept ON sys_user.id = sys_user_dept.user_id").
-		Where("sys_user_dept.dept_id = ?", deptID).
-		Where("sys_user.status = ?", 1)
+	// 构建查询
+	db := r.repo.Db(ctx).Model(&entity.SysUser{}).
+		Joins("JOIN sys_user_dept ud ON ud.user_id = sys_user.id").
+		Where("ud.dept_id = ?", deptID)
 
+	// 排除管理员
 	if excludeAdminID != "" {
 		db = db.Where("sys_user.id != ?", excludeAdminID)
 	}
 
-	err := db.Find(&users).Error
-	if err != nil {
+	// 应用查询条件
+	if err := qb.Build(db); err != nil {
+		return nil, err
+	}
+
+	if err := db.Find(&users).Error; err != nil {
 		return nil, err
 	}
 
 	return r.mapper.ToDomainList(users), nil
+}
+
+// CountByDepartment 统计部门下的用户数量
+func (r *userRepository) CountByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) (int64, error) {
+	var count int64
+
+	// 构建查询
+	db := r.repo.Db(ctx).Model(&entity.SysUser{}).
+		Joins("JOIN sys_user_dept ud ON ud.user_id = sys_user.id").
+		Where("ud.dept_id = ?", deptID)
+
+	// 排除管理员
+	if excludeAdminID != "" {
+		db = db.Where("sys_user.id != ?", excludeAdminID)
+	}
+
+	if err := qb.Build(db); err != nil {
+		return 0, err
+	}
+
+	if err := db.Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 // FindUnassignedUsers 查询未分配部门的用户
@@ -257,4 +287,28 @@ func (r *userRepository) AssignUsers(ctx context.Context, deptID string, userIDs
 		}
 		return r.repo.Db(ctx).Create(&userDepts).Error
 	})
+}
+
+// CountUnassignedUsers 统计未分配部门的用户数量
+func (r *userRepository) CountUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
+	var count int64
+
+	// 构建子查询
+	subQuery := r.repo.Db(ctx).Model(&entity.UserDepartment{}).
+		Select("user_id").
+		Group("user_id")
+
+	// 主查询
+	db := r.repo.Db(ctx).Model(&entity.SysUser{}).
+		Where("id NOT IN (?)", subQuery)
+
+	if err := qb.Build(db); err != nil {
+		return 0, err
+	}
+
+	if err := db.Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

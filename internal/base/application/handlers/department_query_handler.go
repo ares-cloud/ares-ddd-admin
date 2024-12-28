@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
@@ -137,25 +138,45 @@ func (h *DepartmentQueryHandler) HandleGetUserDepartments(ctx context.Context, q
 }
 
 // HandleGetUsers 处理获取部门用户
-func (h *DepartmentQueryHandler) HandleGetUsers(ctx context.Context, req *queries.GetDepartmentUsersQuery) ([]*dto.UserDto, herrors.Herr) {
+func (h *DepartmentQueryHandler) HandleGetUsers(ctx context.Context, req *queries.GetDepartmentUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
 	// 1. 查询部门信息
 	dept, err := h.deptRepo.GetByID(ctx, req.DeptID)
 	if err != nil {
 		return nil, herrors.NewServerHError(err)
 	}
 
-	// 2. 查询部门用户
-	users, err := h.userRepo.FindByDepartment(ctx, req.DeptID, dept.AdminID)
+	// 2. 构建查询条件
+	qb := query.NewQueryBuilder()
+	if req.Username != "" {
+		qb.Where("username", query.Like, "%"+req.Username+"%")
+	}
+	if req.Name != "" {
+		qb.Where("name", query.Like, "%"+req.Name+"%")
+	}
+	qb.WithPage(&req.Page)
+	qb.OrderBy("created_at", true)
+
+	// 3. 查询总数
+	total, err := h.userRepo.CountByDepartment(ctx, req.DeptID, dept.AdminID, qb)
 	if err != nil {
 		return nil, herrors.NewServerHError(err)
 	}
 
-	// 3. 转换为DTO
-	return dto.ToUserDtoList(users), nil
+	// 4. 查询用户列表
+	users, err := h.userRepo.FindByDepartment(ctx, req.DeptID, dept.AdminID, qb)
+	if err != nil {
+		return nil, herrors.NewServerHError(err)
+	}
+
+	// 5. 转换为DTO并返回分页结果
+	return &models.PageRes[dto.UserDto]{
+		List:  dto.ToUserDtoList(users),
+		Total: total,
+	}, nil
 }
 
-// HandleGetUnassignedUsers ��理获取未分配部门的用户查询
-func (h *DepartmentQueryHandler) HandleGetUnassignedUsers(ctx context.Context, req *queries.GetUnassignedUsersQuery) ([]*dto.UserDto, herrors.Herr) {
+// HandleGetUnassignedUsers 处理获取未分配部门的用户查询
+func (h *DepartmentQueryHandler) HandleGetUnassignedUsers(ctx context.Context, req *queries.GetUnassignedUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
 	// 构建查询条件
 	qb := query.NewQueryBuilder()
 	if req.Username != "" {
@@ -170,12 +191,21 @@ func (h *DepartmentQueryHandler) HandleGetUnassignedUsers(ctx context.Context, r
 	qb.WithPage(&req.Page)
 	qb.OrderBy("created_at", true)
 
-	// 查询用户
+	// 查询总数
+	total, err := h.userRepo.CountUnassignedUsers(ctx, qb)
+	if err != nil {
+		return nil, herrors.NewServerHError(err)
+	}
+
+	// 查询用户列表
 	users, err := h.userRepo.FindUnassignedUsers(ctx, qb)
 	if err != nil {
 		return nil, herrors.NewServerHError(err)
 	}
 
-	// 转换为DTO
-	return dto.ToUserDtoList(users), nil
+	// 转换为DTO并返回分页结果
+	return &models.PageRes[dto.UserDto]{
+		List:  dto.ToUserDtoList(users),
+		Total: total,
+	}, nil
 }

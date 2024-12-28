@@ -48,7 +48,7 @@ type QueryBuilder struct {
 	page       *Page
 }
 
-// NewQueryBuilder 创建查询��建器
+// NewQueryBuilder 创建查询构建器
 func NewQueryBuilder() *QueryBuilder {
 	return &QueryBuilder{
 		conditions: make([]Condition, 0),
@@ -166,4 +166,9 @@ func (qb *QueryBuilder) Build(db *gorm.DB) error {
 	}
 
 	return nil
+}
+
+// GetConditions 获取查询条件
+func (qb *QueryBuilder) GetConditions() []Condition {
+	return qb.conditions
 }

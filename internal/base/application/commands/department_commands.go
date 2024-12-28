@@ -82,8 +82,8 @@ func (c *AssignUsersToDepartmentCommand) Validate() herrors.Herr {
 
 // RemoveUsersFromDepartmentCommand 从部门移除用户命令
 type RemoveUsersFromDepartmentCommand struct {
-	DeptID  string   `json:"deptId" validate:"required" label:"部门ID"`
-	UserIDs []string `json:"userIds" validate:"required,min=1" label:"用户ID列表"`
+	DeptID  string   `json:"deptId" query:"deptId" validate:"required" label:"部门ID"`
+	UserIDs []string `json:"userIds" query:"userIds" validate:"required,min=1" label:"用户ID列表"`
 }
 
 func (c *RemoveUsersFromDepartmentCommand) Validate() herrors.Herr {

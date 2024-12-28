@@ -21,7 +21,7 @@ func (q *ListDepartmentsQuery) Validate() herrors.Herr {
 
 // GetDepartmentQuery 获取部门查询
 type GetDepartmentQuery struct {
-	ID string `json:"id" validate:"required" label:"部门ID"` // 部门ID
+	ID string `json:"id" query:"id" validate:"required" label:"部门ID"` // 部门ID
 }
 
 func (q *GetDepartmentQuery) Validate() herrors.Herr {
@@ -30,7 +30,7 @@ func (q *GetDepartmentQuery) Validate() herrors.Herr {
 
 // GetDepartmentTreeQuery 获取部门树查询
 type GetDepartmentTreeQuery struct {
-	ParentID string `json:"parentId" validate:"omitempty" label:"父部门ID"` // 父部门ID,为空则查���全部
+	ParentID string `json:"parentId" query:"parentId" validate:"omitempty" label:"父部门ID"` // 父部门ID,为空则查询全部
 }
 
 func (q *GetDepartmentTreeQuery) Validate() herrors.Herr {
@@ -48,7 +48,10 @@ func (q *GetUserDepartmentsQuery) Validate() herrors.Herr {
 
 // GetDepartmentUsersQuery 获取部门用户查询
 type GetDepartmentUsersQuery struct {
-	DeptID string `json:"deptId" validate:"required" label:"部门ID"`
+	query.Page
+	DeptID   string `json:"deptId" path:"id" validate:"required" label:"部门ID"`
+	Username string `json:"username" query:"username" validate:"omitempty,max=50" label:"用户名"`
+	Name     string `json:"name" query:"name" validate:"omitempty,max=50" label:"姓名"`
 }
 
 func (q *GetDepartmentUsersQuery) Validate() herrors.Herr {

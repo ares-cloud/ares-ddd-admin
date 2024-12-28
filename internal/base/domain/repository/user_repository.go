@@ -23,8 +23,14 @@ type IUserRepository interface {
 	BelongsToDepartment(ctx context.Context, userID string, deptID string) bool
 
 	// FindByDepartment 查询部门下的用户(排除管理员)
-	FindByDepartment(ctx context.Context, deptID string, excludeAdminID string) ([]*model.User, error)
+	FindByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) ([]*model.User, error)
 
 	// FindUnassignedUsers 查询未分配部门的用户
 	FindUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) ([]*model.User, error)
+
+	// CountUnassignedUsers 统计未分配部门的用户数量
+	CountUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) (int64, error)
+
+	// CountByDepartment 统计部门下的用户数量
+	CountByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) (int64, error)
 }
