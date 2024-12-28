@@ -89,3 +89,15 @@ type RemoveUsersFromDepartmentCommand struct {
 func (c *RemoveUsersFromDepartmentCommand) Validate() herrors.Herr {
 	return validator.Validate(c)
 }
+
+// TransferUserCommand 人员部门调动命令
+type TransferUserCommand struct {
+	UserID      string `json:"userId" validate:"required" label:"用户ID"`
+	FromDeptID  string `json:"fromDeptId" validate:"required" label:"原部门ID"`
+	ToDeptID    string `json:"toDeptId" validate:"required" label:"目标部门ID"`
+	Description string `json:"description" validate:"omitempty,max=200" label:"调动说明"`
+}
+
+func (c *TransferUserCommand) Validate() herrors.Herr {
+	return validator.Validate(c)
+}

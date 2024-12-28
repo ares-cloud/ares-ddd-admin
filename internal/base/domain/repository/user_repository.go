@@ -33,4 +33,7 @@ type IUserRepository interface {
 
 	// CountByDepartment 统计部门下的用户数量
 	CountByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) (int64, error)
+
+	// TransferUser 调动用户部门
+	TransferUser(ctx context.Context, userID string, fromDeptID string, toDeptID string) error
 }

@@ -176,7 +176,7 @@ func (r *userRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*m
 	return users, nil
 }
 
-// Count 实现查询
+// Count 实现��询
 func (r *userRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
 	return r.repo.Count(ctx, qb)
 }
@@ -311,4 +311,23 @@ func (r *userRepository) CountUnassignedUsers(ctx context.Context, qb *query.Que
 	}
 
 	return count, nil
+}
+
+// TransferUser 调动用户部门
+func (r *userRepository) TransferUser(ctx context.Context, userID string, fromDeptID string, toDeptID string) error {
+	return r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
+		// 1. 删除原部门关系
+		if err := r.repo.Db(ctx).Where("user_id = ? AND dept_id = ?", userID, fromDeptID).
+			Delete(&entity.UserDepartment{}).Error; err != nil {
+			return err
+		}
+
+		// 2. 创建新部门关系
+		userDept := &entity.UserDepartment{
+			ID:     r.repo.GenStringId(),
+			UserID: userID,
+			DeptID: toDeptID,
+		}
+		return r.repo.Db(ctx).Create(userDept).Error
+	})
 }

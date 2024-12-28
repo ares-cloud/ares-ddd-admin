@@ -79,6 +79,11 @@ func (c *DepartmentController) RegisterRouter(g *route.RouterGroup, t token.ITok
 		}), hserver.NewHandlerFu[commands.RemoveUsersFromDepartmentCommand](c.RemoveUsers))
 		dept.GET("/unassigned-users", casbin.Handler(c.ef),
 			hserver.NewHandlerFu[queries.GetUnassignedUsersQuery](c.GetUnassignedUsers))
+		dept.POST("/transfer", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.moduleName,
+			Action:      "人员调动",
+		}), hserver.NewHandlerFu[commands.TransferUserCommand](c.TransferUser))
 	}
 }
 
@@ -339,4 +344,24 @@ func (c *DepartmentController) GetUnassignedUsers(ctx context.Context, req *quer
 		return result.WithError(err)
 	}
 	return result.WithData(data)
+}
+
+// TransferUser 人员部门调动
+// @Summary 人员部门调动
+// @Description 将用户从一个部门调动到另一个部门
+// @Tags 部门管理
+// @Accept json
+// @Produce json
+// @Param req body commands.TransferUserCommand true "调动参数"
+// @Success 200 {object} base_info.Success
+// @Failure 400 {object} base_info.Swagger400Resp "参数错误"
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "内部错误"
+// @Router /v1/sys/dept/transfer [post]
+func (c *DepartmentController) TransferUser(ctx context.Context, req *commands.TransferUserCommand) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	if err := c.cmdHandler.HandleTransferUser(ctx, req); err != nil {
+		return result.WithError(err)
+	}
+	return result
 }
