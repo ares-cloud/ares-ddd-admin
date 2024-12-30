@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -21,33 +22,35 @@ func (d *CacheDecorator) Cached(ctx context.Context, key string, result interfac
 	if key == "" {
 		return ErrInvalidKey
 	}
-
-	// 尝试从缓存获取
-	data, err := d.cache.Get(ctx, key)
-	if err == nil {
-		// 缓存命中,反序列化
-		if err := json.Unmarshal([]byte(data), result); err != nil {
-			return fmt.Errorf("unmarshal cache data failed: %w", err)
-		}
-		return nil
+	if result == nil {
+		return ErrInvalidResult
 	}
 
-	// 执行原始方法
-	if err := fn(); err != nil {
-		if err == ErrNotFound {
-			// 如果是未找到记录,设置空值缓存,避免缓存穿透
-			d.cache.Set(ctx, key, "null", DefaultExpiration)
-			return err
+	fetch, err := d.cache.Fetch(ctx, key, DefaultExpiration, func() (string, error) {
+		// 执行原始方法
+		if err := fn(); err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return "", nil
+			}
+			return "", err
 		}
+		marshal, err := json.Marshal(result)
+		if err != nil {
+			return "", fmt.Errorf("marshal result failed: %w", err)
+		}
+		return string(marshal), nil
+	})
+	if err != nil {
 		return err
 	}
-
-	// 写入缓存
-	marshal, err := json.Marshal(result)
-	if err != nil {
-		return fmt.Errorf("marshal result failed: %w", err)
+	if fetch != "" {
+		if err = json.Unmarshal([]byte(fetch), result); err != nil {
+			// 如果反序列化失败，可能是类型不匹配，清除缓存
+			d.InvalidateCache(ctx, key)
+			return fmt.Errorf("unmarshal result failed: %w", err)
+		}
 	}
-	return d.cache.Set(ctx, key, string(marshal), DefaultExpiration)
+	return nil
 }
 
 // InvalidateCache 使缓存失效

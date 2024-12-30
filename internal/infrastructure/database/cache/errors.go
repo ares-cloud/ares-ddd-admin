@@ -11,4 +11,6 @@ var (
 	ErrInvalidValue = errors.New("cache: invalid value")
 	// ErrCacheMiss 缓存未命中
 	ErrCacheMiss = errors.New("cache: cache miss")
+	// ErrInvalidResult 结果无效
+	ErrInvalidResult = errors.New("cache: invalid result")
 )

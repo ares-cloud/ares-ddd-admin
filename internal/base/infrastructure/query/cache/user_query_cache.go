@@ -35,8 +35,12 @@ func (c *UserQueryCache) GetUser(ctx context.Context, id string) (*model.User, e
 	err := c.decorator.Cached(ctx, key, &user, func() error {
 		var err error
 		user, err = c.next.GetUser(ctx, id)
-		return err
+		if err != nil {
+			return err
+		}
+		return nil
 	})
+
 	return user, err
 }
 
@@ -56,11 +60,21 @@ func (c *UserQueryCache) GetUserPermissions(ctx context.Context, userID string) 
 func (c *UserQueryCache) GetUserRoles(ctx context.Context, userID string) ([]*model.Role, error) {
 	key := keys.UserRoleKey(userID)
 	var roles []*model.Role
+
+	// 先清除可能存在的错误类型缓存
+	if err := c.decorator.InvalidateCache(ctx, key); err != nil {
+		return nil, fmt.Errorf("清除旧缓存失败: %w", err)
+	}
+
 	err := c.decorator.Cached(ctx, key, &roles, func() error {
 		var err error
 		roles, err = c.next.GetUserRoles(ctx, userID)
-		return err
+		if err != nil {
+			return err
+		}
+		return nil
 	})
+
 	return roles, err
 }
 func (c *UserQueryCache) GetUserRolesCode(ctx context.Context, userID string) ([]string, error) {
@@ -91,12 +105,6 @@ func (c *UserQueryCache) GetUserMenus(ctx context.Context, userID string) ([]*mo
 func (c *UserQueryCache) GetUserTreeMenus(ctx context.Context, userID string) ([]*model.Permissions, error) {
 	key := keys.UserMenuTreeKey(userID)
 	var menus []*model.Permissions
-
-	// 1. 先尝试删除可能存在的错误类型的key
-	if err := c.decorator.InvalidateCache(ctx, key); err != nil {
-		return nil, fmt.Errorf("清除旧缓存失败: %w", err)
-	}
-
 	// 2. 使用新的缓存
 	err := c.decorator.Cached(ctx, key, &menus, func() error {
 		var err error

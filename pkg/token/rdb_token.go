@@ -33,7 +33,7 @@ func (r *RdbToken) GenerateToken(userID string, data interface{}) (*Token, error
 		return nil, err
 	}
 	ctx := context.Background()
-	userKey := "user:" + userID
+	userKey := "user:auth:" + userID
 	if err := r.rdb.Del(ctx, userKey).Err(); err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (r *RdbToken) DelToken(token string) error {
 	}
 
 	// 3. 获取用户的所有token
-	userKey := "user:" + userID
+	userKey := "user:auth:" + userID
 	tokenHashes, err := r.rdb.SMembers(ctx, userKey).Result()
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (r *RdbToken) DelToken(token string) error {
 
 func (r *RdbToken) DelUserToken(userID string) error {
 	ctx := context.Background()
-	userKey := "user:" + userID
+	userKey := "user:auth:" + userID
 
 	// 1. 获取用户的所有token hash
 	tokenHashes, err := r.rdb.SMembers(ctx, userKey).Result()

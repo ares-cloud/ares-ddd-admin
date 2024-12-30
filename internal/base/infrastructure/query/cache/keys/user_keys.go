@@ -4,7 +4,7 @@ import "fmt"
 
 const (
 	// 缓存键前缀
-	userKeyPrefix = "user:"
+	userKeyPrefix = "sys:user:"
 	roleKeyPrefix = "role:"
 	permKeyPrefix = "perm:"
 	menuKeyPrefix = "menu:"
