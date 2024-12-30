@@ -391,22 +391,3 @@ func (r *userRepository) AssignRoles(ctx context.Context, userID string, roleIDs
 		return nil
 	})
 }
-
-// FindByRoleID 根据角色ID查找用户
-func (r *userRepository) FindByRoleID(ctx context.Context, roleID int64) ([]*model.User, error) {
-	var users []*entity.SysUser
-
-	err := r.repo.Db(ctx).Model(&entity.SysUser{}).
-		Joins("JOIN sys_user_role ON sys_user_role.user_id = sys_user.id").
-		Where("sys_user_role.role_id = ?", roleID).
-		Find(&users).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return r.mapper.ToDomainList(users), nil
-}
-
-func (r *userRepository) WarmupUserCache(ctx context.Context, userID string) error {
-	return nil
-}

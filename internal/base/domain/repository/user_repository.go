@@ -20,4 +20,9 @@ type IUserRepository interface {
 
 	// 角色分配
 	AssignRoles(ctx context.Context, userID string, roleIDs []int64) error
+
+	// 获取用户权限和角色
+	GetUserPermissionCodes(ctx context.Context, userID string) ([]string, error)
+	GetUserRoles(ctx context.Context, userID string) ([]*model.Role, error)
+	GetUserMenuTree(ctx context.Context, userID string) ([]*model.Permissions, error)
 }
