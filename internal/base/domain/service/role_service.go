@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
@@ -59,9 +59,9 @@ func (s *RoleService) GetRolePermissionCodes(ctx context.Context, roleID int64) 
 // GetAllDataPermissionRoles 获取所有数据权限角色
 func (s *RoleService) GetAllDataPermissionRoles(ctx context.Context) ([]*model.Role, error) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder().
-		Where("type", query.Eq, int8(entity.RoleTypeData)).
-		Where("status", query.Eq, 1) // 只查询启用状态的角色
+	qb := db_query.NewQueryBuilder().
+		Where("type", db_query.Eq, int8(entity.RoleTypeData)).
+		Where("status", db_query.Eq, 1) // 只查询启用状态的角色
 
 	// 查询数据权限角色
 	roles, err := s.roleRepo.Find(ctx, qb)

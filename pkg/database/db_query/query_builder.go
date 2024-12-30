@@ -1,4 +1,4 @@
-package query
+package db_query
 
 import (
 	"fmt"

@@ -9,7 +9,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/application/queries"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/shared/dto"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
@@ -26,12 +26,12 @@ func NewStorageQueryHandler(repo repository.IStorageRepository) *StorageQueryHan
 // HandleListFolders 处理查询文件夹列表
 func (h *StorageQueryHandler) HandleListFolders(ctx context.Context, q *queries.ListFoldersQuery) (*models.PageRes[dto.FolderDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if q.Name != "" {
-		qb.Where("name", query.Like, "%"+q.Name+"%")
+		qb.Where("name", db_query.Like, "%"+q.Name+"%")
 	}
 	if q.TenantID != "" {
-		qb.Where("tenant_id", query.Eq, q.TenantID)
+		qb.Where("tenant_id", db_query.Eq, q.TenantID)
 	}
 	qb.WithPage(&q.Page)
 
@@ -53,18 +53,18 @@ func (h *StorageQueryHandler) HandleListFolders(ctx context.Context, q *queries.
 // HandleListFiles 处理查询文件列表
 func (h *StorageQueryHandler) HandleListFiles(ctx context.Context, q *queries.ListFilesQuery) (*models.PageRes[dto.FileDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if q.Name != "" {
-		qb.Where("name", query.Like, "%"+q.Name+"%")
+		qb.Where("name", db_query.Like, "%"+q.Name+"%")
 	}
 	if q.Type != "" {
-		qb.Where("type", query.Eq, q.Type)
+		qb.Where("type", db_query.Eq, q.Type)
 	}
 	if q.StorageType != "" {
-		qb.Where("storage_type", query.Eq, q.StorageType)
+		qb.Where("storage_type", db_query.Eq, q.StorageType)
 	}
 	if q.TenantID != "" {
-		qb.Where("tenant_id", query.Eq, q.TenantID)
+		qb.Where("tenant_id", db_query.Eq, q.TenantID)
 	}
 	qb.WithPage(&q.Page)
 
@@ -86,7 +86,7 @@ func (h *StorageQueryHandler) HandleListFiles(ctx context.Context, q *queries.Li
 // HandleGetFolderTree 处理获取文件夹树形结构
 func (h *StorageQueryHandler) HandleGetFolderTree(ctx context.Context) ([]*dto.FolderTreeDto, herrors.Herr) {
 	// 1. 获取所有文件夹
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	folders, _, err := h.repo.ListFolders(ctx, "0", qb)
 	if err != nil {
 		return nil, herrors.NewErr(err)
@@ -116,18 +116,18 @@ func (h *StorageQueryHandler) HandleGetFolderTree(ctx context.Context) ([]*dto.F
 // HandleListRecycleFiles 处理查询回收站文件列表
 func (h *StorageQueryHandler) HandleListRecycleFiles(ctx context.Context, q *queries.ListRecycleFilesQuery) (*models.PageRes[dto.FileDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if q.Name != "" {
-		qb.Where("name", query.Like, "%"+q.Name+"%")
+		qb.Where("name", db_query.Like, "%"+q.Name+"%")
 	}
 	if q.Type != "" {
-		qb.Where("type", query.Eq, q.Type)
+		qb.Where("type", db_query.Eq, q.Type)
 	}
 	if q.StorageType != "" {
-		qb.Where("storage_type", query.Eq, q.StorageType)
+		qb.Where("storage_type", db_query.Eq, q.StorageType)
 	}
 	// 只查询已删除的文件
-	qb.Where("is_deleted", query.Eq, true)
+	qb.Where("is_deleted", db_query.Eq, true)
 	qb.WithPage(&q.Page)
 
 	// 查询数据
@@ -149,8 +149,8 @@ func (h *StorageQueryHandler) HandleListRecycleFiles(ctx context.Context, q *que
 func (h *StorageQueryHandler) HandleGetSubFolders(ctx context.Context, parentID string) ([]*dto.FolderDto, herrors.Herr) {
 	// 调用服务获取文件夹列表
 	// 构建查询条件
-	qb := query.NewQueryBuilder().
-		Where("parent_id", query.Eq, parentID)
+	qb := db_query.NewQueryBuilder().
+		Where("parent_id", db_query.Eq, parentID)
 	// 查询文件夹列表
 	folders, _, err := h.repo.ListFolders(ctx, parentID, qb)
 	if err != nil {
@@ -164,8 +164,8 @@ func (h *StorageQueryHandler) HandleGetSubFolders(ctx context.Context, parentID 
 func (h *StorageQueryHandler) HandleGetRootFolders(ctx context.Context) ([]*dto.FolderDto, herrors.Herr) {
 	// 调用服务获取文件夹列表
 	// 构建查询条件(parent_id为0表示一级文件夹)
-	qb := query.NewQueryBuilder().
-		Where("parent_id", query.Eq, "0")
+	qb := db_query.NewQueryBuilder().
+		Where("parent_id", db_query.Eq, "0")
 	// 查询文件夹列表
 	folders, _, err := h.repo.ListFolders(ctx, "0", qb)
 	if err != nil {

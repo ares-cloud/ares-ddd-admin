@@ -2,163 +2,232 @@ package service
 
 import (
 	"context"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/errors"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/events"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
-	pkgEvent "github.com/ares-cloud/ares-ddd-admin/pkg/events"
+	pkgEvents "github.com/ares-cloud/ares-ddd-admin/pkg/events"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
-type TenantService struct {
+type TenantCommandService struct {
 	tenantRepo repository.ITenantRepository
-	eventBus   *pkgEvent.EventBus
+	publisher  *pkgEvents.EventBus
 }
 
-func NewTenantService(
+func NewTenantCommandService(
 	tenantRepo repository.ITenantRepository,
-	eventBus *pkgEvent.EventBus,
-) *TenantService {
-	return &TenantService{
+	publisher *pkgEvents.EventBus,
+) *TenantCommandService {
+	return &TenantCommandService{
 		tenantRepo: tenantRepo,
-		eventBus:   eventBus,
+		publisher:  publisher,
 	}
 }
 
 // CreateTenant 创建租户
-func (s *TenantService) CreateTenant(ctx context.Context, tenant *model.Tenant) error {
-	// 检查租户编码是否存在
+func (s *TenantCommandService) CreateTenant(ctx context.Context, tenant *model.Tenant) herrors.Herr {
+	// 验证租户模型
+	if err := tenant.Validate(); err != nil {
+		return err
+	}
+
+	// 检查租户编码是否已存在
 	exists, err := s.tenantRepo.ExistsByCode(ctx, tenant.Code)
 	if err != nil {
-		return err
+		return herrors.NewErr(err)
 	}
 	if exists {
-		return errors.ErrTenantCodeExists
+		return errors.TenantCodeExists(tenant.Code)
 	}
 
-	// 检查域名是否存在
-	if tenant.Domain != "" {
-		//exists, err = s.tenantRepo.ExistsByDomain(ctx, tenant.Domain)
-		//if err != nil {
-		//	return err
-		//}
-		//if exists {
-		//	return errors.ErrTenantDomainExists
-		//}
-	}
-
-	// 创建租户
 	if err := s.tenantRepo.Create(ctx, tenant); err != nil {
-		return err
+		return herrors.NewErr(err)
 	}
 
-	//// 发布租户创建事件
-	//event := &events.TenantEvent{
-	//	BaseEvent: events.BaseEvent{TenantID: tenant.ID},
-	//	Action:    events.TenantCreated,
-	//}
-	//return s.eventBus.Publish(ctx, event)
+	// 发布租户创建事件
+	event := events.NewTenantCreatedEvent(tenant.ID)
+	err = s.publisher.Publish(ctx, event)
+	if err != nil {
+		return herrors.NewErr(err)
+	}
 	return nil
 }
 
 // UpdateTenant 更新租户
-func (s *TenantService) UpdateTenant(ctx context.Context, tenant *model.Tenant) error {
+func (s *TenantCommandService) UpdateTenant(ctx context.Context, tenant *model.Tenant) herrors.Herr {
 	// 检查租户是否存在
 	old, err := s.tenantRepo.FindByID(ctx, tenant.ID)
 	if err != nil {
-		return err
+		return herrors.NewErr(err)
 	}
 	if old == nil {
-		return errors.ErrTenantNotFound
+		return errors.TenantNotFound(tenant.ID)
 	}
 
-	// 检查域名是否被其他租户使用
-	if tenant.Domain != old.Domain {
-		//exists, err := s.tenantRepo.ExistsByDomain(ctx, tenant.Domain)
-		//if err != nil {
-		//	return err
-		//}
-		//if exists {
-		//	return errors.ErrTenantDomainExists
-		//}
+	// 检查租户状态
+	if locked, reason := old.IsLocked(); locked {
+		return errors.TenantDisabled(reason)
 	}
 
-	// 更新租户
-	if err := s.tenantRepo.Update(ctx, tenant); err != nil {
+	// 验证租户模型
+	if err := tenant.Validate(); err != nil {
 		return err
+	}
+
+	if err := s.tenantRepo.Update(ctx, tenant); err != nil {
+		return herrors.NewErr(err)
 	}
 
 	// 发布租户更新事件
-	//event := &events.TenantEvent{
-	//	BaseEvent: events.BaseEvent{TenantID: tenant.ID},
-	//	Action:    events.TenantUpdated,
-	//}
-	//return s.eventBus.Publish(ctx, event)
+	event := events.NewTenantUpdatedEvent(tenant.ID)
+	err = s.publisher.Publish(ctx, event)
+	if err != nil {
+		return herrors.NewErr(err)
+	}
 	return nil
 }
 
 // DeleteTenant 删除租户
-func (s *TenantService) DeleteTenant(ctx context.Context, id string) error {
+func (s *TenantCommandService) DeleteTenant(ctx context.Context, id string) herrors.Herr {
 	// 检查租户是否存在
 	tenant, err := s.tenantRepo.FindByID(ctx, id)
 	if err != nil {
-		return err
+		return herrors.NewErr(err)
 	}
 	if tenant == nil {
-		return errors.ErrTenantNotFound
+		return errors.TenantNotFound(id)
 	}
 
-	// 删除租户
+	// 检查租户状态
+	if locked, reason := tenant.IsLocked(); locked {
+		return errors.TenantDisabled(reason)
+	}
+
+	// 检查是否为默认租户
+	if tenant.IsDefaultTenant() {
+		return errors.TenantIsDefault()
+	}
+
 	if err := s.tenantRepo.Delete(ctx, id); err != nil {
-		return err
+		return herrors.NewErr(err)
 	}
 
 	// 发布租户删除事件
-	//event := &events.TenantEvent{
-	//	BaseEvent: events.BaseEvent{TenantID: id},
-	//	Action:    events.TenantDeleted,
-	//}
-	//return s.eventBus.Publish(ctx, event)
+	event := events.NewTenantDeletedEvent(id)
+	err = s.publisher.Publish(ctx, event)
+	if err != nil {
+		return herrors.NewErr(err)
+	}
 	return nil
 }
 
-// UpdateTenantStatus 更新租户状态
-func (s *TenantService) UpdateTenantStatus(ctx context.Context, id string, status int8) error {
-	//if err := s.tenantRepo.UpdateStatus(ctx, id, status); err != nil {
-	//	return err
-	//}
+// AssignPermissions 分配权限
+func (s *TenantCommandService) AssignPermissions(ctx context.Context, tenantID string, permissionIDs []int64) herrors.Herr {
+	// 检查租户是否存在
+	tenant, err := s.tenantRepo.FindByID(ctx, tenantID)
+	if err != nil {
+		return herrors.NewErr(err)
+	}
+	if tenant == nil {
+		return errors.TenantNotFound(tenantID)
+	}
 
-	//// 发布租户状态更新事件
-	//event := &events.TenantEvent{
-	//	BaseEvent: events.BaseEvent{TenantID: id},
-	//	Action:    events.TenantStatusChanged,
-	//}
-	//return s.eventBus.Publish(ctx, event)
+	// 检查租户状态
+	if locked, reason := tenant.IsLocked(); locked {
+		return errors.TenantDisabled(reason)
+	}
+
+	if err := s.tenantRepo.AssignPermissions(ctx, tenantID, permissionIDs); err != nil {
+		return herrors.NewErr(err)
+	}
+
+	// 发布权限变更事件
+	err = s.publisher.Publish(ctx, events.NewTenantPermissionEvent(tenantID, permissionIDs))
+	if err != nil {
+		return herrors.NewErr(err)
+	}
 	return nil
 }
 
 // GetTenant 获取租户信息
-func (s *TenantService) GetTenant(ctx context.Context, id string) (*model.Tenant, error) {
-	return s.tenantRepo.FindByID(ctx, id)
+func (s *TenantCommandService) GetTenant(ctx context.Context, id string) (*model.Tenant, herrors.Herr) {
+	tenant, err := s.tenantRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, herrors.NewErr(err)
+	}
+	if tenant == nil {
+		return nil, errors.TenantNotFound(id)
+	}
+	return tenant, nil
 }
 
-// GetAllEnabledTenants 获取所有启用的租户
-func (s *TenantService) GetAllEnabledTenants(ctx context.Context) ([]*model.Tenant, error) {
-	//return s.tenantRepo.GetAllEnabled(ctx)
-	return nil, nil
+// ExistsByCode 检查租户编码是否存在
+func (s *TenantCommandService) ExistsByCode(ctx context.Context, code string) (bool, herrors.Herr) {
+	exists, err := s.tenantRepo.ExistsByCode(ctx, code)
+	if err != nil {
+		return false, herrors.NewErr(err)
+	}
+	return exists, nil
 }
 
-// GetDefaultTenant 获取默认租户
-func (s *TenantService) GetDefaultTenant(ctx context.Context) (*model.Tenant, error) {
-	//return s.tenantRepo.GetDefaultTenant(ctx)
-	return nil, nil
+// LockTenant 锁定租户
+func (s *TenantCommandService) LockTenant(ctx context.Context, id string, reason string) herrors.Herr {
+	// 检查租户是否存在
+	tenant, err := s.tenantRepo.FindByID(ctx, id)
+	if err != nil {
+		return herrors.NewErr(err)
+	}
+	if tenant == nil {
+		return errors.TenantNotFound(id)
+	}
+
+	// 锁定租户
+	if err := tenant.Lock(reason); err != nil {
+		return err
+	}
+
+	// 保存更新
+	if err := s.tenantRepo.Update(ctx, tenant); err != nil {
+		return herrors.NewErr(err)
+	}
+
+	// 发布租户锁定事件
+	event := events.NewTenantLockedEvent(tenant.ID, reason)
+	if err := s.publisher.Publish(ctx, event); err != nil {
+		return herrors.NewErr(err)
+	}
+
+	return nil
 }
 
-// FindTenants 查询租户列表
-func (s *TenantService) FindTenants(ctx context.Context, qb *query.QueryBuilder) ([]*model.Tenant, error) {
-	return s.tenantRepo.Find(ctx, qb)
-}
+// UnlockTenant 解锁租户
+func (s *TenantCommandService) UnlockTenant(ctx context.Context, id string) herrors.Herr {
+	// 检查租户是否存在
+	tenant, err := s.tenantRepo.FindByID(ctx, id)
+	if err != nil {
+		return herrors.NewErr(err)
+	}
+	if tenant == nil {
+		return errors.TenantNotFound(id)
+	}
 
-// CountTenants 统计租户数量
-func (s *TenantService) CountTenants(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
-	return s.tenantRepo.Count(ctx, qb)
+	// 解锁租户
+	if err := tenant.Unlock(); err != nil {
+		return err
+	}
+
+	// 保存更新
+	if err := s.tenantRepo.Update(ctx, tenant); err != nil {
+		return herrors.NewErr(err)
+	}
+
+	// 发布租户解锁事件
+	event := events.NewTenantUnlockedEvent(tenant.ID)
+	if err := s.publisher.Publish(ctx, event); err != nil {
+		return herrors.NewErr(err)
+	}
+
+	return nil
 }

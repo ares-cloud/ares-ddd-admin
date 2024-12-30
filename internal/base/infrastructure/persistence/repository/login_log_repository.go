@@ -10,7 +10,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type loginLogRepository struct {
@@ -46,7 +46,7 @@ func (r *loginLogRepository) FindByID(ctx context.Context, id int64) (*model.Log
 	return r.mapper.ToDomain(&entity), nil
 }
 
-func (r *loginLogRepository) Find(ctx context.Context, tenantID string, month time.Time, qb *query.QueryBuilder) ([]*model.LoginLog, error) {
+func (r *loginLogRepository) Find(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) ([]*model.LoginLog, error) {
 	// 确保表存在
 	if err := r.EnsureTable(ctx, tenantID, month); err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (r *loginLogRepository) Find(ctx context.Context, tenantID string, month ti
 	return r.mapper.ToDomainList(entities), nil
 }
 
-func (r *loginLogRepository) Count(ctx context.Context, tenantID string, month time.Time, qb *query.QueryBuilder) (int64, error) {
+func (r *loginLogRepository) Count(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) (int64, error) {
 	// 确保表存在
 	if err := r.EnsureTable(ctx, tenantID, month); err != nil {
 		return 0, err

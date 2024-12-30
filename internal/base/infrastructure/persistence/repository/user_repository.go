@@ -10,20 +10,20 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/baserepo"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type ISysUserRepo interface {
 	baserepo.IBaseRepo[entity.SysUser, string]
 	GetByUsername(ctx context.Context, username string) (*entity.SysUser, error)
 	DeleteRoleByUserId(ctx context.Context, userId string) error
-	BelongsToDepartment(ctx context.Context, userID string, deptID string) bool
+	BelongsToDepartment(ctx context.Context, userID string, deptID string) (bool, error)
 	GetUserPermissionCodes(ctx context.Context, userID string) ([]string, error)
 	GetUserMenus(ctx context.Context, userID string) ([]*entity.Permissions, error)
-	FindByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) ([]*entity.SysUser, error)
-	CountByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) (int64, error)
-	FindUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) ([]*entity.SysUser, error)
-	CountUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) (int64, error)
+	FindByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *db_query.QueryBuilder) ([]*entity.SysUser, error)
+	CountByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *db_query.QueryBuilder) (int64, error)
+	FindUnassignedUsers(ctx context.Context, qb *db_query.QueryBuilder) ([]*entity.SysUser, error)
+	CountUnassignedUsers(ctx context.Context, qb *db_query.QueryBuilder) (int64, error)
 	FindByRoleID(ctx context.Context, roleID int64) ([]*entity.SysUser, error)
 	AssignUsersToDepartment(ctx context.Context, deptID string, userIDs []string) error
 	TransferUserDepartment(ctx context.Context, userID string, fromDeptID string, toDeptID string) error
@@ -174,197 +174,18 @@ func (r *userRepository) ExistsByUsername(ctx context.Context, username string) 
 	return true, nil
 }
 
-// Find 实现动态查询
-func (r *userRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*model.User, error) {
-	records, err := r.repo.Find(ctx, qb)
-	if err != nil {
-		if database.IfErrorNotFound(err) {
-			return nil, database.ErrRecordNotFound
-		}
-		return nil, err
-	}
-	users := r.mapper.ToDomainList(records)
-	return users, nil
-}
-
-// Count 实现查询
-func (r *userRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
-	return r.repo.Count(ctx, qb)
-}
-
 func (r *userRepository) Delete(ctx context.Context, id string) error {
 	return r.repo.DelById(ctx, id)
 }
 
 // BelongsToDepartment 检查用户是否属于指定部门
-func (r *userRepository) BelongsToDepartment(ctx context.Context, userID string, deptID string) bool {
+func (r *userRepository) BelongsToDepartment(ctx context.Context, userID string, deptID string) (bool, error) {
 	return r.repo.BelongsToDepartment(ctx, userID, deptID)
-}
-
-// FindByDepartment 查询部门下的用户
-func (r *userRepository) FindByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) ([]*model.User, error) {
-	users, err := r.repo.FindByDepartment(ctx, deptID, excludeAdminID, qb)
-	if err != nil {
-		return nil, err
-	}
-	return r.mapper.ToDomainList(users), nil
-}
-
-// CountByDepartment 统计部门下的用户数量
-func (r *userRepository) CountByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) (int64, error) {
-	var count int64
-
-	// 构建查询
-	db := r.repo.Db(ctx).Model(&entity.SysUser{}).
-		Joins("JOIN sys_user_dept ud ON ud.user_id = sys_user.id").
-		Where("ud.dept_id = ?", deptID)
-
-	// 排除管理员
-	if excludeAdminID != "" {
-		db = db.Where("sys_user.id != ?", excludeAdminID)
-	}
-
-	if err := qb.Build(db); err != nil {
-		return 0, err
-	}
-
-	if err := db.Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
-}
-
-// FindUnassignedUsers 查询未分配部门的用户
-func (r *userRepository) FindUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) ([]*model.User, error) {
-	var users []*entity.SysUser
-
-	// 构建子查询
-	subQuery := r.repo.Db(ctx).Model(&entity.UserDepartment{}).
-		Select("user_id").
-		Group("user_id")
-
-	// 主查询
-	db := r.repo.Db(ctx).Model(&entity.SysUser{}).
-		Where("id NOT IN (?)", subQuery)
-
-	// 应用查询条件
-	if err := qb.Build(db); err != nil {
-		return nil, err
-	}
-
-	if err := db.Find(&users).Error; err != nil {
-		return nil, err
-	}
-
-	return r.mapper.ToDomainList(users), nil
-}
-
-// AssignUsers 分配用户到部门(修改为先删除原有关系)
-func (r *userRepository) AssignUsers(ctx context.Context, deptID string, userIDs []string) error {
-	// 开启事务
-	return r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
-		// 1. 删除用户原有的部门关系
-		if err := r.repo.Db(ctx).Where("user_id IN ?", userIDs).
-			Delete(&entity.UserDepartment{}).Error; err != nil {
-			return err
-		}
-
-		// 2. 创建新的部门关系
-		userDepts := make([]*entity.UserDepartment, 0, len(userIDs))
-		for _, userID := range userIDs {
-			userDepts = append(userDepts, &entity.UserDepartment{
-				ID:     r.repo.GenStringId(),
-				UserID: userID,
-				DeptID: deptID,
-			})
-		}
-		return r.repo.Db(ctx).Create(&userDepts).Error
-	})
-}
-
-// CountUnassignedUsers 统计未分配部门的用户数量
-func (r *userRepository) CountUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
-	var count int64
-
-	// 构建子查询
-	subQuery := r.repo.Db(ctx).Model(&entity.UserDepartment{}).
-		Select("user_id").
-		Group("user_id")
-
-	// 主查询
-	db := r.repo.Db(ctx).Model(&entity.SysUser{}).
-		Where("id NOT IN (?)", subQuery)
-
-	if err := qb.Build(db); err != nil {
-		return 0, err
-	}
-
-	if err := db.Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
 }
 
 // TransferUser 调动用户部门
 func (r *userRepository) TransferUser(ctx context.Context, userID string, fromDeptID string, toDeptID string) error {
-	return r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
-		// 1. 删除原部门关系
-		if err := r.repo.Db(ctx).Where("user_id = ? AND dept_id = ?", userID, fromDeptID).
-			Delete(&entity.UserDepartment{}).Error; err != nil {
-			return err
-		}
-
-		// 2. 创建新部门关系
-		userDept := &entity.UserDepartment{
-			ID:     r.repo.GenStringId(),
-			UserID: userID,
-			DeptID: toDeptID,
-		}
-		return r.repo.Db(ctx).Create(userDept).Error
-	})
-}
-
-// GetUserPermissionCodes 获取用户权限代码列表
-func (r *userRepository) GetUserPermissionCodes(ctx context.Context, userID string) ([]string, error) {
-	return r.repo.GetUserPermissionCodes(ctx, userID)
-}
-
-// GetUserRoles 获取用户角色列表
-func (r *userRepository) GetUserRoles(ctx context.Context, userID string) ([]*model.Role, error) {
-	// 查询用户角色关联
-	userRoles, err := r.roleRepo.GetByUserId(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(userRoles) == 0 {
-		return []*model.Role{}, nil
-	}
-
-	// 获取角色ID列表
-	roleIDs := make([]int64, len(userRoles))
-	for i, ur := range userRoles {
-		roleIDs[i] = ur.ID
-	}
-
-	// 查询角色详情
-	roles, err := r.roleRepo.FindByIds(ctx, roleIDs)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.roleMapper.ToDomainList(roles), nil
-}
-
-// GetUserMenuTree 获取用户菜单树
-func (r *userRepository) GetUserMenuTree(ctx context.Context, userID string) ([]*model.Permissions, error) {
-	permissions, err := r.repo.GetUserMenus(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	return r.menuMapper.ToDomainList(permissions, nil), nil
+	return r.repo.TransferUserDepartment(ctx, userID, fromDeptID, toDeptID)
 }
 
 // AssignRoles 分配角色给用户

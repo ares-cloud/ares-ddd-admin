@@ -6,7 +6,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 )
@@ -26,17 +26,17 @@ func NewPermissionsQueryHandler(permRepo repository.IPermissionsRepository, pds 
 // HandleList 处理列表查询
 func (h *PermissionsQueryHandler) HandleList(ctx context.Context, q *queries.ListPermissionsQuery) (*models.PageRes[dto.PermissionsDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 
 	// 添加查询条件
 	if q.Code != "" {
-		qb.Where("code", query.Like, "%"+q.Code+"%")
+		qb.Where("code", db_query.Like, "%"+q.Code+"%")
 	}
 	if q.Name != "" {
-		qb.Where("name", query.Like, "%"+q.Name+"%")
+		qb.Where("name", db_query.Like, "%"+q.Name+"%")
 	}
 	if q.Status != 0 {
-		qb.Where("status", query.Eq, q.Status)
+		qb.Where("status", db_query.Eq, q.Status)
 	}
 	// 排序
 	qb.OrderBy("sequence", true)

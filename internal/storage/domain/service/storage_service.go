@@ -13,7 +13,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/storage"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/google/uuid"
 )
@@ -60,9 +60,9 @@ func (s *StorageService) CreateDefaultFolder(ctx context.Context, tenantID, crea
 // getOrCreateFolder 获取或创建文件夹
 func (s *StorageService) getOrCreateFolder(ctx context.Context, parentID string, name, tenantID, createdBy string) (*model.Folder, error) {
 	// 1. 查询是否存在
-	folders, total, err := s.repo.ListFolders(ctx, parentID, query.NewQueryBuilder().
-		Where("name", query.Eq, name).
-		Where("tenant_id", query.Eq, tenantID))
+	folders, total, err := s.repo.ListFolders(ctx, parentID, db_query.NewQueryBuilder().
+		Where("name", db_query.Eq, name).
+		Where("tenant_id", db_query.Eq, tenantID))
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (s *StorageService) DeleteFile(ctx context.Context, id string) error {
 // DeleteFolder 删除文件夹
 func (s *StorageService) DeleteFolder(ctx context.Context, id string) error {
 	// 获取文件夹下的所有文件
-	files, _, err := s.repo.ListFiles(ctx, id, query.NewQueryBuilder())
+	files, _, err := s.repo.ListFiles(ctx, id, db_query.NewQueryBuilder())
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (s *StorageService) DeleteFolder(ctx context.Context, id string) error {
 	}
 
 	// 获取文件夹
-	folders, _, err := s.repo.ListFolders(ctx, id, query.NewQueryBuilder())
+	folders, _, err := s.repo.ListFolders(ctx, id, db_query.NewQueryBuilder())
 	if err != nil {
 		return err
 	}
@@ -463,10 +463,10 @@ func (s *StorageService) CreateFolder(ctx context.Context, folder *model.Folder)
 	}
 
 	// 2. ���查同名文件夹是否存在
-	qb := query.NewQueryBuilder().
-		Where("parent_id", query.Eq, folder.ParentID).
-		Where("name", query.Eq, folder.Name).
-		Where("tenant_id", query.Eq, folder.TenantID)
+	qb := db_query.NewQueryBuilder().
+		Where("parent_id", db_query.Eq, folder.ParentID).
+		Where("name", db_query.Eq, folder.Name).
+		Where("tenant_id", db_query.Eq, folder.TenantID)
 
 	_, total, err := s.repo.ListFolders(ctx, folder.ParentID, qb)
 	if err != nil {
@@ -544,7 +544,7 @@ func (s *StorageService) isSubFolder(ctx context.Context, parentID, folderID str
 // updateSubPaths 更新子路径
 func (s *StorageService) updateSubPaths(ctx context.Context, folderID string, oldPath, newPath string) error {
 	// 1. 更新子文件夹路径
-	folders, _, err := s.repo.ListFolders(ctx, folderID, query.NewQueryBuilder())
+	folders, _, err := s.repo.ListFolders(ctx, folderID, db_query.NewQueryBuilder())
 	if err != nil {
 		return err
 	}
@@ -561,7 +561,7 @@ func (s *StorageService) updateSubPaths(ctx context.Context, folderID string, ol
 	}
 
 	// 2. 更新文件路径
-	files, _, err := s.repo.ListFiles(ctx, folderID, query.NewQueryBuilder())
+	files, _, err := s.repo.ListFiles(ctx, folderID, db_query.NewQueryBuilder())
 	if err != nil {
 		return err
 	}
@@ -595,10 +595,10 @@ func (s *StorageService) validateCreateFolder(ctx context.Context, folder *model
 	}
 
 	// 检查同名文件夹是否存在
-	qb := query.NewQueryBuilder().
-		Where("parent_id", query.Eq, folder.ParentID).
-		Where("name", query.Eq, folder.Name).
-		Where("tenant_id", query.Eq, folder.TenantID)
+	qb := db_query.NewQueryBuilder().
+		Where("parent_id", db_query.Eq, folder.ParentID).
+		Where("name", db_query.Eq, folder.Name).
+		Where("tenant_id", db_query.Eq, folder.TenantID)
 
 	_, total, err := s.repo.ListFolders(ctx, folder.ParentID, qb)
 	if err != nil {

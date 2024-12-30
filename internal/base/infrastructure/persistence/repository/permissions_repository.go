@@ -11,7 +11,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/baserepo"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 // IPermissionsRepo ， 系统菜单
@@ -25,7 +25,7 @@ type IPermissionsRepo interface {
 	GetByRoleID(ctx context.Context, roleID int64) ([]*entity.Permissions, []*entity.PermissionsResource, error)
 	GetAllTree(ctx context.Context) ([]*entity.Permissions, []int64, error)
 	GetTreeByType(ctx context.Context, permType int8) ([]*entity.Permissions, []*entity.PermissionsResource, error)
-	GetTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*entity.Permissions, []*entity.PermissionsResource, error)
+	GetTreeByQuery(ctx context.Context, qb *db_query.QueryBuilder) ([]*entity.Permissions, []*entity.PermissionsResource, error)
 	GetTreeByUserAndType(ctx context.Context, userID string, permType int8) ([]*entity.Permissions, []*entity.PermissionsResource, error)
 	GetResourcesByRoles(ctx context.Context, roles []int64) ([]*entity.PermissionsResource, error)
 	GetByRoles(ctx context.Context, roles []int64) ([]*entity.Permissions, error)
@@ -159,7 +159,7 @@ func (r *permissionsRepository) ExistsByCode(ctx context.Context, code string) (
 
 func (r *permissionsRepository) FindByType(ctx context.Context, permType int8) ([]*model.Permissions, error) {
 	// 查询权限基本信息
-	permEntities, err := r.repo.Find(ctx, query.NewQueryBuilder().Where("type", query.Eq, permType))
+	permEntities, err := r.repo.Find(ctx, db_query.NewQueryBuilder().Where("type", db_query.Eq, permType))
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (r *permissionsRepository) FindByID(ctx context.Context, id int64) (*model.
 	return r.mapper.ToDomain(permEntity, resource), nil
 }
 
-func (r *permissionsRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*model.Permissions, error) {
+func (r *permissionsRepository) Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*model.Permissions, error) {
 	permissions, err := r.repo.Find(ctx, qb)
 	if err != nil {
 		return nil, fmt.Errorf("find permissions failed: %w", err)
@@ -219,7 +219,7 @@ func (r *permissionsRepository) Find(ctx context.Context, qb *query.QueryBuilder
 	return r.mapper.ToDomainList(permissions, resources), nil
 }
 
-func (r *permissionsRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
+func (r *permissionsRepository) Count(ctx context.Context, qb *db_query.QueryBuilder) (int64, error) {
 	return r.repo.Count(ctx, qb)
 }
 
@@ -282,7 +282,7 @@ func (r *permissionsRepository) FindTreeByType(ctx context.Context, permType int
 	return r.mapper.ToDomainList(permissions, resources), nil
 }
 
-func (r *permissionsRepository) FindTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*model.Permissions, error) {
+func (r *permissionsRepository) FindTreeByQuery(ctx context.Context, qb *db_query.QueryBuilder) ([]*model.Permissions, error) {
 	permEntities, resources, err := r.repo.GetTreeByQuery(ctx, qb)
 	if err != nil {
 		return nil, err
@@ -293,11 +293,11 @@ func (r *permissionsRepository) FindTreeByQuery(ctx context.Context, qb *query.Q
 
 func (r *permissionsRepository) FindTreeByUserAndType(ctx context.Context, userID string, permType int8) ([]*model.Permissions, error) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if permType > 0 {
-		qb.Where("type", query.Eq, permType)
+		qb.Where("type", db_query.Eq, permType)
 	}
-	qb.Where("status", query.Eq, 1)
+	qb.Where("status", db_query.Eq, 1)
 	qb.OrderBy("sequence", false)
 
 	// 查询用户权限
@@ -338,8 +338,8 @@ func buildPermissionTree(permissions []*model.Permissions) []*model.Permissions 
 
 func (r *permissionsRepository) FindAllEnabled(ctx context.Context) ([]*model.Permissions, error) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
-	qb.Where("status", query.Eq, 1)
+	qb := db_query.NewQueryBuilder()
+	qb.Where("status", db_query.Eq, 1)
 	qb.OrderBy("sequence", true)
 
 	// 查询权限

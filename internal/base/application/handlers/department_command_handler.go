@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/errors"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/commands"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
@@ -16,13 +17,15 @@ type DepartmentCommandHandler struct {
 	deptRepo    repository.IDepartmentRepository
 	deptService *service.DepartmentService
 	userRepo    repository.IUserRepository
+	userService *service.UserCommandService
 }
 
-func NewDepartmentCommandHandler(deptRepo repository.IDepartmentRepository, deptService *service.DepartmentService, userRepo repository.IUserRepository) *DepartmentCommandHandler {
+func NewDepartmentCommandHandler(deptRepo repository.IDepartmentRepository, deptService *service.DepartmentService, userRepo repository.IUserRepository, userService *service.UserCommandService) *DepartmentCommandHandler {
 	return &DepartmentCommandHandler{
 		deptRepo:    deptRepo,
 		deptService: deptService,
 		userRepo:    userRepo,
+		userService: userService,
 	}
 }
 
@@ -158,25 +161,37 @@ func (h *DepartmentCommandHandler) HandleSetAdmin(ctx context.Context, cmd *comm
 	// 1. 查询部门信息
 	dept, err := h.deptRepo.GetByID(ctx, cmd.DeptID)
 	if err != nil {
-		return herrors.NewServerHError(err)
+		hlog.CtxErrorf(ctx, "failed to find department: %s", err)
+		return herrors.UpdateFail(err)
 	}
+	//if dept == nil {
+	//	return errors.DepartmentNotFound(cmd.DeptID)
+	//}
 
 	// 2. 查询用户信息
 	user, err := h.userRepo.FindByID(ctx, cmd.AdminID)
 	if err != nil {
-		return herrors.NewServerHError(err)
+		hlog.CtxErrorf(ctx, "failed to find user: %s", err)
+		return herrors.UpdateFail(err)
+	}
+	if user == nil {
+		return errors.UserNotFound(cmd.AdminID)
 	}
 
-	//// 3. 检查用户是否属于该部门
-	//if !h.userRepo.BelongsToDepartment(ctx, user.ID, dept.ID) {
-	//	return herrors.NewBadReqError("用户不属于该部门")
+	// 3. 检查用户是否属于该部门
+	belongs, hr := h.userService.BelongsToDepartment(ctx, user.ID, dept.ID)
+	if herrors.HaveError(hr) {
+		return hr
+	}
+	if !belongs {
+		return errors.UserDepartmentNotFound(user.ID, dept.ID)
+	}
+
+	// 4. 设置部门管理员
+	//if err := h.deptRepo.SetAdmin(ctx, dept.ID, user.ID); err != nil {
+	//	hlog.CtxErrorf(ctx, "failed to set department admin: %s", err)
+	//	return herrors.UpdateFail(err)
 	//}
-
-	// 4. 更新部门管理员信息
-	dept.SetAdmin(user.ID, user.Name, user.Phone)
-	if err := h.deptRepo.Update(ctx, dept); err != nil {
-		return herrors.NewServerHError(err)
-	}
 
 	return nil
 }
@@ -186,19 +201,34 @@ func (h *DepartmentCommandHandler) HandleAssignUsers(ctx context.Context, cmd *c
 	// 1. 查询部门信息
 	_, err := h.deptRepo.GetByID(ctx, cmd.DeptID)
 	if err != nil {
-		return herrors.NewServerHError(err)
+		hlog.CtxErrorf(ctx, "failed to find department: %s", err)
+		return herrors.UpdateFail(err)
 	}
+	//if dept == nil {
+	//	return errors.DepartmentNotFound(cmd.DeptID)
+	//}
 
 	// 2. 检查用户是否存在
 	for _, userID := range cmd.UserIDs {
-		if _, err := h.userRepo.FindByID(ctx, userID); err != nil {
-			return herrors.NewBadReqError(fmt.Sprintf("用户[%s]不存在", userID))
+		user, err := h.userRepo.FindByID(ctx, userID)
+		if err != nil {
+			hlog.CtxErrorf(ctx, "failed to find user: %s", err)
+			return herrors.UpdateFail(err)
+		}
+		if user == nil {
+			return errors.UserNotFound(userID)
+		}
+
+		// 检查用户是否被锁定
+		if locked, reason := user.IsLocked(); locked {
+			return errors.UserDisabled(reason)
 		}
 	}
 
 	// 3. 分配用户到部门
 	if err := h.deptRepo.AssignUsers(ctx, cmd.DeptID, cmd.UserIDs); err != nil {
-		return herrors.NewServerHError(err)
+		hlog.CtxErrorf(ctx, "failed to assign users to department: %s", err)
+		return herrors.UpdateFail(err)
 	}
 
 	return nil
@@ -209,21 +239,26 @@ func (h *DepartmentCommandHandler) HandleRemoveUsers(ctx context.Context, cmd *c
 	// 1. 查询部门信息
 	dept, err := h.deptRepo.GetByID(ctx, cmd.DeptID)
 	if err != nil {
-		return herrors.NewServerHError(err)
+		hlog.CtxErrorf(ctx, "failed to find department: %s", err)
+		return herrors.UpdateFail(err)
 	}
+	//if dept == nil {
+	//	return errors.DepartmentNotFound(cmd.DeptID)
+	//}
 
 	// 2. 检查是否包含管理员
 	if dept.AdminID != "" {
-		for _, userID := range cmd.UserIDs {
-			if userID == dept.AdminID {
-				return herrors.NewBadReqError("不能移除部门管理员")
-			}
-		}
+		//for _, userID := range cmd.UserIDs {
+		//	if userID == dept.AdminID {
+		//		return errors.DepartmentInvalidOperation("cannot remove department admin")
+		//	}
+		//}
 	}
 
 	// 3. 从部门移除用户
 	if err := h.deptRepo.RemoveUsers(ctx, cmd.DeptID, cmd.UserIDs); err != nil {
-		return herrors.NewServerHError(err)
+		hlog.CtxErrorf(ctx, "failed to remove users from department: %s", err)
+		return herrors.UpdateFail(err)
 	}
 
 	return nil
@@ -235,38 +270,12 @@ func (h *DepartmentCommandHandler) HandleTransferUser(ctx context.Context, cmd *
 		hlog.CtxErrorf(ctx, "Command validation error: %s", hr)
 		return hr
 	}
-	//// 1. 验证用户是否存在
-	//user, err := h.userRepo.FindByID(ctx, cmd.UserID)
-	//if err != nil {
-	//	return herrors.NewBadReqError(fmt.Sprintf("用户[%s]不存在", cmd.UserID))
-	//}
-	//
-	//// 2. 验证原部门
-	//fromDept, err := h.deptRepo.GetByID(ctx, cmd.FromDeptID)
-	//if err != nil {
-	//	return herrors.NewBadReqError(fmt.Sprintf("原部门[%s]不存在", cmd.FromDeptID))
-	//}
-	//
-	//// 3. 验证目标部门
-	//_, err = h.deptRepo.GetByID(ctx, cmd.ToDeptID)
-	//if err != nil {
-	//	return herrors.NewBadReqError(fmt.Sprintf("目标部门[%s]不存在", cmd.ToDeptID))
-	//}
-	//
-	//// 4. 检查用户是否在原部门
-	//if !h.userRepo.BelongsToDepartment(ctx, cmd.UserID, cmd.FromDeptID) {
-	//	return herrors.NewBadReqError(fmt.Sprintf("用户[%s]不属于部门[%s]", user.Username, fromDept.Name))
-	//}
-	//
-	//// 5. 检查是否为部门管理员
-	//if fromDept.AdminID == cmd.UserID {
-	//	return herrors.NewBadReqError("部门管理员不能调动")
-	//}
-	//
-	//// 6. 执行调动
-	//if err := h.userRepo.TransferUser(ctx, cmd.UserID, cmd.FromDeptID, cmd.ToDeptID); err != nil {
-	//	return herrors.NewServerHError(err)
-	//}
+
+	// 调用用户服务执行部门调动
+	if hr := h.userService.TransferUser(ctx, cmd.UserID, cmd.FromDeptID, cmd.ToDeptID); herrors.HaveError(hr) {
+		hlog.CtxErrorf(ctx, "failed to transfer user: %s", hr)
+		return hr
+	}
 
 	return nil
 }

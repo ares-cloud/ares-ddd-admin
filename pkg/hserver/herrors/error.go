@@ -58,18 +58,15 @@ func (r *HError) Error() string {
 }
 
 func IsHError(err error) bool {
-	var HError *HError
-	if errors.As(err, &HError) {
-		return true
-	}
-	return false
+	var e *HError
+	return errors.As(err, &e)
 }
 
 func TohError(err error) Herr {
 	if err == nil {
 		return nil
 	}
-	var e Herr
+	var e *HError
 	if errors.As(err, &e) {
 		return e
 	}
@@ -77,8 +74,5 @@ func TohError(err error) Herr {
 }
 
 func HaveError(err error) bool {
-	if TohError(err) != nil {
-		return true
-	}
-	return false
+	return TohError(err) != nil
 }

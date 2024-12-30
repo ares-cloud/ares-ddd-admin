@@ -25,15 +25,3 @@ func (Department) TableName() string {
 func (Department) GetPrimaryKey() string {
 	return "id"
 }
-
-// UserDepartment 用户部门关系表
-type UserDepartment struct {
-	ID     string `gorm:"column:id;primary_key;comment:ID"`
-	UserID string `gorm:"column:user_id;comment:用户ID"`
-	DeptID string `gorm:"column:dept_id;comment:部门ID"`
-}
-
-// TableName 表名
-func (UserDepartment) TableName() string {
-	return "sys_user_dept"
-}

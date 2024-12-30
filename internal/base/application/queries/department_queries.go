@@ -1,14 +1,14 @@
 package queries
 
 import (
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/validator"
 )
 
 // ListDepartmentsQuery 部门列表查询
 type ListDepartmentsQuery struct {
-	query.Page
+	db_query.Page
 	Name     string `json:"name" query:"name" validate:"omitempty,max=50" label:"部门名称"`      // 部门名称
 	Code     string `json:"code" query:"code" validate:"omitempty,max=50" label:"部门编码"`      // 部门编码
 	Status   *int8  `json:"status" query:"status" validate:"omitempty,oneof=0 1" label:"状态"` // 部门状态
@@ -48,7 +48,7 @@ func (q *GetUserDepartmentsQuery) Validate() herrors.Herr {
 
 // GetDepartmentUsersQuery 获取部门用户查询
 type GetDepartmentUsersQuery struct {
-	query.Page
+	db_query.Page
 	DeptID   string `json:"deptId" path:"id" validate:"required" label:"部门ID"`
 	Username string `json:"username" query:"username" validate:"omitempty,max=50" label:"用户名"`
 	Name     string `json:"name" query:"name" validate:"omitempty,max=50" label:"姓名"`
@@ -60,7 +60,7 @@ func (q *GetDepartmentUsersQuery) Validate() herrors.Herr {
 
 // GetUnassignedUsersQuery 获取未分配部门的用户查询
 type GetUnassignedUsersQuery struct {
-	query.Page
+	db_query.Page
 	Username string `json:"username" validate:"omitempty,max=50" label:"用户名"`
 	Name     string `json:"name" validate:"omitempty,max=50" label:"姓名"`
 }

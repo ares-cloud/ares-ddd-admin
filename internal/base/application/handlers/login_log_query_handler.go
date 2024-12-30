@@ -9,7 +9,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"time"
 
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 )
@@ -25,19 +25,19 @@ func NewLoginLogQueryHandler(loginLogRepo repository.ILoginLogRepository) *Login
 }
 func (h *LoginLogQueryHandler) HandleAppList(ctx context.Context, q *queries.ListLoginLogsQuery) (*models.PageRes[dto.LoginLogDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
-	qb.Where("login_type", query.Eq, model.LoginTypeMember)
+	qb := db_query.NewQueryBuilder()
+	qb.Where("login_type", db_query.Eq, model.LoginTypeMember)
 	return h.HandleList(ctx, qb, q)
 }
 
 func (h *LoginLogQueryHandler) HandleAdminList(ctx context.Context, q *queries.ListLoginLogsQuery) (*models.PageRes[dto.LoginLogDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
-	qb.Where("login_type", query.Eq, model.LoginTypeAdmin)
+	qb := db_query.NewQueryBuilder()
+	qb.Where("login_type", db_query.Eq, model.LoginTypeAdmin)
 	return h.HandleList(ctx, qb, q)
 }
 
-func (h *LoginLogQueryHandler) HandleList(ctx context.Context, qb *query.QueryBuilder, q *queries.ListLoginLogsQuery) (*models.PageRes[dto.LoginLogDto], herrors.Herr) {
+func (h *LoginLogQueryHandler) HandleList(ctx context.Context, qb *db_query.QueryBuilder, q *queries.ListLoginLogsQuery) (*models.PageRes[dto.LoginLogDto], herrors.Herr) {
 	tm := time.Now()
 	if q.Month != "" {
 		// 解析查询月份
@@ -49,19 +49,19 @@ func (h *LoginLogQueryHandler) HandleList(ctx context.Context, qb *query.QueryBu
 	}
 
 	if q.Username != "" {
-		qb.Where("username", query.Like, "%"+q.Username+"%")
+		qb.Where("username", db_query.Like, "%"+q.Username+"%")
 	}
 	if q.IP != "" {
-		qb.Where("ip", query.Like, "%"+q.IP+"%")
+		qb.Where("ip", db_query.Like, "%"+q.IP+"%")
 	}
 	if q.Status != 0 {
-		qb.Where("status", query.Eq, q.Status)
+		qb.Where("status", db_query.Eq, q.Status)
 	}
 	if q.StartTime > 0 {
-		qb.Where("login_time", query.Gte, time.Unix(q.StartTime, 0))
+		qb.Where("login_time", db_query.Gte, time.Unix(q.StartTime, 0))
 	}
 	if q.EndTime > 0 {
-		qb.Where("login_time", query.Lte, time.Unix(q.EndTime, 0))
+		qb.Where("login_time", db_query.Lte, time.Unix(q.EndTime, 0))
 	}
 
 	// 设置排序

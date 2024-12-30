@@ -6,7 +6,7 @@ import (
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
 	iQuery "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 )
@@ -33,21 +33,21 @@ func (h *UserQueryHandler) HandleGet(ctx context.Context, q queries.GetUserQuery
 // HandleList 处理用户列表查询
 func (h *UserQueryHandler) HandleList(ctx context.Context, q *queries.ListUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if q.Username != "" {
-		qb.Where("username", query.Like, "%"+q.Username+"%")
+		qb.Where("username", db_query.Like, "%"+q.Username+"%")
 	}
 	if q.Name != "" {
-		qb.Where("name", query.Like, "%"+q.Name+"%")
+		qb.Where("name", db_query.Like, "%"+q.Name+"%")
 	}
 	if q.Phone != "" {
-		qb.Where("phone", query.Like, "%"+q.Phone+"%")
+		qb.Where("phone", db_query.Like, "%"+q.Phone+"%")
 	}
 	if q.Email != "" {
-		qb.Where("email", query.Like, "%"+q.Email+"%")
+		qb.Where("email", db_query.Like, "%"+q.Email+"%")
 	}
 	if q.Status != 0 {
-		qb.Where("status", query.Eq, q.Status)
+		qb.Where("status", db_query.Eq, q.Status)
 	}
 	qb.WithPage(&q.Page)
 
@@ -134,12 +134,12 @@ func (h *UserQueryHandler) HandleGetUserRoles(ctx context.Context, q *queries.Ge
 // HandleListDepartmentUsers 处理部门用户列表查询
 func (h *UserQueryHandler) HandleListDepartmentUsers(ctx context.Context, q *queries.ListDepartmentUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if q.Username != "" {
-		qb.Where("username", query.Like, "%"+q.Username+"%")
+		qb.Where("username", db_query.Like, "%"+q.Username+"%")
 	}
 	if q.Name != "" {
-		qb.Where("name", query.Like, "%"+q.Name+"%")
+		qb.Where("name", db_query.Like, "%"+q.Name+"%")
 	}
 	qb.WithPage(&q.Page)
 

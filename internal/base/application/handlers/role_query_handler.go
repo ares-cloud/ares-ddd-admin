@@ -10,7 +10,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 )
@@ -30,20 +30,20 @@ func NewRoleQueryHandler(
 // HandleList 处理列表查询
 func (h *RoleQueryHandler) HandleList(ctx context.Context, q *queries.ListRolesQuery) (*models.PageRes[dto.RoleDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 
 	// 添加查询条件
 	if q.Code != "" {
-		qb.Where("code", query.Like, "%"+q.Code+"%")
+		qb.Where("code", db_query.Like, "%"+q.Code+"%")
 	}
 	if q.Name != "" {
-		qb.Where("name", query.Like, "%"+q.Name+"%")
+		qb.Where("name", db_query.Like, "%"+q.Name+"%")
 	}
 	if q.Status != 0 {
-		qb.Where("status", query.Eq, q.Status)
+		qb.Where("status", db_query.Eq, q.Status)
 	}
 	if q.Type != 0 {
-		qb.Where("type", query.Eq, q.Type)
+		qb.Where("type", db_query.Eq, q.Type)
 	}
 	// 设置分页
 	qb.WithPage(&q.Page)
@@ -115,10 +115,10 @@ func (h *RoleQueryHandler) HandleGetAllEnabled(ctx context.Context) ([]*dto.Role
 // HandleGetAllDataPermission 处理获取所有数据权限角色
 func (h *RoleQueryHandler) HandleGetAllDataPermission(ctx context.Context) ([]*dto.RoleDto, herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
-	qb.Where("type", query.Eq, int8(model.RoleTypeData))
-	qb.Where("status", query.Eq, 1) // 只查询启用状态的角色
-	qb.OrderBy("sequence", false)   // 按sequence排序
+	qb := db_query.NewQueryBuilder()
+	qb.Where("type", db_query.Eq, int8(model.RoleTypeData))
+	qb.Where("status", db_query.Eq, 1) // 只查询启用状态的角色
+	qb.OrderBy("sequence", false)      // 按sequence排序
 
 	// 查询角色
 	roles, err := h.roleRepo.Find(ctx, qb)

@@ -8,8 +8,9 @@ type SysUser struct {
 	ID             string `json:"id" gorm:"primaryKey;size:32;comment:用户ID"`
 	TenantID       string `json:"tenant_id" gorm:"size:32;index;comment:租户ID"`
 	Username       string `json:"username" gorm:"size:32;uniqueIndex;comment:用户名"`
-	FaceURL        string `json:"face_url" gorm:"size:255;comment:头像"`
+	Avatar         string `json:"avatar" gorm:"size:255;comment:头像"`
 	Name           string `json:"name" gorm:"size:128;comment:姓名"`
+	Nickname       string `json:"nickname" gorm:"size:128;comment:昵称"`
 	Password       string `json:"password" gorm:"size:128;comment:密码"`
 	Phone          string `json:"phone" gorm:"size:32;comment:手机号"`
 	Email          string `json:"email" gorm:"size:128;comment:邮箱"`

@@ -9,7 +9,7 @@ import (
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/mapper"
 
-	dquery "github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	dquery "github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"

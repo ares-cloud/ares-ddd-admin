@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"golang.org/x/exp/constraints"
 	"gorm.io/gorm"
 )
@@ -25,19 +25,19 @@ type IModel interface {
 
 // IBaseRepo [T IModel,I SupportedIDTypes] ， 基础数据层方法
 type IBaseRepo[T IModel, I SupportedIDTypes] interface {
-	FindById(ctx context.Context, id I) (*T, error)                   // 根据 id 获取模型
-	FindByIds(ctx context.Context, ids []I) ([]*T, error)             // 根据 id 获取模型
-	DelById(ctx context.Context, id I) error                          // 根据 id 删除
-	DelByIds(ctx context.Context, ids []I) error                      // 根据 id 批量删除
-	DelByIdUnScoped(ctx context.Context, id I) error                  // 根据 id 物理删除（可单个可批量）
-	DelByIdsUnScoped(ctx context.Context, ids []I) error              // 根据 id 物理删除（可单个可批量）
-	EditById(ctx context.Context, id I, data *T) error                // 上下文/id/需要更新的数据模型或者map
-	Add(ctx context.Context, data *T) (*T, error)                     // 创建并返回模型
-	BathAdd(ctx context.Context, data ...*T) error                    // 批量插入
-	Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) // 计数
-	Find(ctx context.Context, qb *query.QueryBuilder) ([]*T, error)   // 查询
-	Db(ctx context.Context) *gorm.DB                                  // 获取db
-	GetDb() database.IDataBase                                        // 获取database
+	FindById(ctx context.Context, id I) (*T, error)                      // 根据 id 获取模型
+	FindByIds(ctx context.Context, ids []I) ([]*T, error)                // 根据 id 获取模型
+	DelById(ctx context.Context, id I) error                             // 根据 id 删除
+	DelByIds(ctx context.Context, ids []I) error                         // 根据 id 批量删除
+	DelByIdUnScoped(ctx context.Context, id I) error                     // 根据 id 物理删除（可单个可批量）
+	DelByIdsUnScoped(ctx context.Context, ids []I) error                 // 根据 id 物理删除（可单个可批量）
+	EditById(ctx context.Context, id I, data *T) error                   // 上下文/id/需要更新的数据模型或者map
+	Add(ctx context.Context, data *T) (*T, error)                        // 创建并返回模型
+	BathAdd(ctx context.Context, data ...*T) error                       // 批量插入
+	Count(ctx context.Context, qb *db_query.QueryBuilder) (int64, error) // 计数
+	Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*T, error)   // 查询
+	Db(ctx context.Context) *gorm.DB                                     // 获取db
+	GetDb() database.IDataBase                                           // 获取database
 	GenStringId() string
 	GenInt64Id() int64
 }
@@ -255,7 +255,7 @@ func (r *BaseRepo[T, I]) BathAdd(ctx context.Context, data ...*T) error {
 }
 
 // 计数
-func (r *BaseRepo[T, I]) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
+func (r *BaseRepo[T, I]) Count(ctx context.Context, qb *db_query.QueryBuilder) (int64, error) {
 	var count int64
 	db := r.db.DB(ctx).Model(r.Model)
 	if where, values := qb.BuildWhere(); where != "" {
@@ -265,7 +265,7 @@ func (r *BaseRepo[T, I]) Count(ctx context.Context, qb *query.QueryBuilder) (int
 }
 
 // 查询
-func (r *BaseRepo[T, I]) Find(ctx context.Context, qb *query.QueryBuilder) ([]*T, error) {
+func (r *BaseRepo[T, I]) Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*T, error) {
 	var res []*T
 	db := r.db.DB(ctx).Model(r.Model)
 	if where, values := qb.BuildWhere(); where != "" {

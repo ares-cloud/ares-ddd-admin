@@ -8,7 +8,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache/keys"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/impl"
 	dCache "github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database/cache"
-	dquery "github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	dquery "github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 // UserQueryCache 用户查询缓存装饰器

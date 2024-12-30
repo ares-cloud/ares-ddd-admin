@@ -6,7 +6,7 @@ import (
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
 
@@ -43,18 +43,18 @@ func (h *DepartmentQueryHandler) HandleList(ctx context.Context, req *queries.Li
 	}
 
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if req.Name != "" {
-		qb.Where("name", query.Like, "%"+req.Name+"%")
+		qb.Where("name", db_query.Like, "%"+req.Name+"%")
 	}
 	if req.Code != "" {
-		qb.Where("code", query.Like, "%"+req.Code+"%")
+		qb.Where("code", db_query.Like, "%"+req.Code+"%")
 	}
 	if req.Status != nil {
-		qb.Where("status", query.Eq, *req.Status)
+		qb.Where("status", db_query.Eq, *req.Status)
 	}
 	if req.ParentID != "" {
-		qb.Where("parent_id", query.Eq, req.ParentID)
+		qb.Where("parent_id", db_query.Eq, req.ParentID)
 	}
 	qb.OrderBy("sort", false)
 	qb.WithPage(&req.Page)
@@ -146,12 +146,12 @@ func (h *DepartmentQueryHandler) HandleGetUsers(ctx context.Context, req *querie
 	}
 
 	// 2. 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if req.Username != "" {
-		qb.Where("username", query.Like, "%"+req.Username+"%")
+		qb.Where("username", db_query.Like, "%"+req.Username+"%")
 	}
 	if req.Name != "" {
-		qb.Where("name", query.Like, "%"+req.Name+"%")
+		qb.Where("name", db_query.Like, "%"+req.Name+"%")
 	}
 	qb.WithPage(&req.Page)
 	qb.OrderBy("created_at", true)
@@ -179,15 +179,15 @@ func (h *DepartmentQueryHandler) HandleGetUsers(ctx context.Context, req *querie
 // HandleGetUnassignedUsers 处理获取未分配部门的用户查询
 func (h *DepartmentQueryHandler) HandleGetUnassignedUsers(ctx context.Context, req *queries.GetUnassignedUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if req.Username != "" {
-		qb.Where("username", query.Like, "%"+req.Username+"%")
+		qb.Where("username", db_query.Like, "%"+req.Username+"%")
 	}
 	if req.Name != "" {
-		qb.Where("name", query.Like, "%"+req.Name+"%")
+		qb.Where("name", db_query.Like, "%"+req.Name+"%")
 	}
 	// 只查询启用状态的用户
-	qb.Where("status", query.Eq, 1)
+	qb.Where("status", db_query.Eq, 1)
 	// 添加分页
 	qb.WithPage(&req.Page)
 	qb.OrderBy("created_at", true)

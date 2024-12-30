@@ -1,11 +1,11 @@
 package queries
 
 import (
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type ListLoginLogsQuery struct {
-	query.Page
+	db_query.Page
 	Month     string `json:"month" query:"month"`           // 查询月份(格式:202403)
 	Username  string `json:"username" query:"username"`     // 用户名
 	IP        string `json:"ip" query:"ip"`                 // 登录IP

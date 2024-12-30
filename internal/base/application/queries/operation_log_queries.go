@@ -1,10 +1,10 @@
 package queries
 
-import "github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+import "github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 
 // ListOperationLogQuery 查询操作日志列表
 type ListOperationLogQuery struct {
-	query.Page
+	db_query.Page
 	Month     string `json:"month" query:"month"`           // 查询月份(格式:202403)
 	TenantID  string `json:"tenant_id" query:"tenant_id"`   // 租户ID
 	Username  string `json:"username" query:"username"`     // 用户名

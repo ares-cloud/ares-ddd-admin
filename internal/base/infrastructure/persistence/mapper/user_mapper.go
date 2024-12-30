@@ -15,8 +15,7 @@ func (m *UserMapper) ToDomain(e *entity.SysUser, roles []*model.Role) *model.Use
 	return &model.User{
 		ID:             e.ID,
 		Username:       e.Username,
-		FaceURL:        e.FaceURL,
-		Name:           e.Name,
+		Avatar:         e.Avatar,
 		Password:       e.Password,
 		Phone:          e.Phone,
 		Email:          e.Email,
@@ -34,8 +33,7 @@ func (m *UserMapper) ToEntity(d *model.User) *entity.SysUser {
 	return &entity.SysUser{
 		ID:             d.ID,
 		Username:       d.Username,
-		FaceURL:        d.FaceURL,
-		Name:           d.Name,
+		Avatar:         d.Avatar,
 		Password:       d.Password,
 		Phone:          d.Phone,
 		Email:          d.Email,

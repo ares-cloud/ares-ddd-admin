@@ -9,7 +9,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 	"time"
 
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
@@ -36,21 +36,21 @@ func (h *OperationLogQueryHandler) HandleList(ctx context.Context, q *queries.Li
 	}
 
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if q.Username != "" {
-		qb.Where("username", query.Like, "%"+q.Username+"%")
+		qb.Where("username", db_query.Like, "%"+q.Username+"%")
 	}
 	if q.Module != "" {
-		qb.Where("ip", query.Like, "%"+q.Module+"%")
+		qb.Where("ip", db_query.Like, "%"+q.Module+"%")
 	}
 	if q.Action != "" {
-		qb.Where("status", query.Eq, q.Action)
+		qb.Where("status", db_query.Eq, q.Action)
 	}
 	if q.StartTime > 0 {
-		qb.Where("login_time", query.Gte, time.Unix(q.StartTime, 0))
+		qb.Where("login_time", db_query.Gte, time.Unix(q.StartTime, 0))
 	}
 	if q.EndTime > 0 {
-		qb.Where("login_time", query.Lte, time.Unix(q.EndTime, 0))
+		qb.Where("login_time", db_query.Lte, time.Unix(q.EndTime, 0))
 	}
 
 	// 设置排序

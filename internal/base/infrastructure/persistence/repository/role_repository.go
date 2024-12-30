@@ -11,7 +11,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/baserepo"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type ISysRoleRepo interface {
@@ -23,7 +23,7 @@ type ISysRoleRepo interface {
 	GetUserRoles(ctx context.Context, userId string) ([]*entity.SysUserRole, error)
 	FindByIds(ctx context.Context, ids []int64) ([]*entity.Role, error)
 	FindAllEnabled(ctx context.Context) ([]*entity.Role, error)
-	Find(ctx context.Context, qb *query.QueryBuilder) ([]*entity.Role, error)
+	Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*entity.Role, error)
 	UpdatePermissions(ctx context.Context, roleID int64, permIDs []int64) error
 	GetRoleDataPermission(ctx context.Context, roleID int64) (*entity.DataPermission, error)
 	GetRolePermissions(ctx context.Context, roleID int64) ([]*entity.Permissions, error)
@@ -161,7 +161,7 @@ func (r *roleRepository) FindByIDs(ctx context.Context, ids []int64) ([]*model.R
 	return r.mapper.ToDomainList(roleEntities), nil
 }
 
-func (r *roleRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*model.Role, error) {
+func (r *roleRepository) Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*model.Role, error) {
 	records, err := r.repo.Find(ctx, qb)
 	if err != nil {
 		if database.IfErrorNotFound(err) {
@@ -173,7 +173,7 @@ func (r *roleRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*m
 	return roles, nil
 }
 
-func (r *roleRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
+func (r *roleRepository) Count(ctx context.Context, qb *db_query.QueryBuilder) (int64, error) {
 	return r.repo.Count(ctx, qb)
 }
 
@@ -192,8 +192,8 @@ func (r *roleRepository) FindByUserID(ctx context.Context, userID string) ([]*mo
 
 func (r *roleRepository) FindAllEnabled(ctx context.Context) ([]*model.Role, error) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
-	qb.Where("status", query.Eq, 1)
+	qb := db_query.NewQueryBuilder()
+	qb.Where("status", db_query.Eq, 1)
 	qb.OrderBy("sequence", false)
 
 	// 查询角色
@@ -208,10 +208,10 @@ func (r *roleRepository) FindAllEnabled(ctx context.Context) ([]*model.Role, err
 // FindByType 根据角色类型查询角色列表
 func (r *roleRepository) FindByType(ctx context.Context, roleType int8) ([]*model.Role, error) {
 	// 构建查询条件
-	qb := query.NewQueryBuilder()
-	qb.Where("type", query.Eq, roleType)
-	qb.Where("status", query.Eq, 1) // 只查询启用状态的角色
-	qb.OrderBy("sequence", false)   // 按sequence排序
+	qb := db_query.NewQueryBuilder()
+	qb.Where("type", db_query.Eq, roleType)
+	qb.Where("status", db_query.Eq, 1) // 只查询启用状态的角色
+	qb.OrderBy("sequence", false)      // 按sequence排序
 
 	// 查询角色
 	roles, err := r.repo.Find(ctx, qb)

@@ -10,7 +10,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type operationLogRepository struct {
@@ -49,7 +49,7 @@ func (r *operationLogRepository) FindByID(ctx context.Context, id int64) (*model
 }
 
 // Find 查询操作日志列表
-func (r *operationLogRepository) Find(ctx context.Context, tenantID string, month time.Time, qb *query.QueryBuilder) ([]*model.OperationLog, error) {
+func (r *operationLogRepository) Find(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) ([]*model.OperationLog, error) {
 	// 确保表存在
 	if err := r.EnsureTable(ctx, tenantID, month); err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (r *operationLogRepository) Find(ctx context.Context, tenantID string, mont
 }
 
 // Count 统计数量
-func (r *operationLogRepository) Count(ctx context.Context, tenantID string, month time.Time, qb *query.QueryBuilder) (int64, error) {
+func (r *operationLogRepository) Count(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) (int64, error) {
 	// 确保表存在
 	if err := r.EnsureTable(ctx, tenantID, month); err != nil {
 		return 0, err

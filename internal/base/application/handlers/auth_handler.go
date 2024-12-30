@@ -48,7 +48,7 @@ func (h *AuthHandler) HandleLogin(ctx context.Context, cmd commands.LoginCommand
 	}
 
 	// 验证登录类型
-	if cmd.LoginType == commands.LoginTypeAdmin && !auth.User.IsAdmin() {
+	if cmd.LoginType == commands.LoginTypeAdmin {
 		err = errors.New("非管理员用户不能登录管理端")
 		go h.recordLoginLog(ctx, auth.User, cmd, err)
 		return nil, herrors.NewBadReqError(err.Error())

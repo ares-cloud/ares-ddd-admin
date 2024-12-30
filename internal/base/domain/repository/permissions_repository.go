@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type IPermissionsRepository interface {
@@ -18,13 +18,13 @@ type IPermissionsRepository interface {
 	FindByType(ctx context.Context, permType int8) ([]*model.Permissions, error)
 
 	// 新增动态查询方法
-	Find(ctx context.Context, qb *query.QueryBuilder) ([]*model.Permissions, error)
-	Count(ctx context.Context, qb *query.QueryBuilder) (int64, error)
+	Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*model.Permissions, error)
+	Count(ctx context.Context, qb *db_query.QueryBuilder) (int64, error)
 
 	// 构建权限树相关方法
 	FindAllTree(ctx context.Context) ([]*model.Permissions, []int64, error)                                // 构建所有权限树
 	FindTreeByType(ctx context.Context, permType int8) ([]*model.Permissions, error)                       // 根据类型构建权限树
-	FindTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*model.Permissions, error)             // 根据查询条件构建权限树
+	FindTreeByQuery(ctx context.Context, qb *db_query.QueryBuilder) ([]*model.Permissions, error)          // 根据查询条件构建权限树
 	FindTreeByUserAndType(ctx context.Context, userID string, permType int8) ([]*model.Permissions, error) // 根据用户和类型构建权限树
 
 	// FindAllEnabled 获取所有启用状态的权限

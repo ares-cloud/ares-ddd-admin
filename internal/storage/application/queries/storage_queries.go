@@ -1,12 +1,12 @@
 package queries
 
 import (
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 // ListFoldersQuery 查询文件夹列表
 type ListFoldersQuery struct {
-	query.Page
+	db_query.Page
 	ParentID string `query:"parentId"` // 父文件夹ID
 	Name     string `query:"name"`     // 文件夹名称
 	TenantID string `query:"tenantId"` // 租户ID
@@ -14,7 +14,7 @@ type ListFoldersQuery struct {
 
 // ListFilesQuery 查询文件列表
 type ListFilesQuery struct {
-	query.Page
+	db_query.Page
 	FolderID    string `query:"folderId"`    // 文件夹ID
 	Name        string `query:"name"`        // 文件名
 	Type        string `query:"type"`        // 文件类型
@@ -35,7 +35,7 @@ type GetFolderTreeQuery struct {
 
 // ListRecycleFilesQuery 查询回收站文件列表查询
 type ListRecycleFilesQuery struct {
-	query.Page
+	db_query.Page
 	Name        string `query:"name"`        // 文件名
 	Type        string `query:"type"`        // 文件类型
 	StorageType string `query:"storageType"` // 存储类型

@@ -9,7 +9,7 @@ import (
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/baserepo"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 // sysMenuRepo ， 菜单数据层
@@ -151,7 +151,7 @@ func (r *sysMenuRepo) GetTreeByType(ctx context.Context, permType int8) ([]*enti
 }
 
 // GetTreeByQuery 根据查询条件获取权限树
-func (r *sysMenuRepo) GetTreeByQuery(ctx context.Context, qb *query.QueryBuilder) ([]*entity.Permissions, []*entity.PermissionsResource, error) {
+func (r *sysMenuRepo) GetTreeByQuery(ctx context.Context, qb *db_query.QueryBuilder) ([]*entity.Permissions, []*entity.PermissionsResource, error) {
 	var permEntities []*entity.Permissions
 
 	db := r.Db(ctx)

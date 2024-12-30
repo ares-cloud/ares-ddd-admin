@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/mapper"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
@@ -11,23 +12,21 @@ import (
 	drepository "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/baserepo"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type ISysTenantRepo interface {
 	baserepo.IBaseRepo[entity.Tenant, string]
-	GetByCode(ctx context.Context, code string) (*entity.Tenant, error)
-	DelById(ctx context.Context, id string) error
-	Create(ctx context.Context, tenant *entity.Tenant) error
 	Update(ctx context.Context, tenant *entity.Tenant) error
+	DeleteWithRelations(ctx context.Context, id string) error // 删除租户及关联数据
 
-	// 权限相关方法
+	// 权限相关
 	AssignPermissions(ctx context.Context, tenantID string, permissionIDs []int64) error
-	GetPermissionsByTenantID(ctx context.Context, tenantID string) ([]*entity.Permissions, []*entity.PermissionsResource, error)
+	GetPermissionsByTenantID(ctx context.Context, tenantID string) ([]*entity.Permissions, error)
 	HasPermission(ctx context.Context, tenantID string, permissionID int64) (bool, error)
 
-	// 用户相关方法
-	FindByIds(ctx context.Context, ids []string) ([]*entity.Tenant, error)
+	Lock(ctx context.Context, tenantID string, reason string) error
+	Unlock(ctx context.Context, tenantID string) error
 }
 
 type tenantRepository struct {
@@ -52,10 +51,10 @@ func NewTenantRepository(repo ISysTenantRepo, userRepo ISysUserRepo) drepository
 
 func (r *tenantRepository) Create(ctx context.Context, tenant *model.Tenant) error {
 	tenantEntity := r.mapper.ToEntity(tenant)
-	ctx = context.Background()
 	return r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
 		// 生成ID
 		tenantEntity.ID = r.repo.GenStringId()
+
 		// 创建管理员用户
 		if tenant.AdminUser != nil {
 			userEntity := r.userMapper.ToEntity(tenant.AdminUser)
@@ -66,38 +65,35 @@ func (r *tenantRepository) Create(ctx context.Context, tenant *model.Tenant) err
 			}
 			tenantEntity.AdminUserID = userEntity.ID
 		}
+
 		// 创建租户
-		err := r.repo.Create(ctx, tenantEntity)
-		if err != nil {
+		if _, err := r.repo.Add(ctx, tenantEntity); err != nil {
 			return fmt.Errorf("create tenant failed: %w", err)
 		}
-
 		return nil
 	})
 }
 
 func (r *tenantRepository) Update(ctx context.Context, tenant *model.Tenant) error {
 	tenantEntity := r.mapper.ToEntity(tenant)
-	return r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
-		// 更新租户信息
-		err := r.repo.Update(ctx, tenantEntity)
-		if err != nil {
-			return fmt.Errorf("update tenant failed: %w", err)
-		}
-
-		return nil
-	})
+	if err := r.repo.Update(ctx, tenantEntity); err != nil {
+		return fmt.Errorf("update tenant failed: %w", err)
+	}
+	return nil
 }
 
 func (r *tenantRepository) Delete(ctx context.Context, id string) error {
-	return r.repo.DelById(ctx, id)
+	if err := r.repo.DeleteWithRelations(ctx, id); err != nil {
+		return fmt.Errorf("delete tenant failed: %w", err)
+	}
+	return nil
 }
 
 func (r *tenantRepository) FindByID(ctx context.Context, id string) (*model.Tenant, error) {
 	tenantEntity, err := r.repo.FindById(ctx, id)
 	if err != nil {
 		if database.IfErrorNotFound(err) {
-			return nil, database.ErrRecordNotFound
+			return nil, nil
 		}
 		return nil, err
 	}
@@ -112,92 +108,56 @@ func (r *tenantRepository) FindByID(ctx context.Context, id string) (*model.Tena
 }
 
 func (r *tenantRepository) FindByCode(ctx context.Context, code string) (*model.Tenant, error) {
-	tenantEntity, err := r.repo.GetByCode(ctx, code)
-	if err != nil {
-		if database.IfErrorNotFound(err) {
-			return nil, database.ErrRecordNotFound
-		}
-		return nil, err
-	}
+	qb := db_query.NewQueryBuilder()
+	qb.Where("code", db_query.Eq, code)
 
-	// 查询管理员用户
-	adminUser, err := r.userRepo.FindById(ctx, tenantEntity.AdminUserID)
-	if err != nil && !database.IfErrorNotFound(err) {
-		return nil, err
-	}
-
-	return r.mapper.ToDomain(tenantEntity, adminUser), nil
-}
-
-func (r *tenantRepository) ExistsByCode(ctx context.Context, code string) (bool, error) {
-	_, err := r.repo.GetByCode(ctx, code)
-	if err != nil {
-		if database.IfErrorNotFound(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-func (r *tenantRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*model.Tenant, error) {
 	tenants, err := r.repo.Find(ctx, qb)
 	if err != nil {
 		return nil, err
 	}
-
-	// 获取所有管理员用户ID
-	adminUserIDs := make([]string, 0, len(tenants))
-	for _, t := range tenants {
-		if t.AdminUserID != "" {
-			adminUserIDs = append(adminUserIDs, t.AdminUserID)
-		}
+	if len(tenants) == 0 {
+		return nil, nil
 	}
 
 	// 查询管理员用户
-	var adminUsers []*entity.SysUser
-	if len(adminUserIDs) > 0 {
-		if adminUsers, err = r.userRepo.FindByIds(ctx, adminUserIDs); err != nil {
-			return nil, err
-		}
+	adminUser, err := r.userRepo.FindById(ctx, tenants[0].AdminUserID)
+	if err != nil && !database.IfErrorNotFound(err) {
+		return nil, err
 	}
 
-	// 构建管理员用户映射
-	adminUserMap := make(map[string]*entity.SysUser)
-	for _, u := range adminUsers {
-		adminUserMap[u.ID] = u
-	}
-
-	// 转换为领域模型
-	result := make([]*model.Tenant, len(tenants))
-	for i, t := range tenants {
-		result[i] = r.mapper.ToDomain(t, adminUserMap[t.AdminUserID])
-	}
-
-	return result, nil
+	return r.mapper.ToDomain(tenants[0], adminUser), nil
 }
 
-func (r *tenantRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
-	return r.repo.Count(ctx, qb)
-}
-func (r *tenantRepository) AssignPermissions(_ context.Context, tenantID string, permissionIDs []int64) error {
-	return r.repo.AssignPermissions(context.Background(), tenantID, permissionIDs)
-}
+func (r *tenantRepository) ExistsByCode(ctx context.Context, code string) (bool, error) {
+	qb := db_query.NewQueryBuilder()
+	qb.Where("code", db_query.Eq, code)
 
-func (r *tenantRepository) GetPermissions(_ context.Context, tenantID string) ([]*model.Permissions, error) {
-	// 获取租户权限和资源
-	permissions, resources, err := r.repo.GetPermissionsByTenantID(context.Background(), tenantID)
+	count, err := r.repo.Count(ctx, qb)
 	if err != nil {
-		if database.IfErrorNotFound(err) {
-			return make([]*model.Permissions, 0), nil
-		}
-		return nil, fmt.Errorf("get tenant permissions failed: %w", err)
+		return false, err
 	}
-
-	// 转换为领域模型
-	return r.permMapper.ToDomainList(permissions, resources), nil
+	return count > 0, nil
 }
 
-func (r *tenantRepository) HasPermission(_ context.Context, tenantID string, permissionID int64) (bool, error) {
-	return r.repo.HasPermission(context.Background(), tenantID, permissionID)
+func (r *tenantRepository) AssignPermissions(ctx context.Context, tenantID string, permissionIDs []int64) error {
+	return r.repo.AssignPermissions(ctx, tenantID, permissionIDs)
+}
+
+func (r *tenantRepository) GetPermissions(ctx context.Context, tenantID string) ([]*model.Permissions, error) {
+	permissions, err := r.repo.GetPermissionsByTenantID(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	return r.permMapper.ToDomainList(permissions, nil), nil
+}
+
+func (r *tenantRepository) HasPermission(ctx context.Context, tenantID string, permissionID int64) (bool, error) {
+	return r.repo.HasPermission(ctx, tenantID, permissionID)
+}
+func (r *tenantRepository) Lock(ctx context.Context, tenantID string, reason string) error {
+	return r.repo.Lock(ctx, tenantID, reason)
+}
+
+func (r *tenantRepository) Unlock(ctx context.Context, tenantID string) error {
+	return r.repo.Unlock(ctx, tenantID)
 }

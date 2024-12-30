@@ -1,7 +1,7 @@
 package queries
 
 import (
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type GetRoleQuery struct {
@@ -9,7 +9,7 @@ type GetRoleQuery struct {
 }
 
 type ListRolesQuery struct {
-	query.Page
+	db_query.Page
 	Code   string `json:"code" query:"code"`    // 编码
 	Name   string `json:"name" query:"name"`    // 名称
 	Type   int    `json:"type" query:"type"`    // 类型

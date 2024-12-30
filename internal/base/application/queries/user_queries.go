@@ -1,6 +1,6 @@
 package queries
 
-import "github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+import "github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 
 // GetUserQuery 获取用户查询
 type GetUserQuery struct {
@@ -9,7 +9,7 @@ type GetUserQuery struct {
 
 // ListUsersQuery 用户列表查询
 type ListUsersQuery struct {
-	query.Page
+	db_query.Page
 	Username string
 	Name     string
 	Phone    string
@@ -34,7 +34,7 @@ type GetUserInfoQuery struct {
 
 // ListDepartmentUsersQuery 部门用户列表查询
 type ListDepartmentUsersQuery struct {
-	query.Page
+	db_query.Page
 	DeptID         string
 	ExcludeAdminID string
 	Username       string
@@ -43,7 +43,7 @@ type ListDepartmentUsersQuery struct {
 
 // ListUnassignedUsersQuery 未分配部门用户列表查询
 type ListUnassignedUsersQuery struct {
-	query.Page
+	db_query.Page
 	Username string
 	Name     string
 }

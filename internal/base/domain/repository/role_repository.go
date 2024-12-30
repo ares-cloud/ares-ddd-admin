@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type IRoleRepository interface {
@@ -18,8 +18,8 @@ type IRoleRepository interface {
 	FindByIDs(ctx context.Context, ids []int64) ([]*model.Role, error)
 
 	// 新增动态查询方法
-	Find(ctx context.Context, qb *query.QueryBuilder) ([]*model.Role, error)
-	Count(ctx context.Context, qb *query.QueryBuilder) (int64, error)
+	Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*model.Role, error)
+	Count(ctx context.Context, qb *db_query.QueryBuilder) (int64, error)
 
 	// FindAllEnabled 获取所有启用状态的角色
 	FindAllEnabled(ctx context.Context) ([]*model.Role, error)

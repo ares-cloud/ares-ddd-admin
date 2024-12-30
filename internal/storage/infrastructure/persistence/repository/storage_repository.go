@@ -12,7 +12,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/mapper"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type storageRepository struct {
@@ -63,7 +63,7 @@ func (r *storageRepository) GetFile(ctx context.Context, id string) (*model.File
 }
 
 // ListFiles 查询文件列表
-func (r *storageRepository) ListFiles(ctx context.Context, folderID string, qb *query.QueryBuilder) ([]*model.File, int64, error) {
+func (r *storageRepository) ListFiles(ctx context.Context, folderID string, qb *db_query.QueryBuilder) ([]*model.File, int64, error) {
 	db := r.db.DB(ctx).Model(&entity.File{})
 
 	// 添加文件夹条件
@@ -126,7 +126,7 @@ func (r *storageRepository) GetFolder(ctx context.Context, id string) (*model.Fo
 }
 
 // ListFolders 查询文件夹列表
-func (r *storageRepository) ListFolders(ctx context.Context, parentID string, qb *query.QueryBuilder) ([]*model.Folder, int64, error) {
+func (r *storageRepository) ListFolders(ctx context.Context, parentID string, qb *db_query.QueryBuilder) ([]*model.Folder, int64, error) {
 	db := r.db.DB(ctx).Model(&entity.Folder{})
 
 	// 添加父文件夹条件
@@ -199,7 +199,7 @@ func (r *storageRepository) CreateFileShare(ctx context.Context, share *model.Fi
 // GetFolderTree 获取文件夹树形结构
 func (r *storageRepository) GetFolderTree(ctx context.Context, tenantID string) ([]*model.FolderTree, error) {
 	// 1. 获取所有文件夹
-	qb := query.NewQueryBuilder().Where("tenant_id", query.Eq, tenantID)
+	qb := db_query.NewQueryBuilder().Where("tenant_id", db_query.Eq, tenantID)
 	folders, _, err := r.ListFolders(ctx, "0", qb)
 	if err != nil {
 		return nil, err

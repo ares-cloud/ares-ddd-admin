@@ -3,9 +3,11 @@ package data
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
-	"time"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/baserepo"
@@ -121,37 +123,17 @@ func (r *sysTenantRepo) AssignPermissions(ctx context.Context, tenantID string, 
 	})
 }
 
-// GetPermissionsByTenantID 获取租户的权限列表及资源
-func (r *sysTenantRepo) GetPermissionsByTenantID(ctx context.Context, tenantID string) ([]*entity.Permissions, []*entity.PermissionsResource, error) {
+// GetPermissionsByTenantID 获取租户的权限列表
+func (r *sysTenantRepo) GetPermissionsByTenantID(ctx context.Context, tenantID string) ([]*entity.Permissions, error) {
 	var permissions []*entity.Permissions
-
-	// 通过关联表查询权限
 	err := r.Db(ctx).
 		Joins("JOIN sys_tenant_permissions tp ON tp.permission_id = sys_permissions.id").
 		Where("tp.tenant_id = ?", tenantID).
 		Find(&permissions).Error
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-
-	if len(permissions) == 0 {
-		return []*entity.Permissions{}, nil, nil
-	}
-
-	// 获取权限ID列表
-	permIDs := make([]int64, 0, len(permissions))
-	for _, p := range permissions {
-		permIDs = append(permIDs, p.ID)
-	}
-
-	// 查询权限资源
-	var resources []*entity.PermissionsResource
-	err = r.Db(ctx).Where("permissions_id IN ?", permIDs).Find(&resources).Error
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return permissions, resources, nil
+	return permissions, nil
 }
 
 // HasPermission 检查租户是否拥有指定权限
@@ -161,4 +143,77 @@ func (r *sysTenantRepo) HasPermission(ctx context.Context, tenantID string, perm
 		Where("tenant_id = ? AND permission_id = ?", tenantID, permissionID).
 		Count(&count).Error
 	return count > 0, err
+}
+
+// DeleteWithRelations 删除租户及关联数据
+func (r *sysTenantRepo) DeleteWithRelations(ctx context.Context, id string) error {
+	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
+		// 检查是否为默认租户
+		tenant, err := r.FindById(ctx, id)
+		if err != nil {
+			return fmt.Errorf("find tenant failed: %w", err)
+		}
+		if tenant.IsDefault == 1 {
+			return fmt.Errorf("cannot delete default tenant")
+		}
+
+		// 删除租户下的所有用户
+		if err := r.Db(ctx).Where("tenant_id = ?", id).Delete(&entity.SysUser{}).Error; err != nil {
+			return err
+		}
+
+		// 删除租户下的所有角色
+		if err := r.Db(ctx).Where("tenant_id = ?", id).Delete(&entity.Role{}).Error; err != nil {
+			return err
+		}
+
+		// 删除租户
+		return r.DelById(ctx, id)
+	})
+}
+
+// Lock 锁定租户
+func (r *sysTenantRepo) Lock(ctx context.Context, tenantID string, reason string) error {
+	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
+		// 检查租户是否存在
+		tenant, err := r.FindById(ctx, tenantID)
+		if err != nil {
+			return fmt.Errorf("find tenant failed: %w", err)
+		}
+		if tenant == nil {
+			return fmt.Errorf("tenant not found: %s", tenantID)
+		}
+
+		// 更新租户状态和锁定原因
+		return r.Db(ctx).Model(&entity.Tenant{}).
+			Where("id = ?", tenantID).
+			Updates(map[string]interface{}{
+				"status":      model.StatusDisabled,
+				"lock_reason": reason,
+				"updated_at":  time.Now().Unix(),
+			}).Error
+	})
+}
+
+// Unlock 解锁租户
+func (r *sysTenantRepo) Unlock(ctx context.Context, tenantID string) error {
+	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
+		// 检查租户是否存在
+		tenant, err := r.FindById(ctx, tenantID)
+		if err != nil {
+			return fmt.Errorf("find tenant failed: %w", err)
+		}
+		if tenant == nil {
+			return fmt.Errorf("tenant not found: %s", tenantID)
+		}
+
+		// 更新租户状态和清空锁定原因
+		return r.Db(ctx).Model(&entity.Tenant{}).
+			Where("id = ?", tenantID).
+			Updates(map[string]interface{}{
+				"status":      model.StatusEnabled,
+				"lock_reason": "",
+				"updated_at":  time.Now().Unix(),
+			}).Error
+	})
 }

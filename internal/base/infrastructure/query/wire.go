@@ -8,7 +8,10 @@ import (
 
 var ProviderSet = wire.NewSet(
 	impl.NewUserQueryService,
+	impl.NewTenantQueryService,
 	cache.NewCacheEventHandler,
 	cache.NewUserQueryCache,
+	cache.NewTenantQueryCache,
 	wire.Bind(new(UserQueryService), new(*cache.UserQueryCache)),
+	wire.Bind(new(TenantQueryService), new(*cache.TenantQueryCache)),
 )

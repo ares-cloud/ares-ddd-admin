@@ -14,6 +14,7 @@ type Tenant struct {
 	IsDefault   int8   `json:"is_default" gorm:"default:2;comment:是否默认租户(1:是 2:否)"`
 	ExpireTime  int64  `json:"expire_time" gorm:"comment:过期时间"`
 	Description string `json:"description" gorm:"size:512;comment:描述"`
+	LockReason  string `json:"lock_reason" gorm:"size:255;comment:禁用原因"`
 }
 
 // TableName 定义表名

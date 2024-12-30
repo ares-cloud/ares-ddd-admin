@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 )
@@ -43,10 +43,10 @@ type IDepartmentRepository interface {
 	RemoveUsers(ctx context.Context, deptID string, userIDs []string) error
 
 	// Find 查询部门列表
-	Find(ctx context.Context, qb *query.QueryBuilder) ([]*model.Department, error)
+	Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*model.Department, error)
 
 	// Count 查询总数
-	Count(ctx context.Context, qb *query.QueryBuilder) (int64, error)
+	Count(ctx context.Context, qb *db_query.QueryBuilder) (int64, error)
 }
 
 // ListDepartmentQuery 部门列表查询参数

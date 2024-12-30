@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	drepository "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
@@ -72,8 +72,8 @@ func (r *departmentRepository) GetByCode(ctx context.Context, code string) (*mod
 }
 
 func (r *departmentRepository) GetByParentID(ctx context.Context, parentID string) ([]*model.Department, error) {
-	qb := query.NewQueryBuilder()
-	qb.Where("parentId", query.Eq, parentID)
+	qb := db_query.NewQueryBuilder()
+	qb.Where("parentId", db_query.Eq, parentID)
 	qb.OrderBy("sort", false)
 
 	deptEntities, err := r.repo.Find(ctx, qb)
@@ -85,18 +85,18 @@ func (r *departmentRepository) GetByParentID(ctx context.Context, parentID strin
 }
 
 func (r *departmentRepository) List(ctx context.Context, req *drepository.ListDepartmentQuery) ([]*model.Department, error) {
-	qb := query.NewQueryBuilder()
+	qb := db_query.NewQueryBuilder()
 	if req.Name != "" {
-		qb.Where("name", query.Like, "%"+req.Name+"%")
+		qb.Where("name", db_query.Like, "%"+req.Name+"%")
 	}
 	if req.Code != "" {
-		qb.Where("code", query.Like, "%"+req.Code+"%")
+		qb.Where("code", db_query.Like, "%"+req.Code+"%")
 	}
 	if req.Status != nil {
-		qb.Where("status", query.Eq, *req.Status)
+		qb.Where("status", db_query.Eq, *req.Status)
 	}
 	if req.ParentID != "" {
-		qb.Where("parent_id", query.Eq, req.ParentID)
+		qb.Where("parent_id", db_query.Eq, req.ParentID)
 	}
 	qb.OrderBy("sort", false)
 
@@ -191,7 +191,7 @@ func (r *departmentRepository) AssignUsers(ctx context.Context, deptID string, u
 		userDepts := make([]*entity.UserDepartment, 0, len(userIDs))
 		for _, userID := range userIDs {
 			userDepts = append(userDepts, &entity.UserDepartment{
-				ID:     r.repo.GenStringId(),
+				ID:     r.repo.GenInt64Id(),
 				UserID: userID,
 				DeptID: deptID,
 			})
@@ -207,7 +207,7 @@ func (r *departmentRepository) RemoveUsers(ctx context.Context, deptID string, u
 }
 
 // Find 查询部门列表
-func (r *departmentRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*model.Department, error) {
+func (r *departmentRepository) Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*model.Department, error) {
 	depts, err := r.repo.Find(ctx, qb)
 	if err != nil {
 		return nil, err
@@ -216,6 +216,6 @@ func (r *departmentRepository) Find(ctx context.Context, qb *query.QueryBuilder)
 }
 
 // Count 查询总数
-func (r *departmentRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
+func (r *departmentRepository) Count(ctx context.Context, qb *db_query.QueryBuilder) (int64, error) {
 	return r.repo.Count(ctx, qb)
 }

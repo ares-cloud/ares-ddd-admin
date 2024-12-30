@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/events"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/errors"
 	domanevent "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/events"
@@ -41,12 +42,12 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*mo
 	}
 
 	// 验证密码
-	if !user.CheckPassword(password) {
+	if her := user.ComparePassword(password); herrors.HaveError(her) {
 		return nil, errors.ErrInvalidCredentials
 	}
 
 	// 检查用户状态
-	if !user.IsActive() {
+	if ok, _ := user.IsLocked(); !ok {
 		return nil, errors.ErrUserDisabled
 	}
 
@@ -68,12 +69,12 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID string, oldPass
 	}
 
 	// 验证旧密码
-	if !user.CheckPassword(oldPassword) {
+	if herrors.HaveError(user.ComparePassword(oldPassword)) {
 		return errors.ErrInvalidCredentials
 	}
-
+	user.Password = newPassword
 	// 更新密码
-	if err := user.ChangePassword(oldPassword, newPassword); err != nil {
+	if err := user.HashPassword(); err != nil {
 		return err
 	}
 

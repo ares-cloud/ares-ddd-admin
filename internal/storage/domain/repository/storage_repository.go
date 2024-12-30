@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/model"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type IStorageRepository interface {
@@ -14,14 +14,14 @@ type IStorageRepository interface {
 	UpdateFile(ctx context.Context, file *model.File) error
 	DeleteFile(ctx context.Context, id string) error
 	GetFile(ctx context.Context, id string) (*model.File, error)
-	ListFiles(ctx context.Context, folderID string, qb *query.QueryBuilder) ([]*model.File, int64, error)
+	ListFiles(ctx context.Context, folderID string, qb *db_query.QueryBuilder) ([]*model.File, int64, error)
 
 	// Folder operations
 	CreateFolder(ctx context.Context, folder *model.Folder) error
 	UpdateFolder(ctx context.Context, folder *model.Folder) error
 	DeleteFolder(ctx context.Context, id string) error
 	GetFolder(ctx context.Context, id string) (*model.Folder, error)
-	ListFolders(ctx context.Context, parentID string, qb *query.QueryBuilder) ([]*model.Folder, int64, error)
+	ListFolders(ctx context.Context, parentID string, qb *db_query.QueryBuilder) ([]*model.Folder, int64, error)
 
 	// Share operations
 	GetFileShare(ctx context.Context, shareCode string) (*model.FileShare, error)

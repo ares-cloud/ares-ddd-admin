@@ -1,4 +1,4 @@
-package query
+package db_query
 
 // Page 分页参数
 type Page struct {
