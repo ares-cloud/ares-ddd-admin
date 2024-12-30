@@ -7,6 +7,10 @@ import (
 
 type RoleMapper struct{}
 
+func NewRoleMapper() *RoleMapper {
+	return &RoleMapper{}
+}
+
 func (m *RoleMapper) ToDomain(e *entity.Role, permissions []*model.Permissions) *model.Role {
 	return &model.Role{
 		ID:          e.ID,

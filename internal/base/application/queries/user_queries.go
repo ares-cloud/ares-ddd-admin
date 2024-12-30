@@ -2,23 +2,48 @@ package queries
 
 import "github.com/ares-cloud/ares-ddd-admin/pkg/database/query"
 
+// GetUserQuery 获取用户查询
 type GetUserQuery struct {
-	Id string `json:"id" query:"id"` // 用户ID
+	ID string
 }
 
+// ListUsersQuery 用户列表查询
 type ListUsersQuery struct {
 	query.Page
-	Username string `json:"username" query:"username"` // 登录用户名
-	Name     string `json:"name" query:"name"`         // 用户姓名
-	Phone    string `json:"phone" query:"phone"`       // 用户手机号
-	Email    string `json:"email" query:"email"`       // 用户邮箱
-	Status   int8   `json:"status" query:"status"`     // 角色状态（禁用、启用）
+	Username string
+	Name     string
+	Phone    string
+	Email    string
+	Status   int
 }
 
-type GetUserInfoQuery struct {
-	Id string `json:"id" query:"id"` // 用户ID
+// GetUserPermissionsQuery 获取用户权限查询
+type GetUserPermissionsQuery struct {
+	UserID string
 }
 
+// GetUserMenusQuery 获取用户菜单查询
 type GetUserMenusQuery struct {
-	Id string `json:"id" query:"id"` // 用户ID
+	UserID string
+}
+
+// GetUserInfoQuery 查询用户信息
+type GetUserInfoQuery struct {
+	UserID string
+}
+
+// ListDepartmentUsersQuery 部门用户列表查询
+type ListDepartmentUsersQuery struct {
+	query.Page
+	DeptID         string
+	ExcludeAdminID string
+	Username       string
+	Name           string
+}
+
+// ListUnassignedUsersQuery 未分配部门用户列表查询
+type ListUnassignedUsersQuery struct {
+	query.Page
+	Username string
+	Name     string
 }

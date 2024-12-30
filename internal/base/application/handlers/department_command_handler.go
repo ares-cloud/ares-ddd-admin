@@ -167,10 +167,10 @@ func (h *DepartmentCommandHandler) HandleSetAdmin(ctx context.Context, cmd *comm
 		return herrors.NewServerHError(err)
 	}
 
-	// 3. 检查用户是否属于该部门
-	if !h.userRepo.BelongsToDepartment(ctx, user.ID, dept.ID) {
-		return herrors.NewBadReqError("用户不属于该部门")
-	}
+	//// 3. 检查用户是否属于该部门
+	//if !h.userRepo.BelongsToDepartment(ctx, user.ID, dept.ID) {
+	//	return herrors.NewBadReqError("用户不属于该部门")
+	//}
 
 	// 4. 更新部门管理员信息
 	dept.SetAdmin(user.ID, user.Name, user.Phone)
@@ -235,38 +235,38 @@ func (h *DepartmentCommandHandler) HandleTransferUser(ctx context.Context, cmd *
 		hlog.CtxErrorf(ctx, "Command validation error: %s", hr)
 		return hr
 	}
-	// 1. 验证用户是否存在
-	user, err := h.userRepo.FindByID(ctx, cmd.UserID)
-	if err != nil {
-		return herrors.NewBadReqError(fmt.Sprintf("用户[%s]不存在", cmd.UserID))
-	}
-
-	// 2. 验证原部门
-	fromDept, err := h.deptRepo.GetByID(ctx, cmd.FromDeptID)
-	if err != nil {
-		return herrors.NewBadReqError(fmt.Sprintf("原部门[%s]不存在", cmd.FromDeptID))
-	}
-
-	// 3. 验证目标部门
-	_, err = h.deptRepo.GetByID(ctx, cmd.ToDeptID)
-	if err != nil {
-		return herrors.NewBadReqError(fmt.Sprintf("目标部门[%s]不存在", cmd.ToDeptID))
-	}
-
-	// 4. 检查用户是否在原部门
-	if !h.userRepo.BelongsToDepartment(ctx, cmd.UserID, cmd.FromDeptID) {
-		return herrors.NewBadReqError(fmt.Sprintf("用户[%s]不属于部门[%s]", user.Username, fromDept.Name))
-	}
-
-	// 5. 检查是否为部门管理员
-	if fromDept.AdminID == cmd.UserID {
-		return herrors.NewBadReqError("部门管理员不能调动")
-	}
-
-	// 6. 执行调动
-	if err := h.userRepo.TransferUser(ctx, cmd.UserID, cmd.FromDeptID, cmd.ToDeptID); err != nil {
-		return herrors.NewServerHError(err)
-	}
+	//// 1. 验证用户是否存在
+	//user, err := h.userRepo.FindByID(ctx, cmd.UserID)
+	//if err != nil {
+	//	return herrors.NewBadReqError(fmt.Sprintf("用户[%s]不存在", cmd.UserID))
+	//}
+	//
+	//// 2. 验证原部门
+	//fromDept, err := h.deptRepo.GetByID(ctx, cmd.FromDeptID)
+	//if err != nil {
+	//	return herrors.NewBadReqError(fmt.Sprintf("原部门[%s]不存在", cmd.FromDeptID))
+	//}
+	//
+	//// 3. 验证目标部门
+	//_, err = h.deptRepo.GetByID(ctx, cmd.ToDeptID)
+	//if err != nil {
+	//	return herrors.NewBadReqError(fmt.Sprintf("目标部门[%s]不存在", cmd.ToDeptID))
+	//}
+	//
+	//// 4. 检查用户是否在原部门
+	//if !h.userRepo.BelongsToDepartment(ctx, cmd.UserID, cmd.FromDeptID) {
+	//	return herrors.NewBadReqError(fmt.Sprintf("用户[%s]不属于部门[%s]", user.Username, fromDept.Name))
+	//}
+	//
+	//// 5. 检查是否为部门管理员
+	//if fromDept.AdminID == cmd.UserID {
+	//	return herrors.NewBadReqError("部门管理员不能调动")
+	//}
+	//
+	//// 6. 执行调动
+	//if err := h.userRepo.TransferUser(ctx, cmd.UserID, cmd.FromDeptID, cmd.ToDeptID); err != nil {
+	//	return herrors.NewServerHError(err)
+	//}
 
 	return nil
 }

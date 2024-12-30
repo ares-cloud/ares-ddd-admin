@@ -3,8 +3,7 @@ package base
 import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/interfaces/rest"
 	"github.com/google/wire"
 )
@@ -13,8 +12,7 @@ import (
 var ProviderSet = wire.NewSet(
 	domain.ProviderSet,
 	handlers.ProviderSet,
-	persistence.ProviderSet,
-	base.ProviderSet,
+	infrastructure.ProviderSet,
 	rest.NewSysRoleController,
 	rest.NewSysUserController,
 	rest.NewSysTenantController,

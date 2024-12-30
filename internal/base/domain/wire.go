@@ -6,9 +6,10 @@ import (
 )
 
 var ProviderSet = wire.NewSet(
-	service.NewPermissionService,
+	service.NewAuthService,
 	service.NewRoleService,
-	service.NewUserService,
+	service.NewPermissionService,
+	service.NewTenantService,
 	service.NewDepartmentService,
-	service.NewDataPermissionService,
+	service.NewUserCommandService,
 )

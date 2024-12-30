@@ -9,6 +9,7 @@ type TenantDto struct {
 	ID          string   `json:"id"`          // ID
 	Code        string   `json:"code"`        // 租户编码
 	Name        string   `json:"name"`        // 租户名称
+	Domain      string   `json:"domain"`      // 域名
 	Description string   `json:"description"` // 描述
 	IsDefault   int8     `json:"isDefault"`   // 是否默认租户
 	Status      int8     `json:"status"`      // 状态
@@ -28,6 +29,7 @@ func ToTenantDto(t *model.Tenant) *TenantDto {
 		ID:          t.ID,
 		Code:        t.Code,
 		Name:        t.Name,
+		Domain:      t.Domain,
 		Description: t.Description,
 		IsDefault:   t.IsDefault,
 		Status:      t.Status,

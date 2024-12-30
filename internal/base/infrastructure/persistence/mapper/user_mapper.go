@@ -7,6 +7,10 @@ import (
 
 type UserMapper struct{}
 
+func NewUserMapper() *UserMapper {
+	return &UserMapper{}
+}
+
 func (m *UserMapper) ToDomain(e *entity.SysUser, roles []*model.Role) *model.User {
 	return &model.User{
 		ID:             e.ID,

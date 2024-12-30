@@ -101,7 +101,7 @@ func (c *SysUserController) AddUser(ctx context.Context, params *commands.Create
 // @Router /v1/sys/user/:id [get]
 func (c *SysUserController) GetDetails(ctx context.Context, params *models.StringIdReq) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
-	data, err := c.queryHandel.HandleGet(ctx, queries.GetUserQuery{Id: params.Id})
+	data, err := c.queryHandel.HandleGet(ctx, queries.GetUserQuery{ID: params.Id})
 	if err != nil {
 		return result.WithError(err)
 	}
@@ -212,7 +212,7 @@ func (c *SysUserController) GetUserInfo(ctx context.Context) *hserver.ResponseRe
 	userId := actx.GetUserId(ctx)
 
 	data, err := c.queryHandel.HandleGetUserInfo(ctx, queries.GetUserInfoQuery{
-		Id: userId,
+		UserID: userId,
 	})
 	if err != nil {
 		return result.WithError(err)
@@ -238,7 +238,7 @@ func (c *SysUserController) GetUserMenus(ctx context.Context) *hserver.ResponseR
 	userId := actx.GetUserId(ctx)
 
 	data, err := c.queryHandel.HandleGetUserMenus(ctx, queries.GetUserMenusQuery{
-		Id: userId,
+		UserID: userId,
 	})
 	if err != nil {
 		return result.WithError(err)

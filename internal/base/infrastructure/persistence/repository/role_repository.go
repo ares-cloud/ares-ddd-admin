@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/mapper"
 
@@ -18,10 +19,17 @@ type ISysRoleRepo interface {
 	GetByCode(ctx context.Context, code string) (*entity.Role, error)
 	GetByRoleId(ctx context.Context, roleId int64) ([]*entity.RolePermissions, error)
 	DeletePermissionsByRoleId(ctx context.Context, roleId int64) error
-	GetByUserId(ctx context.Context, userId string) ([]*entity.SysUserRole, error)
+	GetByUserId(ctx context.Context, userId string) ([]*entity.Role, error)
+	GetUserRoles(ctx context.Context, userId string) ([]*entity.SysUserRole, error)
 	FindByIds(ctx context.Context, ids []int64) ([]*entity.Role, error)
 	FindAllEnabled(ctx context.Context) ([]*entity.Role, error)
 	Find(ctx context.Context, qb *query.QueryBuilder) ([]*entity.Role, error)
+	UpdatePermissions(ctx context.Context, roleID int64, permIDs []int64) error
+	GetRoleDataPermission(ctx context.Context, roleID int64) (*entity.DataPermission, error)
+	GetRolePermissions(ctx context.Context, roleID int64) ([]*entity.Permissions, error)
+	FindByPermissionID(ctx context.Context, permissionID int64) ([]*entity.Role, error)
+	FindByType(ctx context.Context, roleType int8) ([]*entity.Role, error)
+	GetPermissionsByRoleID(ctx context.Context, roleID int64) ([]int64, error)
 }
 
 type roleRepository struct {
@@ -179,24 +187,7 @@ func (r *roleRepository) FindByUserID(ctx context.Context, userID string) ([]*mo
 	if err != nil {
 		return nil, err
 	}
-
-	if len(userRoles) == 0 {
-		return []*model.Role{}, nil
-	}
-
-	// 获取角色ID列表
-	roleIds := make([]int64, 0, len(userRoles))
-	for _, ur := range userRoles {
-		roleIds = append(roleIds, ur.RoleID)
-	}
-
-	// 查询角色信息
-	roles, err := r.repo.FindByIds(ctx, roleIds)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.mapper.ToDomainList(roles), nil
+	return r.mapper.ToDomainList(userRoles), nil
 }
 
 func (r *roleRepository) FindAllEnabled(ctx context.Context) ([]*model.Role, error) {
@@ -242,4 +233,49 @@ func (r *roleRepository) GetPermissionsByRoleID(ctx context.Context, roleID int6
 		Where("role_id = ?", roleID).
 		Pluck("permission_id", &permIDs).Error
 	return permIDs, err
+}
+
+// FindByPermissionID 根据权限ID查找角色
+func (r *roleRepository) FindByPermissionID(ctx context.Context, permissionID int64) ([]*model.Role, error) {
+	roles, err := r.repo.FindByPermissionID(ctx, permissionID)
+	if err != nil {
+		return nil, err
+	}
+	return r.mapper.ToDomainList(roles), nil
+}
+
+// UpdatePermissions 更新角色权限
+func (r *roleRepository) UpdatePermissions(ctx context.Context, roleID int64, permIDs []int64) error {
+	return r.repo.UpdatePermissions(ctx, roleID, permIDs)
+}
+
+// GetRoleDataPermission 获取角色数据权限
+func (r *roleRepository) GetRoleDataPermission(ctx context.Context, roleID int64) (*model.DataPermission, error) {
+	dataPerm, err := r.repo.GetRoleDataPermission(ctx, roleID)
+	if err != nil {
+		return nil, err
+	}
+	if dataPerm == nil {
+		return nil, nil
+	}
+	var deptIDs []string
+	if err = json.Unmarshal([]byte(dataPerm.DeptIDs), &deptIDs); err != nil {
+		return nil, err
+	}
+	return &model.DataPermission{
+		ID:       dataPerm.ID,
+		RoleID:   dataPerm.RoleID,
+		Scope:    model.DataScope(dataPerm.Scope),
+		DeptIDs:  deptIDs,
+		TenantID: dataPerm.TenantID,
+	}, nil
+}
+
+// GetRolePermissions 获取角色权限
+func (r *roleRepository) GetRolePermissions(ctx context.Context, roleID int64) ([]*model.Permissions, error) {
+	permissions, err := r.repo.GetRolePermissions(ctx, roleID)
+	if err != nil {
+		return nil, err
+	}
+	return r.permMapper.ToDomainList(permissions, nil), nil
 }

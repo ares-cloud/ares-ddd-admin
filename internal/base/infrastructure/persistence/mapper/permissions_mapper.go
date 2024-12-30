@@ -7,6 +7,10 @@ import (
 
 type PermissionsMapper struct{}
 
+func NewPermissionsMapper() *PermissionsMapper {
+	return &PermissionsMapper{}
+}
+
 // ToDomain 实体转换为领域模型
 func (m *PermissionsMapper) ToDomain(e *entity.Permissions, resources []*entity.PermissionsResource) *model.Permissions {
 	if e == nil {

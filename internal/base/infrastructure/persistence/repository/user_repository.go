@@ -18,6 +18,15 @@ type ISysUserRepo interface {
 	GetByUsername(ctx context.Context, username string) (*entity.SysUser, error)
 	DeleteRoleByUserId(ctx context.Context, userId string) error
 	BelongsToDepartment(ctx context.Context, userID string, deptID string) bool
+	GetUserPermissionCodes(ctx context.Context, userID string) ([]string, error)
+	GetUserMenus(ctx context.Context, userID string) ([]*entity.Permissions, error)
+	FindByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) ([]*entity.SysUser, error)
+	CountByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) (int64, error)
+	FindUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) ([]*entity.SysUser, error)
+	CountUnassignedUsers(ctx context.Context, qb *query.QueryBuilder) (int64, error)
+	FindByRoleID(ctx context.Context, roleID int64) ([]*entity.SysUser, error)
+	AssignUsersToDepartment(ctx context.Context, deptID string, userIDs []string) error
+	TransferUserDepartment(ctx context.Context, userID string, fromDeptID string, toDeptID string) error
 }
 
 type userRepository struct {
@@ -25,6 +34,7 @@ type userRepository struct {
 	roleRepo   ISysRoleRepo
 	mapper     *mapper.UserMapper
 	roleMapper *mapper.RoleMapper
+	menuMapper *mapper.PermissionsMapper
 }
 
 func NewUserRepository(repo ISysUserRepo, roleRepo ISysRoleRepo) drepository.IUserRepository {
@@ -33,6 +43,7 @@ func NewUserRepository(repo ISysUserRepo, roleRepo ISysRoleRepo) drepository.IUs
 		roleRepo:   roleRepo,
 		mapper:     &mapper.UserMapper{},
 		roleMapper: &mapper.RoleMapper{},
+		menuMapper: &mapper.PermissionsMapper{},
 	}
 }
 
@@ -109,7 +120,7 @@ func (r *userRepository) FindByID(ctx context.Context, id string) (*model.User, 
 	if len(userRoles) > 0 {
 		roleIds := make([]int64, 0)
 		for _, role := range userRoles {
-			roleIds = append(roleIds, role.RoleID)
+			roleIds = append(roleIds, role.ID)
 		}
 		rs, err1 := r.roleRepo.FindByIds(ctx, roleIds)
 		if err1 != nil {
@@ -140,7 +151,7 @@ func (r *userRepository) FindByUsername(ctx context.Context, username string) (*
 	if len(userRoles) > 0 {
 		roleIds := make([]int64, 0)
 		for _, role := range userRoles {
-			roleIds = append(roleIds, role.RoleID)
+			roleIds = append(roleIds, role.ID)
 		}
 		rs, err1 := r.roleRepo.FindByIds(ctx, roleIds)
 		if err1 != nil {
@@ -176,7 +187,7 @@ func (r *userRepository) Find(ctx context.Context, qb *query.QueryBuilder) ([]*m
 	return users, nil
 }
 
-// Count 实现��询
+// Count 实现查询
 func (r *userRepository) Count(ctx context.Context, qb *query.QueryBuilder) (int64, error) {
 	return r.repo.Count(ctx, qb)
 }
@@ -192,27 +203,10 @@ func (r *userRepository) BelongsToDepartment(ctx context.Context, userID string,
 
 // FindByDepartment 查询部门下的用户
 func (r *userRepository) FindByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *query.QueryBuilder) ([]*model.User, error) {
-	var users []*entity.SysUser
-
-	// 构建查询
-	db := r.repo.Db(ctx).Model(&entity.SysUser{}).
-		Joins("JOIN sys_user_dept ud ON ud.user_id = sys_user.id").
-		Where("ud.dept_id = ?", deptID)
-
-	// 排除管理员
-	if excludeAdminID != "" {
-		db = db.Where("sys_user.id != ?", excludeAdminID)
-	}
-
-	// 应用查询条件
-	if err := qb.Build(db); err != nil {
+	users, err := r.repo.FindByDepartment(ctx, deptID, excludeAdminID, qb)
+	if err != nil {
 		return nil, err
 	}
-
-	if err := db.Find(&users).Error; err != nil {
-		return nil, err
-	}
-
 	return r.mapper.ToDomainList(users), nil
 }
 
@@ -330,4 +324,89 @@ func (r *userRepository) TransferUser(ctx context.Context, userID string, fromDe
 		}
 		return r.repo.Db(ctx).Create(userDept).Error
 	})
+}
+
+// GetUserPermissionCodes 获取用户权限代码列表
+func (r *userRepository) GetUserPermissionCodes(ctx context.Context, userID string) ([]string, error) {
+	return r.repo.GetUserPermissionCodes(ctx, userID)
+}
+
+// GetUserRoles 获取用户角色列表
+func (r *userRepository) GetUserRoles(ctx context.Context, userID string) ([]*model.Role, error) {
+	// 查询用户角色关联
+	userRoles, err := r.roleRepo.GetByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(userRoles) == 0 {
+		return []*model.Role{}, nil
+	}
+
+	// 获取角色ID列表
+	roleIDs := make([]int64, len(userRoles))
+	for i, ur := range userRoles {
+		roleIDs[i] = ur.ID
+	}
+
+	// 查询角色详情
+	roles, err := r.roleRepo.FindByIds(ctx, roleIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.roleMapper.ToDomainList(roles), nil
+}
+
+// GetUserMenuTree 获取用户菜单树
+func (r *userRepository) GetUserMenuTree(ctx context.Context, userID string) ([]*model.Permissions, error) {
+	permissions, err := r.repo.GetUserMenus(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return r.menuMapper.ToDomainList(permissions, nil), nil
+}
+
+// AssignRoles 分配角色给用户
+func (r *userRepository) AssignRoles(ctx context.Context, userID string, roleIDs []int64) error {
+	return r.repo.GetDb().InTx(ctx, func(ctx context.Context) error {
+		// 1. 删除原有角色关联
+		if err := r.repo.DeleteRoleByUserId(ctx, userID); err != nil {
+			return err
+		}
+
+		// 2. 创建新的角色关联
+		if len(roleIDs) > 0 {
+			userRoles := make([]*entity.SysUserRole, len(roleIDs))
+			for i, roleID := range roleIDs {
+				userRoles[i] = &entity.SysUserRole{
+					UserID: userID,
+					RoleID: roleID,
+				}
+			}
+			if err := r.repo.Db(ctx).Create(&userRoles).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// FindByRoleID 根据角色ID查找用户
+func (r *userRepository) FindByRoleID(ctx context.Context, roleID int64) ([]*model.User, error) {
+	var users []*entity.SysUser
+
+	err := r.repo.Db(ctx).Model(&entity.SysUser{}).
+		Joins("JOIN sys_user_role ON sys_user_role.user_id = sys_user.id").
+		Where("sys_user_role.role_id = ?", roleID).
+		Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return r.mapper.ToDomainList(users), nil
+}
+
+func (r *userRepository) WarmupUserCache(ctx context.Context, userID string) error {
+	return nil
 }

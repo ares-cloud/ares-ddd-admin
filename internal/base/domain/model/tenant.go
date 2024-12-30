@@ -10,6 +10,7 @@ type Tenant struct {
 	ID          string
 	Code        string // 租户编码(唯一)
 	Name        string // 租户名称
+	Domain      string // 域名
 	AdminUser   *User  // 管理员用户
 	Status      int8   // 状态(1:启用 2:禁用)
 	IsDefault   int8   // 是否默认租户(1:是 2:否)

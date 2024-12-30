@@ -29,4 +29,16 @@ type IRoleRepository interface {
 
 	// GetPermissionsByRoleID 获取角色的权限ID列表
 	GetPermissionsByRoleID(ctx context.Context, roleID int64) ([]int64, error)
+
+	// FindByPermissionID 根据权限ID查找角色
+	FindByPermissionID(ctx context.Context, permissionID int64) ([]*model.Role, error)
+
+	// UpdatePermissions 更新角色权限
+	UpdatePermissions(ctx context.Context, roleID int64, permIDs []int64) error
+
+	// GetRolePermissions 获取角色权限
+	GetRolePermissions(ctx context.Context, roleID int64) ([]*model.Permissions, error)
+
+	// GetRoleDataPermission 获取角色数据权限
+	GetRoleDataPermission(ctx context.Context, roleID int64) (*model.DataPermission, error)
 }

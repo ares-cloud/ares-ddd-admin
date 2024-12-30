@@ -13,23 +13,29 @@ import (
 	service2 "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/oplog"
+	handlers3 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/data"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/mapper"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
+	cache2 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/impl"
 	rest2 "github.com/ares-cloud/ares-ddd-admin/internal/base/interfaces/rest"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database"
+	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database/cache"
 	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring"
 	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/interfaces/rest"
 	storage2 "github.com/ares-cloud/ares-ddd-admin/internal/storage"
-	handlers3 "github.com/ares-cloud/ares-ddd-admin/internal/storage/application/handlers"
+	handlers4 "github.com/ares-cloud/ares-ddd-admin/internal/storage/application/handlers"
 	service3 "github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/cleaner"
 	repository2 "github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/repository"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/storage"
 	rest3 "github.com/ares-cloud/ares-ddd-admin/internal/storage/interfaces/rest"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/snowflake_id"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/events"
 )
 
 import (
@@ -71,22 +77,31 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data, storageCon
 	sysRoleController := rest2.NewSysRoleController(roleCommandHandler, roleQueryHandler, enforcer)
 	iSysUserRepo := data.NewSysUserRepo(iDataBase)
 	iUserRepository := repository.NewUserRepository(iSysUserRepo, iSysRoleRepo)
-	userCommandHandler := handlers2.NewUserCommandHandler(iUserRepository, iRoleRepository)
+	eventBus := events.NewEventBus()
+	userCommandService := service2.NewUserCommandService(iUserRepository, eventBus)
+	userMapper := mapper.NewUserMapper()
+	roleMapper := mapper.NewRoleMapper()
+	permissionsMapper := mapper.NewPermissionsMapper()
+	userQueryService := impl.NewUserQueryService(iSysUserRepo, iSysRoleRepo, userMapper, roleMapper, permissionsMapper)
+	client := database.NewRc(redisClient)
+	cacheCache := cache.NewCache(redisClient, client)
+	cacheDecorator := cache.NewCacheDecorator(cacheCache)
+	userQueryCache := cache2.NewUserQueryCache(userQueryService, cacheDecorator)
+	userCommandHandler := handlers2.NewUserCommandHandler(userCommandService, userQueryCache, iRoleRepository)
+	userQueryHandler := handlers2.NewUserQueryHandler(userQueryCache)
+	sysUserController := rest2.NewSysUserController(userCommandHandler, userQueryHandler, enforcer)
 	iSysTenantRepo := data.NewSysTenantRepo(iDataBase)
 	iTenantRepository := repository.NewTenantRepository(iSysTenantRepo, iSysUserRepo)
-	userService := service2.NewUserService(iUserRepository, iPermissionsRepository, iRoleRepository, iTenantRepository)
-	userQueryHandler := handlers2.NewUserQueryHandler(iUserRepository, userService, iPermissionsRepository)
-	sysUserController := rest2.NewSysUserController(userCommandHandler, userQueryHandler, enforcer)
 	tenantCommandHandler := handlers2.NewTenantCommandHandler(iTenantRepository)
 	tenantQueryHandler := handlers2.NewTenantQueryHandler(iTenantRepository, iPermissionsRepository)
 	sysTenantController := rest2.NewSysTenantController(tenantCommandHandler, tenantQueryHandler, enforcer)
 	permissionsCommandHandler := handlers2.NewPermissionsCommandHandler(iPermissionsRepository, enforcer)
-	permissionService := service2.NewPermissionService(iPermissionsRepository, iTenantRepository)
+	permissionService := service2.NewPermissionService(iPermissionsRepository, iRoleRepository, iTenantRepository, eventBus)
 	permissionsQueryHandler := handlers2.NewPermissionsQueryHandler(iPermissionsRepository, permissionService)
 	sysPermissionsController := rest2.NewSysPermissionsController(permissionsCommandHandler, permissionsQueryHandler, enforcer)
 	iAuthRepository := repository.NewAuthRepository(iUserRepository, redisClient)
 	iLoginLogRepository := repository.NewLoginLogRepository(iDataBase)
-	authHandler := handlers2.NewAuthHandler(iAuthRepository, userService, iLoginLogRepository)
+	authHandler := handlers2.NewAuthHandler(iAuthRepository, userQueryCache, iLoginLogRepository)
 	authController := rest2.NewAuthController(authHandler)
 	loginLogQueryHandler := handlers2.NewLoginLogQueryHandler(iLoginLogRepository)
 	loginLogController := rest2.NewLoginLogController(loginLogQueryHandler, enforcer)
@@ -94,7 +109,7 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data, storageCon
 	operationLogController := rest2.NewOperationLogController(operationLogQueryHandler, enforcer)
 	iSysDepartmentRepo := data.NewSysDepartmentRepo(iDataBase)
 	iDepartmentRepository := repository.NewDepartmentRepository(iSysDepartmentRepo)
-	departmentService := service2.NewDepartmentService(iDepartmentRepository)
+	departmentService := service2.NewDepartmentService(iDepartmentRepository, eventBus)
 	departmentCommandHandler := handlers2.NewDepartmentCommandHandler(iDepartmentRepository, departmentService, iUserRepository)
 	departmentQueryHandler := handlers2.NewDepartmentQueryHandler(iDepartmentRepository, iUserRepository, departmentService)
 	departmentController := rest2.NewDepartmentController(departmentCommandHandler, departmentQueryHandler, enforcer)
@@ -102,13 +117,16 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data, storageCon
 	dataPermissionCommandHandler := handlers2.NewDataPermissionCommandHandler(iDataPermissionRepository)
 	dataPermissionQueryHandler := handlers2.NewDataPermissionQueryHandler(iDataPermissionRepository)
 	dataPermissionController := rest2.NewDataPermissionController(dataPermissionCommandHandler, dataPermissionQueryHandler)
-	baseServer := base.NewBaseServer(sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController, departmentController, dataPermissionController)
+	eventHandler := cache2.NewCacheEventHandler(userQueryCache)
+	userEventHandler := handlers3.NewUserEventHandler()
+	handlerEvent := handlers3.NewHandlerEvent(eventBus, eventHandler, userEventHandler)
+	baseServer := base.NewBaseServer(sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController, departmentController, dataPermissionController, handlerEvent)
 	monitoringServer := monitoring.NewServer(metricsController)
 	iStorageRepository := repository2.NewStorageRepository(iDataBase)
-	storageQueryHandler := handlers3.NewStorageQueryHandler(iStorageRepository)
+	storageQueryHandler := handlers4.NewStorageQueryHandler(iStorageRepository)
 	storageFactory := storage.NewStorageFactory(storageConfig, redisClient)
 	storageService := service3.NewStorageService(iStorageRepository, storageFactory)
-	storageCommandHandler := handlers3.NewStorageCommandHandler(storageService)
+	storageCommandHandler := handlers4.NewStorageCommandHandler(storageService)
 	storageController := rest3.NewStorageController(storageQueryHandler, storageCommandHandler, storageService)
 	recycleCleaner := cleaner.NewRecycleCleaner(iStorageRepository, storageService, storageConfig)
 	storageServer, cleanup3, err := storage2.NewServer(storageController, recycleCleaner)

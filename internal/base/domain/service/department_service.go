@@ -5,16 +5,21 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ares-cloud/ares-ddd-admin/pkg/events"
+
+	domanevent "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/events"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
 )
 
 type DepartmentService struct {
-	repo repository.IDepartmentRepository
+	repo     repository.IDepartmentRepository
+	eventBus *events.EventBus
 }
 
-func NewDepartmentService(repo repository.IDepartmentRepository) *DepartmentService {
-	return &DepartmentService{repo: repo}
+func NewDepartmentService(repo repository.IDepartmentRepository, eventBus *events.EventBus) *DepartmentService {
+	return &DepartmentService{repo: repo, eventBus: eventBus}
 }
 
 // CreateDepartment 创建部门
@@ -76,7 +81,24 @@ func (s *DepartmentService) UpdateDepartment(ctx context.Context, dept *model.De
 		}
 	}
 
-	return s.repo.Update(ctx, dept)
+	if err := s.repo.Update(ctx, dept); err != nil {
+		return err
+	}
+
+	// 获取部门下的用户
+	//users, err := s.repo.GetDepartmentUsers(ctx, dept.ID)
+	//if err != nil {
+	//	return err
+	//}
+
+	// 发布部门更新事件
+	//userIDs := make([]string, len(users))
+	//for i, user := range users {
+	//	userIDs[i] = user.ID
+	//}
+
+	event := domanevent.NewDepartmentEvent(dept.TenantID, dept.ID, domanevent.DepartmentUpdated)
+	return s.eventBus.Publish(ctx, event)
 }
 
 // DeleteDepartment 删除部门
@@ -100,34 +122,7 @@ func (s *DepartmentService) GetDepartmentList(ctx context.Context, query *reposi
 
 // GetDepartmentTree 获取部门树
 func (s *DepartmentService) GetDepartmentTree(ctx context.Context, parentID string) ([]*model.Department, error) {
-	// 1. 获取所有部门
-	depts, err := s.repo.List(ctx, &repository.ListDepartmentQuery{})
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. 构建部门映射
-	deptMap := make(map[string]*model.Department)
-	for _, dept := range depts {
-		deptMap[dept.ID] = dept
-		dept.Children = make([]*model.Department, 0) // 初始化子部门切片
-	}
-
-	// 3. 构建树形结构
-	var root []*model.Department
-	for _, dept := range depts {
-		if dept.ParentID == parentID {
-			// 根节点
-			root = append(root, dept)
-		} else {
-			// 将当前部门添加到父部门的子部门列表中
-			if parent, ok := deptMap[dept.ParentID]; ok {
-				parent.Children = append(parent.Children, dept)
-			}
-		}
-	}
-
-	return root, nil
+	return nil, nil //s.repo.GetDepartmentTree(ctx)
 }
 
 // MoveDepartment 移动部门
@@ -190,4 +185,49 @@ func (s *DepartmentService) checkCircularReference(ctx context.Context, deptID, 
 	}
 
 	return nil
+}
+
+// TransferUser 调动用户部门
+func (s *DepartmentService) TransferUser(ctx context.Context, userID string, fromDeptID string, toDeptID string) error {
+	// 1. 检查用户是否存在
+	//user, err := s.repo.FindByID(ctx, userID)
+	//if err != nil {
+	//	return err
+	//}
+	//if user == nil {
+	//	return fmt.Errorf("用户不存在: %s", userID)
+	//}
+
+	// 2. 检查原部门是否存在
+	fromDept, err := s.repo.GetByID(ctx, fromDeptID)
+	if err != nil {
+		return err
+	}
+	if fromDept == nil {
+		return fmt.Errorf("原部门不存在: %s", fromDeptID)
+	}
+
+	// 3. 检查目标部门是否存在
+	toDept, err := s.repo.GetByID(ctx, toDeptID)
+	if err != nil {
+		return err
+	}
+	if toDept == nil {
+		return fmt.Errorf("目标部门不存在: %s", toDeptID)
+	}
+
+	//// 4. 执行部门调动
+	//if err := s.repo.TransferUser(ctx, userID, fromDeptID, toDeptID); err != nil {
+	//	return err
+	//}
+	//
+	//// 5. 发布用户部门变更事件
+	//event := domanevent.NewUserDeptEvent(user.TenantID, userID, fromDeptID, toDeptID)
+	//return s.eventBus.Publish(ctx, event)
+	return nil
+}
+
+func (s *DepartmentService) GetDepartmentUsers(ctx context.Context, deptID string) ([]*model.User, error) {
+	//return s.repo.GetDepartmentUsers(ctx, deptID)
+	return nil, nil
 }

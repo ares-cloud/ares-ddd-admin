@@ -8,6 +8,7 @@ type Tenant struct {
 	ID          string `json:"id" gorm:"primaryKey;size:32;comment:租户ID"`
 	Code        string `json:"code" gorm:"size:32;uniqueIndex;comment:租户编码"`
 	Name        string `json:"name" gorm:"size:128;comment:租户名称"`
+	Domain      string `json:"domain" gorm:"size:255;comment:租户名称"`
 	AdminUserID string `json:"admin_user_id" gorm:"size:32;comment:管理员用户ID"`
 	Status      int8   `json:"status" gorm:"default:1;comment:状态(1:启用 2:禁用)"`
 	IsDefault   int8   `json:"is_default" gorm:"default:2;comment:是否默认租户(1:是 2:否)"`

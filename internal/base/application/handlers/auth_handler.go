@@ -7,13 +7,13 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/ipcity"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"time"
 
+	iQuery "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/captcha"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/token"
@@ -21,11 +21,11 @@ import (
 
 type AuthHandler struct {
 	authRepo repository.IAuthRepository
-	uds      *service.UserService
+	uds      iQuery.UserQueryService
 	llr      repository.ILoginLogRepository
 }
 
-func NewAuthHandler(authRepo repository.IAuthRepository, uds *service.UserService, llr repository.ILoginLogRepository) *AuthHandler {
+func NewAuthHandler(authRepo repository.IAuthRepository, uds iQuery.UserQueryService, llr repository.ILoginLogRepository) *AuthHandler {
 	return &AuthHandler{
 		authRepo: authRepo,
 		uds:      uds,
@@ -59,7 +59,7 @@ func (h *AuthHandler) HandleLogin(ctx context.Context, cmd commands.LoginCommand
 		return nil, err1
 	}
 	ctx = actx.WithTenantId(ctx, auth.User.TenantID)
-	roles, e := h.uds.GetUserRoles(ctx, auth.User)
+	roles, e := h.uds.GetUserRolesCode(ctx, auth.User.ID)
 	if e != nil {
 		hlog.CtxErrorf(ctx, "get user roles failed: %v", e)
 		return nil, herrors.QueryFail(e)
