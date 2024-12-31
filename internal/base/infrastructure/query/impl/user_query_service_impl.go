@@ -176,7 +176,7 @@ func (u *UserQueryService) GetUserTreeMenus(ctx context.Context, userID string) 
 	}
 
 	// 3. 转换为DTO
-	return u.permissionsConverter.ToTreeDTOList(permissions), nil
+	return u.permissionsConverter.ToSimpleTreeDTOList(permissions), nil
 }
 
 // FindUsersByDepartment 查询部门下的用户

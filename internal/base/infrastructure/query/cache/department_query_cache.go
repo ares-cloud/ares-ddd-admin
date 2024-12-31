@@ -7,6 +7,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache/keys"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/impl"
 	dCache "github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database/cache"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
@@ -98,4 +99,16 @@ func (c *DepartmentQueryCache) InvalidateDepartmentCache(ctx context.Context, de
 // InvalidateUserDepartmentsCache 使用户部门缓存失效
 func (c *DepartmentQueryCache) InvalidateUserDepartmentsCache(ctx context.Context, userID string) error {
 	return c.decorator.InvalidateCache(ctx, keys.UserDepartmentsKey(userID))
+}
+
+func (c *DepartmentQueryCache) FindByID(ctx context.Context, id string) (*dto.DepartmentDto, error) {
+	tenantID := actx.GetTenantId(ctx)
+	key := keys.DepartmentKey(tenantID, id)
+	var dept *dto.DepartmentDto
+	err := c.decorator.Cached(ctx, key, &dept, func() error {
+		var err error
+		dept, err = c.next.FindByID(ctx, id)
+		return err
+	})
+	return dept, err
 }

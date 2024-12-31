@@ -2,7 +2,6 @@ package keys
 
 import (
 	"fmt"
-	"strconv"
 )
 
 const (
@@ -13,41 +12,41 @@ const (
 )
 
 // RoleKey 生成角色缓存key
-func RoleKey(id int64) string {
-	return rolePrefix + strconv.FormatInt(id, 10)
+func RoleKey(tenantID string, id int64) string {
+	return fmt.Sprintf("%s%s:%d", rolePrefix, tenantID, id)
 }
 
 // RoleCodeKey 生成角色编码缓存key
-func RoleCodeKey(code string) string {
-	return fmt.Sprintf("role:code:%s", code)
+func RoleCodeKey(tenantID string, code string) string {
+	return fmt.Sprintf("%s%s:code:%s", rolePrefix, tenantID, code)
 }
 
 // RolePermKey 生成角色权限缓存key
-func RolePermKey(roleID int64) string {
-	return fmt.Sprintf("%s%d", rolePermPrefix, roleID)
+func RolePermKey(tenantID string, roleID int64) string {
+	return fmt.Sprintf("%s%s:perm:%d", rolePrefix, tenantID, roleID)
 }
 
 // RolePermissionsKey 角色权限缓存key
-func RolePermissionsKey(roleID int64) string {
-	return fmt.Sprintf("role:permissions:%d", roleID)
+func RolePermissionsKey(tenantID string, roleID int64) string {
+	return fmt.Sprintf("%s%s:permissions:%d", rolePrefix, tenantID, roleID)
 }
 
 // RoleListKey 角色列表缓存key
-func RoleListKey() string {
-	return "role:list"
+func RoleListKey(tenantID string) string {
+	return fmt.Sprintf("%s%s:list", rolePrefix, tenantID)
 }
 
 // RoleKeys 生成角色相关的所有缓存key
-func RoleKeys(roleID int64) []string {
+func RoleKeys(tenantID string, roleID int64) []string {
 	return []string{
-		RoleKey(roleID),
-		RolePermKey(roleID),
-		RolePermissionsKey(roleID),
-		RoleListKey(),
+		RoleKey(tenantID, roleID),
+		RolePermKey(tenantID, roleID),
+		RolePermissionsKey(tenantID, roleID),
+		RoleListKey(tenantID),
 	}
 }
 
 // RoleUsersKey 角色用户缓存key
-func RoleUsersKey(roleID int64) string {
-	return fmt.Sprintf("role:users:%d", roleID)
+func RoleUsersKey(tenantID string, roleID int64) string {
+	return fmt.Sprintf("%s%s:users:%d", rolePrefix, tenantID, roleID)
 }

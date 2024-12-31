@@ -2,41 +2,31 @@ package handlers
 
 import (
 	"context"
-	"errors"
-	"fmt"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/commands"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-
-	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
-
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 )
 
 type PermissionsCommandHandler struct {
-	permRepo repository.IPermissionsRepository
-	ef       *casbin.Enforcer
+	permService *service.PermissionService
+	ef          *casbin.Enforcer
 }
 
-func NewPermissionsCommandHandler(permRepo repository.IPermissionsRepository, ef *casbin.Enforcer) *PermissionsCommandHandler {
+func NewPermissionsCommandHandler(
+	permService *service.PermissionService,
+	ef *casbin.Enforcer,
+) *PermissionsCommandHandler {
 	return &PermissionsCommandHandler{
-		permRepo: permRepo,
-		ef:       ef,
+		permService: permService,
+		ef:          ef,
 	}
 }
 
 func (h *PermissionsCommandHandler) HandleCreate(ctx context.Context, cmd commands.CreatePermissionsCommand) herrors.Herr {
-	// 检查权限编码是否已存在
-	exists, err := h.permRepo.ExistsByCode(ctx, cmd.Code)
-	if err != nil {
-		hlog.CtxErrorf(ctx, "check permission code exists failed: %s", err)
-		return herrors.CreateFail(err)
-	}
-	if exists {
-		return herrors.CreateFail(fmt.Errorf("permission code %s already exists", cmd.Code))
-	}
-
 	perm := model.NewPermissions(cmd.Code, cmd.Name, cmd.Type, cmd.Sequence)
 	perm.Localize = cmd.Localize
 	perm.Icon = cmd.Icon
@@ -47,37 +37,54 @@ func (h *PermissionsCommandHandler) HandleCreate(ctx context.Context, cmd comman
 
 	// 添加资源
 	for _, resource := range cmd.Resources {
-		perm.AddResource(resource.Method, resource.Path)
+		if err := perm.AddResource(resource.Method, resource.Path); err != nil {
+			hlog.CtxErrorf(ctx, "add resource failed: %s", err)
+			return err
+		}
 	}
 
-	err = h.permRepo.Create(ctx, perm)
-	if err != nil {
+	if err := h.permService.CreatePermission(ctx, perm); err != nil {
 		hlog.CtxErrorf(ctx, "permission create failed: %s", err)
-		return herrors.CreateFail(err)
+		return err
 	}
 	return nil
 }
 
 func (h *PermissionsCommandHandler) HandleUpdate(ctx context.Context, cmd commands.UpdatePermissionsCommand) herrors.Herr {
-	perm, err := h.permRepo.FindByID(ctx, cmd.ID)
+	// 1. 查询权限
+	perm, err := h.permService.FindByID(ctx, cmd.ID)
 	if err != nil {
 		hlog.CtxErrorf(ctx, "permission find failed: %s", err)
-		return herrors.UpdateFail(err)
+		return err
 	}
 
-	// 更新基本信息
-	perm.UpdateBasicInfo(cmd.Name, cmd.Description, cmd.Sequence)
+	// 2. 更新基本信息
+	if err := perm.UpdateBasicInfo(cmd.Name, cmd.Description, cmd.Sequence); err != nil {
+		hlog.CtxErrorf(ctx, "update basic info failed: %s", err)
+		return err
+	}
+
 	if cmd.Status != nil {
-		perm.UpdateStatus(*cmd.Status)
+		if err := perm.UpdateStatus(*cmd.Status); err != nil {
+			hlog.CtxErrorf(ctx, "update status failed: %s", err)
+			return err
+		}
 	}
 
 	perm.Icon = cmd.Icon
 	perm.Path = cmd.Path
 	perm.Properties = cmd.Properties
-	perm.ChangeType(cmd.Type)
-	perm.ChangeParentID(cmd.ParentID)
+	if err := perm.ChangeType(cmd.Type); err != nil {
+		hlog.CtxErrorf(ctx, "change type failed: %s", err)
+		return err
+	}
+	if err := perm.ChangeParentID(cmd.ParentID); err != nil {
+		hlog.CtxErrorf(ctx, "change parent id failed: %s", err)
+		return err
+	}
 	perm.Localize = cmd.Localize
-	// 更新资源列表
+
+	// 3. 更新资源列表
 	if len(cmd.Resources) > 0 {
 		resources := make([]*model.PermissionsResource, len(cmd.Resources))
 		for i, r := range cmd.Resources {
@@ -86,16 +93,19 @@ func (h *PermissionsCommandHandler) HandleUpdate(ctx context.Context, cmd comman
 				Path:   r.Path,
 			}
 		}
-		perm.UpdateResources(resources)
+		if err := perm.UpdateResources(resources); err != nil {
+			hlog.CtxErrorf(ctx, "update resources failed: %s", err)
+			return err
+		}
 	}
 
-	err = h.permRepo.Update(ctx, perm)
-	if err != nil {
+	// 4. 更新权限
+	if err := h.permService.UpdatePermission(ctx, perm); err != nil {
 		hlog.CtxErrorf(ctx, "permission update failed %s", err)
-		return herrors.UpdateFail(err)
+		return err
 	}
 
-	// 发布权限更新消息
+	// 5. 发布权限更新消息
 	if err := h.ef.PublishUpdate(ctx); err != nil {
 		hlog.CtxErrorf(ctx, "publish permission update error: %v", err)
 	}
@@ -103,26 +113,10 @@ func (h *PermissionsCommandHandler) HandleUpdate(ctx context.Context, cmd comman
 	return nil
 }
 
-// HandleDelete 处理删除权限命令
 func (h *PermissionsCommandHandler) HandleDelete(ctx context.Context, id int64) herrors.Herr {
-	// 查找权限是否存在
-	perm, err := h.permRepo.FindByID(ctx, id)
-	if err != nil {
-		hlog.CtxErrorf(ctx, "permission find failed: %s", err)
-		return herrors.DeleteFail(err)
-	}
-
-	// 检查是否有子权限
-	if len(perm.Children) > 0 {
-		return herrors.DeleteFail(errors.New("cannot delete permission with children"))
-	}
-
-	// 执行删除
-	err = h.permRepo.Delete(ctx, id)
-	if err != nil {
+	if err := h.permService.DeletePermission(ctx, id); err != nil {
 		hlog.CtxErrorf(ctx, "permission delete failed: %s", err)
-		return herrors.DeleteFail(err)
+		return err
 	}
-
 	return nil
 }

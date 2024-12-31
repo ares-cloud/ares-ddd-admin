@@ -7,7 +7,9 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache/keys"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/impl"
 	dCache "github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database/cache"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
 type RoleQueryCache struct {
@@ -70,4 +72,10 @@ func (c *RoleQueryCache) GetRoleByCode(ctx context.Context, code string) (*dto.R
 		return err
 	})
 	return role, err
+}
+
+func (c *RoleQueryCache) FindByID(ctx context.Context, id int64) (*dto.RoleDto, herrors.Herr) {
+	tenantID := actx.GetTenantId(ctx)
+	key := keys.RoleKey(tenantID, id)
+	// ... 其他代码
 }

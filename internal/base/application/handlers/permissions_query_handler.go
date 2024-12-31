@@ -2,29 +2,27 @@ package handlers
 
 import (
 	"context"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
-	dto2 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 )
 
 type PermissionsQueryHandler struct {
-	permRepo repository.IPermissionsRepository
-	pds      *service.PermissionService
+	permQuery query.IPermissionsQuery
 }
 
-func NewPermissionsQueryHandler(permRepo repository.IPermissionsRepository, pds *service.PermissionService) *PermissionsQueryHandler {
+func NewPermissionsQueryHandler(
+	permQuery query.IPermissionsQuery,
+) *PermissionsQueryHandler {
 	return &PermissionsQueryHandler{
-		permRepo: permRepo,
-		pds:      pds,
+		permQuery: permQuery,
 	}
 }
 
-// HandleList 处理列表查询
 func (h *PermissionsQueryHandler) HandleList(ctx context.Context, q *queries.ListPermissionsQuery) (*models.PageRes[dto.PermissionsDto], herrors.Herr) {
 	// 构建查询条件
 	qb := db_query.NewQueryBuilder()
@@ -44,62 +42,42 @@ func (h *PermissionsQueryHandler) HandleList(ctx context.Context, q *queries.Lis
 	// 设置分页
 	qb.WithPage(&q.Page)
 
-	// 获取总数
-	total, err := h.permRepo.Count(ctx, qb)
-	if err != nil {
-		return nil, herrors.NewErr(err)
-	}
-
 	// 查询数据
-	perms, err := h.permRepo.Find(ctx, qb)
+	perms, total, err := h.permQuery.Find(ctx, qb)
 	if err != nil {
-		return nil, herrors.NewErr(err)
+		return nil, err
 	}
-
-	// 转换为DTO
-	dtoList := dto.ToPermissionsDtoList(perms)
 
 	return &models.PageRes[dto.PermissionsDto]{
-		List:  dtoList,
+		List:  perms,
 		Total: total,
 	}, nil
 }
 
-// HandleGet 保留其他原有方法
 func (h *PermissionsQueryHandler) HandleGet(ctx context.Context, query queries.GetPermissionsQuery) (*dto.PermissionsDto, herrors.Herr) {
-	perm, err := h.permRepo.FindByID(ctx, query.Id)
+	perm, err := h.permQuery.FindByID(ctx, query.Id)
 	if err != nil {
-		return nil, herrors.QueryFail(err)
+		return nil, err
 	}
-	return dto.ToPermissionsDto(perm), nil
+	return perm, nil
 }
 
 func (h *PermissionsQueryHandler) HandleGetTree(ctx context.Context, query queries.GetPermissionsTreeQuery) ([]*dto.PermissionsDto, herrors.Herr) {
-	perms, err := h.permRepo.FindTreeByType(ctx, 1)
+	perms, err := h.permQuery.FindTreeByType(ctx, query.Type)
 	if err != nil {
-		return nil, herrors.QueryFail(err)
+		return nil, err
 	}
-	return dto.ToPermissionsDtoList(perms), nil
+	return perms, nil
 }
 
-func (h *PermissionsQueryHandler) HandleGetPermissionsTree(ctx context.Context) (*dto2.PermissionsTreeResult, herrors.Herr) {
-	// 获取所有权限并构建树
-	//permissions, ids, err := h.permRepo.FindAllTree(ctx)
-	//if err != nil {
-	//	return nil, herrors.QueryFail(err)
-	//}
-
-	return &dto2.PermissionsTreeResult{
-		//Tree: permissions,
-		//Ids: ids,
-	}, nil
-}
-
-// HandleGetAllEnabled 获取所有启用状态的权限
 func (h *PermissionsQueryHandler) HandleGetAllEnabled(ctx context.Context) ([]*dto.PermissionsDto, herrors.Herr) {
-	permissions, err := h.pds.FindAllEnabled(ctx)
+	permissions, err := h.permQuery.FindAllEnabled(ctx)
 	if err != nil {
-		return nil, herrors.QueryFail(err)
+		return nil, err
 	}
-	return dto.ToPermissionsDtoList(permissions), nil
+	return permissions, nil
+}
+
+func (h *PermissionsQueryHandler) HandleGetPermissionsTree(ctx context.Context) ([]*dto.PermissionsTreeDto, herrors.Herr) {
+	return h.permQuery.GetSimplePermissionsTree(ctx)
 }

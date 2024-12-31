@@ -7,27 +7,27 @@ const (
 )
 
 // DepartmentKey 部门缓存key
-func DepartmentKey(deptID string) string {
-	return fmt.Sprintf("%s%s", deptPrefix, deptID)
+func DepartmentKey(tenantID string, deptID string) string {
+	return fmt.Sprintf("%s%s:%s", deptPrefix, tenantID, deptID)
 }
 
 // DepartmentTreeKey 部门树缓存key
-func DepartmentTreeKey(parentID string) string {
+func DepartmentTreeKey(tenantID string, parentID string) string {
 	if parentID == "" {
-		return fmt.Sprintf("%stree", deptPrefix)
+		return fmt.Sprintf("%s%s:tree", deptPrefix, tenantID)
 	}
-	return fmt.Sprintf("%stree:%s", deptPrefix, parentID)
+	return fmt.Sprintf("%s%s:tree:%s", deptPrefix, tenantID, parentID)
 }
 
 // UserDepartmentsKey 用户部门缓存key
-func UserDepartmentsKey(userID string) string {
-	return fmt.Sprintf("user:depts:%s", userID)
+func UserDepartmentsKey(tenantID string, userID string) string {
+	return fmt.Sprintf("user:%s:depts:%s", tenantID, userID)
 }
 
 // DepartmentKeys 生成部门相关的所有缓存key
-func DepartmentKeys(deptID string) []string {
+func DepartmentKeys(tenantID string, deptID string) []string {
 	return []string{
-		DepartmentKey(deptID),
-		DepartmentTreeKey(""),
+		DepartmentKey(tenantID, deptID),
+		DepartmentTreeKey(tenantID, ""),
 	}
 }
