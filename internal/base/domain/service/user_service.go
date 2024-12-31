@@ -185,7 +185,6 @@ func (s *UserCommandService) TransferUser(ctx context.Context, userID, fromDeptI
 
 // GetUser 获取用户信息
 func (s *UserCommandService) GetUser(ctx context.Context, userID string) (*model.User, herrors.Herr) {
-	// 1. 查询用户
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, herrors.NewServerHError(err)
@@ -193,11 +192,5 @@ func (s *UserCommandService) GetUser(ctx context.Context, userID string) (*model
 	if user == nil {
 		return nil, errors.UserNotFound(userID)
 	}
-
-	// 2. 检查用户状态
-	if locked, reason := user.IsLocked(); locked {
-		return nil, errors.UserDisabled(reason)
-	}
-
 	return user, nil
 }

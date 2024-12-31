@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/mapper"
 
@@ -25,11 +24,13 @@ type ISysRoleRepo interface {
 	FindAllEnabled(ctx context.Context) ([]*entity.Role, error)
 	Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*entity.Role, error)
 	UpdatePermissions(ctx context.Context, roleID int64, permIDs []int64) error
-	GetRoleDataPermission(ctx context.Context, roleID int64) (*entity.DataPermission, error)
 	GetRolePermissions(ctx context.Context, roleID int64) ([]*entity.Permissions, error)
+	HasPermission(ctx context.Context, roleID int64, permissionID int64) (bool, error)
 	FindByPermissionID(ctx context.Context, permissionID int64) ([]*entity.Role, error)
 	FindByType(ctx context.Context, roleType int8) ([]*entity.Role, error)
+	GetIdsByUserId(ctx context.Context, userId string) ([]int64, error)
 	GetPermissionsByRoleID(ctx context.Context, roleID int64) ([]int64, error)
+	GetUserCountByRoleID(ctx context.Context, roleID int64) (int64, error)
 }
 
 type roleRepository struct {
@@ -153,129 +154,39 @@ func (r *roleRepository) ExistsByCode(ctx context.Context, code string) (bool, e
 	}
 	return true, nil
 }
-func (r *roleRepository) FindByIDs(ctx context.Context, ids []int64) ([]*model.Role, error) {
-	roleEntities, err := r.repo.FindByIds(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-	return r.mapper.ToDomainList(roleEntities), nil
-}
-
-func (r *roleRepository) Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*model.Role, error) {
-	records, err := r.repo.Find(ctx, qb)
-	if err != nil {
-		if database.IfErrorNotFound(err) {
-			return nil, database.ErrRecordNotFound
-		}
-		return nil, err
-	}
-	roles := r.mapper.ToDomainList(records)
-	return roles, nil
-}
-
-func (r *roleRepository) Count(ctx context.Context, qb *db_query.QueryBuilder) (int64, error) {
-	return r.repo.Count(ctx, qb)
-}
 
 func (r *roleRepository) Delete(ctx context.Context, id int64) error {
 	return r.repo.DelByIdUnScoped(ctx, id)
 }
 
-func (r *roleRepository) FindByUserID(ctx context.Context, userID string) ([]*model.Role, error) {
-	// 查询用户角色关联
-	userRoles, err := r.repo.GetByUserId(ctx, userID)
+// GetRolePermissions 获取角色权限
+func (r *roleRepository) GetRolePermissions(ctx context.Context, roleID int64) ([]*model.Permissions, error) {
+	// 获取权限实体列表
+	perms, err := r.repo.GetRolePermissions(ctx, roleID)
 	if err != nil {
-		return nil, err
-	}
-	return r.mapper.ToDomainList(userRoles), nil
-}
-
-func (r *roleRepository) FindAllEnabled(ctx context.Context) ([]*model.Role, error) {
-	// 构建查询条件
-	qb := db_query.NewQueryBuilder()
-	qb.Where("status", db_query.Eq, 1)
-	qb.OrderBy("sequence", false)
-
-	// 查询角色
-	roles, err := r.repo.Find(ctx, qb)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.mapper.ToDomainList(roles), nil
-}
-
-// FindByType 根据角色类型查询角色列表
-func (r *roleRepository) FindByType(ctx context.Context, roleType int8) ([]*model.Role, error) {
-	// 构建查询条件
-	qb := db_query.NewQueryBuilder()
-	qb.Where("type", db_query.Eq, roleType)
-	qb.Where("status", db_query.Eq, 1) // 只查询启用状态的角色
-	qb.OrderBy("sequence", false)      // 按sequence排序
-
-	// 查询角色
-	roles, err := r.repo.Find(ctx, qb)
-	if err != nil {
-		if database.IfErrorNotFound(err) {
-			return nil, database.ErrRecordNotFound
-		}
 		return nil, err
 	}
 
 	// 转换为领域模型
-	return r.mapper.ToDomainList(roles), nil
+	return r.permMapper.ToDomainList(perms, nil), nil
 }
 
-// GetPermissionsByRoleID 获取角色的权限ID列表
-func (r *roleRepository) GetPermissionsByRoleID(ctx context.Context, roleID int64) ([]int64, error) {
-	var permIDs []int64
-	err := r.repo.Db(ctx).Model(&entity.RolePermissions{}).
-		Where("role_id = ?", roleID).
-		Pluck("permission_id", &permIDs).Error
-	return permIDs, err
+// AssignPermissions 分配权限
+func (r *roleRepository) AssignPermissions(ctx context.Context, roleID int64, permissionIDs []int64) error {
+	return r.repo.UpdatePermissions(ctx, roleID, permissionIDs)
 }
 
-// FindByPermissionID 根据权限ID查找角色
-func (r *roleRepository) FindByPermissionID(ctx context.Context, permissionID int64) ([]*model.Role, error) {
-	roles, err := r.repo.FindByPermissionID(ctx, permissionID)
+// ExistsPermission 检查权限是否存在
+func (r *roleRepository) ExistsPermission(ctx context.Context, permissionID int64) (bool, error) {
+	return r.permissionsRepo.ExistsById(ctx, permissionID)
+}
+
+// IsRoleInUse 检查角色是否被使用
+func (r *roleRepository) IsRoleInUse(ctx context.Context, roleID int64) (bool, error) {
+	// 获取角色关联的用户数量
+	userCount, err := r.repo.GetUserCountByRoleID(ctx, roleID)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	return r.mapper.ToDomainList(roles), nil
-}
-
-// UpdatePermissions 更新角色权限
-func (r *roleRepository) UpdatePermissions(ctx context.Context, roleID int64, permIDs []int64) error {
-	return r.repo.UpdatePermissions(ctx, roleID, permIDs)
-}
-
-// GetRoleDataPermission 获取角色数据权限
-func (r *roleRepository) GetRoleDataPermission(ctx context.Context, roleID int64) (*model.DataPermission, error) {
-	dataPerm, err := r.repo.GetRoleDataPermission(ctx, roleID)
-	if err != nil {
-		return nil, err
-	}
-	if dataPerm == nil {
-		return nil, nil
-	}
-	var deptIDs []string
-	if err = json.Unmarshal([]byte(dataPerm.DeptIDs), &deptIDs); err != nil {
-		return nil, err
-	}
-	return &model.DataPermission{
-		ID:       dataPerm.ID,
-		RoleID:   dataPerm.RoleID,
-		Scope:    model.DataScope(dataPerm.Scope),
-		DeptIDs:  deptIDs,
-		TenantID: dataPerm.TenantID,
-	}, nil
-}
-
-// GetRolePermissions 获取角色权限
-func (r *roleRepository) GetRolePermissions(ctx context.Context, roleID int64) ([]*model.Permissions, error) {
-	permissions, err := r.repo.GetRolePermissions(ctx, roleID)
-	if err != nil {
-		return nil, err
-	}
-	return r.permMapper.ToDomainList(permissions, nil), nil
+	return userCount > 0, nil
 }

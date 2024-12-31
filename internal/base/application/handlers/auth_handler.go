@@ -21,11 +21,11 @@ import (
 
 type AuthHandler struct {
 	authRepo repository.IAuthRepository
-	uds      iQuery.UserQueryService
+	uds      iQuery.IUserQueryService
 	llr      repository.ILoginLogRepository
 }
 
-func NewAuthHandler(authRepo repository.IAuthRepository, uds iQuery.UserQueryService, llr repository.ILoginLogRepository) *AuthHandler {
+func NewAuthHandler(authRepo repository.IAuthRepository, uds iQuery.IUserQueryService, llr repository.ILoginLogRepository) *AuthHandler {
 	return &AuthHandler{
 		authRepo: authRepo,
 		uds:      uds,

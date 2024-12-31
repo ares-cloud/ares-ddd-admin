@@ -1,63 +1,79 @@
 package events
 
 import (
-	"strconv"
-
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/events"
 )
 
 const (
-	// 角色聚合根名称
-	RoleAggregate = "role"
-	// 版本号
-	Version = "1.0"
+	RoleCreated            = "role.created"
+	RoleUpdated            = "role.updated"
+	RoleDeleted            = "role.deleted"
+	RolePermissionsChanged = "role.permissions.changed"
 )
 
-// 角色事件类型定义
-const (
-	RoleCreated           = "role.created"
-	RoleUpdated           = "role.updated"
-	RoleDeleted           = "role.deleted"
-	RolePermissionChanged = "role.permission.changed"
-	RoleDataScopeChanged  = "role.datascope.changed"
-)
-
-// RoleEvent 角色事件
+// RoleEvent 角色事件基类
 type RoleEvent struct {
-	events.BaseTenantEvent
+	events.BaseEvent
+	RoleID   int64  `json:"role_id"`
+	TenantID string `json:"tenant_id"`
 }
 
 // NewRoleEvent 创建角色事件
-func NewRoleEvent(tenantID string, roleID int64, eventName string) *RoleEvent {
+func NewRoleEvent(tenantID string, roleID int64, eventType string) *RoleEvent {
 	return &RoleEvent{
-		BaseTenantEvent: events.NewBaseTenantEvent(
-			eventName,
-			Version,
-			strconv.FormatInt(roleID, 10),
-			RoleAggregate,
-			tenantID,
-		),
+		BaseEvent: events.NewBaseEvent(eventType),
+		RoleID:    roleID,
+		TenantID:  tenantID,
 	}
 }
 
-func (e *RoleEvent) RoleID() string {
-	return e.AggregateID()
+// RoleCreatedEvent 角色创建事件
+type RoleCreatedEvent struct {
+	*RoleEvent
+	Role *model.Role `json:"role"`
 }
 
-// RolePermissionEvent 角色权限变更事件
-type RolePermissionEvent struct {
-	RoleEvent
-	permissionIDs []int64
-}
-
-// NewRolePermissionEvent 创建角色权限变更事件
-func NewRolePermissionEvent(tenantID string, roleID int64, permissionIDs []int64) *RolePermissionEvent {
-	return &RolePermissionEvent{
-		RoleEvent:     *NewRoleEvent(tenantID, roleID, RolePermissionChanged),
-		permissionIDs: permissionIDs,
+func NewRoleCreatedEvent(role *model.Role) *RoleCreatedEvent {
+	return &RoleCreatedEvent{
+		RoleEvent: NewRoleEvent(role.TenantID, role.ID, RoleCreated),
+		Role:      role,
 	}
 }
 
-func (e *RolePermissionEvent) PermissionIDs() []int64 {
-	return e.permissionIDs
+// RoleUpdatedEvent 角色更新事件
+type RoleUpdatedEvent struct {
+	*RoleEvent
+	Role *model.Role `json:"role"`
+}
+
+func NewRoleUpdatedEvent(role *model.Role) *RoleUpdatedEvent {
+	return &RoleUpdatedEvent{
+		RoleEvent: NewRoleEvent(role.TenantID, role.ID, RoleUpdated),
+		Role:      role,
+	}
+}
+
+// RoleDeletedEvent 角色删除事件
+type RoleDeletedEvent struct {
+	*RoleEvent
+}
+
+func NewRoleDeletedEvent(roleID int64) *RoleDeletedEvent {
+	return &RoleDeletedEvent{
+		RoleEvent: NewRoleEvent("", roleID, RoleDeleted),
+	}
+}
+
+// RolePermissionsAssignedEvent 角色权限分配事件
+type RolePermissionsAssignedEvent struct {
+	*RoleEvent
+	PermissionIDs []int64 `json:"permission_ids"`
+}
+
+func NewRolePermissionsAssignedEvent(roleID int64, permissionIDs []int64) *RolePermissionsAssignedEvent {
+	return &RolePermissionsAssignedEvent{
+		RoleEvent:     NewRoleEvent("", roleID, RolePermissionsChanged),
+		PermissionIDs: permissionIDs,
+	}
 }

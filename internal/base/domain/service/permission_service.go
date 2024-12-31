@@ -59,17 +59,17 @@ func (s *PermissionService) UpdatePermission(ctx context.Context, perm *model.Pe
 		return err
 	}
 
-	// 获取使用此权限的角色
-	roles, err := s.roleRepo.FindByPermissionID(ctx, perm.ID)
-	if err != nil {
-		return err
-	}
-
-	// 发布权限更新事件
-	roleIDs := make([]int64, len(roles))
-	for i, role := range roles {
-		roleIDs[i] = role.ID
-	}
+	//// 获取使用此权限的角色
+	//roles, err := s.roleRepo.FindByPermissionID(ctx, perm.ID)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//// 发布权限更新事件
+	//roleIDs := make([]int64, len(roles))
+	//for i, role := range roles {
+	//	roleIDs[i] = role.ID
+	//}
 
 	//event := &events.PermissionEvent{
 	//	BaseEvent:    events.BaseEvent{TenantID: actx.GetTenantId(ctx)},

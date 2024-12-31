@@ -27,6 +27,7 @@ type ISysTenantRepo interface {
 
 	Lock(ctx context.Context, tenantID string, reason string) error
 	Unlock(ctx context.Context, tenantID string) error
+	GetTenantRoles(ctx context.Context, tenantID string) ([]*entity.Role, error)
 }
 
 type tenantRepository struct {

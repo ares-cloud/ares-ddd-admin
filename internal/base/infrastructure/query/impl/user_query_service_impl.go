@@ -3,217 +3,206 @@ package impl
 import (
 	"context"
 	"fmt"
-	"sort"
 
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/converter"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
-
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/mapper"
-
-	dquery "github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
-
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
 type UserQueryService struct {
-	userRepo   repository.ISysUserRepo
-	roleRepo   repository.ISysRoleRepo
-	userMapper *mapper.UserMapper
-	roleMapper *mapper.RoleMapper
-	permMapper *mapper.PermissionsMapper
+	userRepo             repository.ISysUserRepo
+	roleRepo             repository.ISysRoleRepo
+	permissionsRepo      repository.IPermissionsRepo
+	userConverter        *converter.UserConverter
+	roleConverter        *converter.RoleConverter
+	permissionsConverter *converter.PermissionsConverter
 }
 
 func NewUserQueryService(
 	userRepo repository.ISysUserRepo,
 	roleRepo repository.ISysRoleRepo,
-	userMapper *mapper.UserMapper,
-	roleMapper *mapper.RoleMapper,
-	permMapper *mapper.PermissionsMapper,
+	permissionsRepo repository.IPermissionsRepo,
+	userConverter *converter.UserConverter,
+	roleConverter *converter.RoleConverter,
+	permissionsConverter *converter.PermissionsConverter,
 ) *UserQueryService {
 	return &UserQueryService{
-		userRepo:   userRepo,
-		roleRepo:   roleRepo,
-		userMapper: userMapper,
-		roleMapper: roleMapper,
-		permMapper: permMapper,
+		userRepo:             userRepo,
+		roleRepo:             roleRepo,
+		permissionsRepo:      permissionsRepo,
+		userConverter:        userConverter,
+		roleConverter:        roleConverter,
+		permissionsConverter: permissionsConverter,
 	}
 }
 
-// GetUser 获取用户信息
-func (u UserQueryService) GetUser(ctx context.Context, id string) (*model.User, error) {
-	if id == "" {
-		return nil, fmt.Errorf("用户ID不能为空")
-	}
-
+// GetUser 获取用户详情
+func (u *UserQueryService) GetUser(ctx context.Context, id string) (*dto.UserDto, error) {
 	// 1. 获取用户基本信息
 	user, err := u.userRepo.FindById(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("获取用户信息失败: %w", err)
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
 	}
 
-	// 2. 获取用户角色
-	roles, err := u.GetUserRoles(ctx, id)
+	// 2. 获取用户角色ID列表
+	roleIds, err := u.roleRepo.GetIdsByUserId(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("获取用户角色失败: %w", err)
+		return nil, err
 	}
 
-	// 3. 转换为领域模型
-	return u.userMapper.ToDomain(user, roles), nil
+	// 3. 转换为DTO
+	return u.userConverter.ToDTO(user, roleIds), nil
 }
 
 // FindUsers 查询用户列表
-func (u UserQueryService) FindUsers(ctx context.Context, qb *dquery.QueryBuilder) ([]*model.User, error) {
+func (u *UserQueryService) FindUsers(ctx context.Context, qb *db_query.QueryBuilder) ([]*dto.UserDto, error) {
+	// 1. 获取用户列表
 	users, err := u.userRepo.Find(ctx, qb)
 	if err != nil {
-		return nil, fmt.Errorf("查询用户列表失败: %w", err)
+		return nil, err
 	}
-	return u.userMapper.ToDomainList(users), nil
+
+	// 2. 获取用户角色ID列表
+	userDtos := make([]*dto.UserDto, 0, len(users))
+	for _, user := range users {
+		roleIds, err := u.roleRepo.GetIdsByUserId(ctx, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		if userDto := u.userConverter.ToDTO(user, roleIds); userDto != nil {
+			userDtos = append(userDtos, userDto)
+		}
+	}
+
+	return userDtos, nil
 }
-func (u UserQueryService) GetUserRolesCode(ctx context.Context, userID string) ([]string, error) {
-	// 在缓存层实现
-	return nil, nil
+
+// GetUserRolesCode 获取用户角色编码列表
+func (u *UserQueryService) GetUserRolesCode(ctx context.Context, userID string) ([]string, error) {
+	// 1. 获取用户角色
+	roles, err := u.roleRepo.GetByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. 提取角色编码
+	roleCodes := make([]string, 0, len(roles))
+	for _, role := range roles {
+		if role.Status == 1 { // 只返回启用状态的角色
+			roleCodes = append(roleCodes, role.Code)
+		}
+	}
+
+	return roleCodes, nil
 }
 
 // CountUsers 统计用户数量
-func (u UserQueryService) CountUsers(ctx context.Context, qb *dquery.QueryBuilder) (int64, error) {
+func (u *UserQueryService) CountUsers(ctx context.Context, qb *db_query.QueryBuilder) (int64, error) {
 	return u.userRepo.Count(ctx, qb)
 }
 
 // GetUserPermissions 获取用户权限
-func (u UserQueryService) GetUserPermissions(ctx context.Context, userID string) ([]string, error) {
-	if userID == "" {
-		return nil, fmt.Errorf("用户ID不能为空")
-	}
-
-	permissions, err := u.userRepo.GetUserPermissionCodes(ctx, userID)
+func (u *UserQueryService) GetUserPermissions(ctx context.Context, userID string) ([]string, error) {
+	roles, err := u.roleRepo.GetUserRoles(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("获取用户权限失败: %w", err)
+		return nil, err
 	}
 
-	if permissions == nil {
-		permissions = make([]string, 0)
+	// 获取角色对应的权限
+	permissions := make([]string, 0)
+	for _, role := range roles {
+		perms, err := u.roleRepo.GetRolePermissions(ctx, role.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range perms {
+			permissions = append(permissions, p.Code)
+		}
 	}
 	return permissions, nil
 }
 
 // GetUserRoles 获取用户角色
-func (u UserQueryService) GetUserRoles(ctx context.Context, userID string) ([]*model.Role, error) {
-	if userID == "" {
-		return nil, fmt.Errorf("用户ID不能为空")
-	}
-
+func (u *UserQueryService) GetUserRoles(ctx context.Context, userID string) ([]*dto.RoleDto, error) {
 	roles, err := u.roleRepo.GetByUserId(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("获取用户角色失败: %w", err)
+		return nil, err
 	}
-
-	if roles == nil {
-		return make([]*model.Role, 0), nil
-	}
-	return u.roleMapper.ToDomainList(roles), nil
+	return u.roleConverter.ToDTOList(roles), nil
 }
 
 // GetUserMenus 获取用户菜单
-func (u UserQueryService) GetUserMenus(ctx context.Context, userID string) ([]*model.Permissions, error) {
-	if userID == "" {
-		return nil, fmt.Errorf("用户ID不能为空")
-	}
-
-	menus, err := u.userRepo.GetUserMenus(ctx, userID)
+func (u *UserQueryService) GetUserMenus(ctx context.Context, userID string) ([]*dto.PermissionsDto, error) {
+	roles, err := u.roleRepo.GetByUserId(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("获取用户菜单失败: %w", err)
+		return nil, err
 	}
 
-	if menus == nil {
-		return make([]*model.Permissions, 0), nil
+	// 获取角色对应的菜单权限
+	var permissions []*entity.Permissions
+	for _, role := range roles {
+		perms, err := u.roleRepo.GetRolePermissions(ctx, role.ID)
+		if err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, perms...)
 	}
-	return u.permMapper.ToDomainList(menus, nil), nil
+
+	// 转换为DTO并返回
+	return u.permissionsConverter.ToDTOList(permissions), nil
 }
 
 // GetUserTreeMenus 获取用户菜单树
-func (u UserQueryService) GetUserTreeMenus(ctx context.Context, userID string) ([]*model.Permissions, error) {
-	if userID == "" {
-		return nil, fmt.Errorf("用户ID不能为空")
-	}
-
-	// 1. 获取用户的所有菜单权限
-	menus, err := u.userRepo.GetUserMenus(ctx, userID)
+func (u *UserQueryService) GetUserTreeMenus(ctx context.Context, userID string) ([]*dto.PermissionsTreeDto, error) {
+	// 1. 获取用户角色
+	roles, err := u.roleRepo.GetIdsByUserId(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("获取用户菜单失败: %w", err)
+		return nil, err
 	}
 
-	if menus == nil {
-		return make([]*model.Permissions, 0), nil
+	if len(roles) == 0 {
+		return []*dto.PermissionsTreeDto{}, nil
 	}
 
-	// 2. 转换为领域模型
-	menuList := u.permMapper.ToDomainList(menus, nil)
+	// 2. 获取角色对应的菜单权限
+	permissions, _, err := u.permissionsRepo.GetTreeByUserAndType(context.Background(), userID, 1) // type=1表示菜单类型
+	if err != nil {
+		return nil, err
+	}
 
-	// 3. 构建树形结构
-	return buildPermissionTree(menuList), nil
+	// 3. 转换为DTO
+	return u.permissionsConverter.ToTreeDTOList(permissions), nil
 }
 
-// buildPermissionTree 构建权限树
-func buildPermissionTree(permissions []*model.Permissions) []*model.Permissions {
-	// 1. 创建一个map用于快速查找
-	permMap := make(map[int64]*model.Permissions)
-	for _, perm := range permissions {
-		permMap[perm.ID] = perm
-		// 初始化子节点切片
-		perm.Children = make([]*model.Permissions, 0)
-	}
-
-	// 2. 构建树形结构
-	var roots []*model.Permissions
-	for _, perm := range permissions {
-		if perm.ParentID == 0 { // 根节点
-			roots = append(roots, perm)
-		} else {
-			if parent, ok := permMap[perm.ParentID]; ok {
-				parent.Children = append(parent.Children, perm)
-			}
-		}
-	}
-
-	// 3. 对每个节点的子节点进行排序
-	for _, perm := range permissions {
-		if len(perm.Children) > 0 {
-			sortPermissions(perm.Children)
-		}
-	}
-
-	// 4. 对根节点进行排序
-	sortPermissions(roots)
-
-	return roots
-}
-
-// sortPermissions 根据Sort字段对权限列表进行排序
-func sortPermissions(perms []*model.Permissions) {
-	sort.Slice(perms, func(i, j int) bool {
-		// 如果Sort相同，则按照ID排序
-		if perms[i].Sequence == perms[j].Sequence {
-			return perms[i].ID < perms[j].ID
-		}
-		return perms[i].Sequence < perms[j].Sequence
-	})
-}
-
-// FindUsersByDepartment 查询部门用户
-func (u UserQueryService) FindUsersByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *dquery.QueryBuilder) ([]*model.User, error) {
-	if deptID == "" {
-		return nil, fmt.Errorf("部门ID不能为空")
-	}
-
+// FindUsersByDepartment 查询部门下的用户
+func (u *UserQueryService) FindUsersByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *db_query.QueryBuilder) ([]*dto.UserDto, error) {
 	users, err := u.userRepo.FindByDepartment(ctx, deptID, excludeAdminID, qb)
 	if err != nil {
-		return nil, fmt.Errorf("查询部门用户失败: %w", err)
+		return nil, err
 	}
-	return u.toDomainList(users), nil
+
+	// 获取用户角色并转换
+	userDtos := make([]*dto.UserDto, 0, len(users))
+	for _, user := range users {
+		roleIds, err := u.roleRepo.GetIdsByUserId(ctx, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		if userDto := u.userConverter.ToDTO(user, roleIds); userDto != nil {
+			userDtos = append(userDtos, userDto)
+		}
+	}
+
+	return userDtos, nil
 }
 
 // CountUsersByDepartment 统计部门用户数量
-func (u UserQueryService) CountUsersByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *dquery.QueryBuilder) (int64, error) {
+func (u *UserQueryService) CountUsersByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *db_query.QueryBuilder) (int64, error) {
 	if deptID == "" {
 		return 0, fmt.Errorf("部门ID不能为空")
 	}
@@ -221,22 +210,15 @@ func (u UserQueryService) CountUsersByDepartment(ctx context.Context, deptID str
 }
 
 // FindUnassignedUsers 查询未分配部门的用户
-func (u UserQueryService) FindUnassignedUsers(ctx context.Context, qb *dquery.QueryBuilder) ([]*model.User, error) {
+func (u *UserQueryService) FindUnassignedUsers(ctx context.Context, qb *db_query.QueryBuilder) ([]*dto.UserDto, error) {
 	users, err := u.userRepo.FindUnassignedUsers(ctx, qb)
 	if err != nil {
-		return nil, fmt.Errorf("查询未分配部门用户失败: %w", err)
+		return nil, err
 	}
-	return u.toDomainList(users), nil
+	return u.userConverter.ToDTOList(users), nil
 }
 
 // CountUnassignedUsers 统计未分配部门的用户数量
-func (u UserQueryService) CountUnassignedUsers(ctx context.Context, qb *dquery.QueryBuilder) (int64, error) {
+func (u *UserQueryService) CountUnassignedUsers(ctx context.Context, qb *db_query.QueryBuilder) (int64, error) {
 	return u.userRepo.CountUnassignedUsers(ctx, qb)
-}
-
-func (u UserQueryService) toDomainList(users []*entity.SysUser) []*model.User {
-	if users == nil {
-		return make([]*model.User, 0)
-	}
-	return u.userMapper.ToDomainList(users)
 }

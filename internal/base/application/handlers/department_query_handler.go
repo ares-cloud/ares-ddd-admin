@@ -138,76 +138,76 @@ func (h *DepartmentQueryHandler) HandleGetUserDepartments(ctx context.Context, q
 }
 
 // HandleGetUsers 处理获取部门用户
-func (h *DepartmentQueryHandler) HandleGetUsers(ctx context.Context, req *queries.GetDepartmentUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
-	// 1. 查询部门信息
-	_, err := h.deptRepo.GetByID(ctx, req.DeptID)
-	if err != nil {
-		return nil, herrors.NewServerHError(err)
-	}
-
-	// 2. 构建查询条件
-	qb := db_query.NewQueryBuilder()
-	if req.Username != "" {
-		qb.Where("username", db_query.Like, "%"+req.Username+"%")
-	}
-	if req.Name != "" {
-		qb.Where("name", db_query.Like, "%"+req.Name+"%")
-	}
-	qb.WithPage(&req.Page)
-	qb.OrderBy("created_at", true)
-
-	//// 3. 查询总数
-	//total, err := h.userRepo.CountByDepartment(ctx, req.DeptID, dept.AdminID, qb)
-	//if err != nil {
-	//	return nil, herrors.NewServerHError(err)
-	//}
-	//
-	//// 4. 查询用户列表
-	//users, err := h.userRepo.FindByDepartment(ctx, req.DeptID, dept.AdminID, qb)
-	//if err != nil {
-	//	return nil, herrors.NewServerHError(err)
-	//}
-
-	//// 5. 转换为DTO并返回分页结果
-	//return &models.PageRes[dto.UserDto]{
-	//	List:  dto.ToUserDtoList(users),
-	//	Total: total,
-	//}, nil
-	return nil, nil
-}
-
-// HandleGetUnassignedUsers 处理获取未分配部门的用户查询
-func (h *DepartmentQueryHandler) HandleGetUnassignedUsers(ctx context.Context, req *queries.GetUnassignedUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
-	// 构建查询条件
-	qb := db_query.NewQueryBuilder()
-	if req.Username != "" {
-		qb.Where("username", db_query.Like, "%"+req.Username+"%")
-	}
-	if req.Name != "" {
-		qb.Where("name", db_query.Like, "%"+req.Name+"%")
-	}
-	// 只查询启用状态的用户
-	qb.Where("status", db_query.Eq, 1)
-	// 添加分页
-	qb.WithPage(&req.Page)
-	qb.OrderBy("created_at", true)
-
-	//// 查询总数
-	//total, err := h.userRepo.CountUnassignedUsers(ctx, qb)
-	//if err != nil {
-	//	return nil, herrors.NewServerHError(err)
-	//}
-	//
-	//// 查询用户列表
-	//users, err := h.userRepo.FindUnassignedUsers(ctx, qb)
-	//if err != nil {
-	//	return nil, herrors.NewServerHError(err)
-	//}
-
-	// 转换为DTO并返回分页结果
-	//return &models.PageRes[dto.UserDto]{
-	//	List:  dto.ToUserDtoList(users),
-	//	Total: total,
-	//}, nil
-	return nil, nil
-}
+//func (h *DepartmentQueryHandler) HandleGetUsers(ctx context.Context, req *queries.GetDepartmentUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
+//	// 1. 查询部门信息
+//	_, err := h.deptRepo.GetByID(ctx, req.DeptID)
+//	if err != nil {
+//		return nil, herrors.NewServerHError(err)
+//	}
+//
+//	// 2. 构建查询条件
+//	qb := db_query.NewQueryBuilder()
+//	if req.Username != "" {
+//		qb.Where("username", db_query.Like, "%"+req.Username+"%")
+//	}
+//	if req.Name != "" {
+//		qb.Where("name", db_query.Like, "%"+req.Name+"%")
+//	}
+//	qb.WithPage(&req.Page)
+//	qb.OrderBy("created_at", true)
+//
+//	//// 3. 查询总数
+//	//total, err := h.userRepo.CountByDepartment(ctx, req.DeptID, dept.AdminID, qb)
+//	//if err != nil {
+//	//	return nil, herrors.NewServerHError(err)
+//	//}
+//	//
+//	//// 4. 查询用户列表
+//	//users, err := h.userRepo.FindByDepartment(ctx, req.DeptID, dept.AdminID, qb)
+//	//if err != nil {
+//	//	return nil, herrors.NewServerHError(err)
+//	//}
+//
+//	//// 5. 转换为DTO并返回分页结果
+//	//return &models.PageRes[dto.UserDto]{
+//	//	List:  dto.ToUserDtoList(users),
+//	//	Total: total,
+//	//}, nil
+//	return nil, nil
+//}
+//
+//// HandleGetUnassignedUsers 处理获取未分配部门的用户查询
+//func (h *DepartmentQueryHandler) HandleGetUnassignedUsers(ctx context.Context, req *queries.GetUnassignedUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
+//	// 构建查询条件
+//	qb := db_query.NewQueryBuilder()
+//	if req.Username != "" {
+//		qb.Where("username", db_query.Like, "%"+req.Username+"%")
+//	}
+//	if req.Name != "" {
+//		qb.Where("name", db_query.Like, "%"+req.Name+"%")
+//	}
+//	// 只查询启用状态的用户
+//	qb.Where("status", db_query.Eq, 1)
+//	// 添加分页
+//	qb.WithPage(&req.Page)
+//	qb.OrderBy("created_at", true)
+//
+//	//// 查询总数
+//	//total, err := h.userRepo.CountUnassignedUsers(ctx, qb)
+//	//if err != nil {
+//	//	return nil, herrors.NewServerHError(err)
+//	//}
+//	//
+//	//// 查询用户列表
+//	//users, err := h.userRepo.FindUnassignedUsers(ctx, qb)
+//	//if err != nil {
+//	//	return nil, herrors.NewServerHError(err)
+//	//}
+//
+//	// 转换为DTO并返回分页结果
+//	//return &models.PageRes[dto.UserDto]{
+//	//	List:  dto.ToUserDtoList(users),
+//	//	Total: total,
+//	//}, nil
+//	return nil, nil
+//}

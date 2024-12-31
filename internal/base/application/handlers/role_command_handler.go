@@ -2,120 +2,88 @@ package handlers
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/cloudwego/hertz/pkg/common/hlog"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/commands"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
-
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
-	"github.com/cloudwego/hertz/pkg/common/hlog"
 )
 
 type RoleCommandHandler struct {
-	roleRepo repository.IRoleRepository
-	permRepo repository.IPermissionsRepository
-	ef       *casbin.Enforcer
+	roleService *service.RoleCommandService
 }
 
-func NewRoleCommandHandler(roleRepo repository.IRoleRepository, permRepo repository.IPermissionsRepository, ef *casbin.Enforcer) *RoleCommandHandler {
+func NewRoleCommandHandler(roleService *service.RoleCommandService) *RoleCommandHandler {
 	return &RoleCommandHandler{
-		roleRepo: roleRepo,
-		permRepo: permRepo,
-		ef:       ef,
+		roleService: roleService,
 	}
 }
 
+// HandleCreate 处理创建角色命令
 func (h *RoleCommandHandler) HandleCreate(ctx context.Context, cmd *commands.CreateRoleCommand) herrors.Herr {
-	// 检查角色编码是否已存在
-	exists, err := h.roleRepo.ExistsByCode(ctx, cmd.Code)
-	if err != nil {
-		hlog.CtxErrorf(ctx, "check role code exists failed: %s", err)
-		return herrors.CreateFail(err)
-	}
-	if exists {
-		return herrors.CreateFail(fmt.Errorf("role code %s already exists", cmd.Code))
+	if hr := cmd.Validate(); herrors.HaveError(hr) {
+		hlog.CtxErrorf(ctx, "Command validation error: %s", hr)
+		return hr
 	}
 
-	role := model.NewRole(cmd.Code, cmd.Name, cmd.Sequence)
+	// 创建角色领域模型
+	role := model.NewRole(actx.GetTenantId(ctx), cmd.Code, cmd.Name)
 	role.Description = cmd.Description
 	role.Localize = cmd.Localize
-	role.Type = model.RoleType(cmd.Type)
-	if len(cmd.PermIDs) > 0 {
-		perms := make([]*model.Permissions, 0, len(cmd.PermIDs))
-		for _, permID := range cmd.PermIDs {
-			perm, err := h.permRepo.FindByID(ctx, permID)
-			if err != nil {
-				hlog.CtxErrorf(ctx, "failed to find perm with id %s", permID)
-				return herrors.CreateFail(err)
-			}
-			perms = append(perms, perm)
-		}
-		role.AssignPermissions(perms)
-	}
+	role.Sequence = cmd.Sequence
+	role.Type = cmd.Type
 
-	err = h.roleRepo.Create(ctx, role)
-	if err != nil {
-		hlog.CtxErrorf(ctx, "failed to create role: %s", err)
-		return herrors.CreateFail(err)
-	}
-
-	// 发布权限更新消息
-	if err := h.ef.PublishUpdate(ctx); err != nil {
-		hlog.CtxErrorf(ctx, "publish permission update error: %v", err)
-	}
-
-	return nil
+	// 创建角色
+	return h.roleService.CreateRole(ctx, role)
 }
 
-func (h *RoleCommandHandler) HandleUpdate(ctx context.Context, cmd commands.UpdateRoleCommand) herrors.Herr {
-	role, err := h.roleRepo.FindByID(ctx, cmd.ID)
-	if err != nil {
-		hlog.CtxErrorf(ctx, "failed to find role: %s", err)
-		return herrors.CreateFail(err)
+// HandleUpdate 处理更新角色命令
+func (h *RoleCommandHandler) HandleUpdate(ctx context.Context, cmd *commands.UpdateRoleCommand) herrors.Herr {
+	if hr := cmd.Validate(); herrors.HaveError(hr) {
+		hlog.CtxErrorf(ctx, "Command validation error: %s", hr)
+		return hr
 	}
 
-	role.UpdateBasicInfo(cmd.Name, cmd.Description, cmd.Sequence)
-	if cmd.Status != nil {
-		role.UpdateStatus(*cmd.Status)
+	// 获取现有角色
+	role, hr := h.roleService.GetRole(ctx, cmd.ID)
+	if herrors.HaveError(hr) {
+		hlog.CtxErrorf(ctx, "failed to get role: %s", hr)
+		return hr
 	}
 
-	if len(cmd.PermIDs) > 0 {
-		perms := make([]*model.Permissions, 0, len(cmd.PermIDs))
-		for _, permID := range cmd.PermIDs {
-			perm, err := h.permRepo.FindByID(ctx, permID)
-			if err != nil {
-				hlog.CtxErrorf(ctx, "failed to find perm with id %s", permID)
-				return herrors.CreateFail(err)
-			}
-			perms = append(perms, perm)
+	// 更新基本信息
+	role.UpdateBasicInfo(cmd.Name, cmd.Localize, cmd.Description, cmd.Sequence)
+	if cmd.Status != 0 {
+		if hr := role.UpdateStatus(cmd.Status); herrors.HaveError(hr) {
+			return hr
 		}
-		role.AssignPermissions(perms)
-	} else {
-		role.AssignPermissions(nil)
 	}
-	role.UpdateLocalize(cmd.Localize)
-	role.Type = model.RoleType(cmd.Type)
-	err = h.roleRepo.Update(ctx, role)
-	if err != nil {
-		hlog.CtxErrorf(ctx, "failed to update role: %s", err)
-		return herrors.CreateFail(err)
-	}
-	return nil
+
+	// 保存更新
+	return h.roleService.UpdateRole(ctx, role)
 }
 
-func (h *RoleCommandHandler) HandleDelete(ctx context.Context, cmd commands.DeleteRoleCommand) herrors.Herr {
-	// 检查角色是否存在
-	role, err := h.roleRepo.FindByID(ctx, cmd.ID)
-	if err != nil {
-		hlog.CtxErrorf(ctx, "failed to find role: %s", err)
-		return herrors.CreateFail(err)
+// HandleDelete 处理删除角色命令
+func (h *RoleCommandHandler) HandleDelete(ctx context.Context, cmd *commands.DeleteRoleCommand) herrors.Herr {
+	if hr := cmd.Validate(); herrors.HaveError(hr) {
+		hlog.CtxErrorf(ctx, "Command validation error: %s", hr)
+		return hr
 	}
 
-	err = h.roleRepo.Delete(ctx, role.ID)
-	if err != nil {
-		hlog.CtxErrorf(ctx, "failed to delete role: %s", err)
-		return herrors.CreateFail(err)
+	// 删除角色
+	return h.roleService.DeleteRole(ctx, cmd.ID)
+}
+
+// HandleAssignPermissions 处理分配权限命令
+func (h *RoleCommandHandler) HandleAssignPermissions(ctx context.Context, cmd *commands.AssignRolePermissionsCommand) herrors.Herr {
+	if hr := cmd.Validate(); herrors.HaveError(hr) {
+		hlog.CtxErrorf(ctx, "Command validation error: %s", hr)
+		return hr
 	}
-	return nil
+
+	// 分配权限
+	return h.roleService.AssignPermissions(ctx, cmd.RoleID, cmd.PermissionIDs)
 }

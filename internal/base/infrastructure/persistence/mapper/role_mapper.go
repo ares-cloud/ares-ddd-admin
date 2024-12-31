@@ -20,7 +20,7 @@ func (m *RoleMapper) ToDomain(e *entity.Role, permissions []*model.Permissions) 
 		Description: e.Description,
 		Sequence:    e.Sequence,
 		Status:      e.Status,
-		Type:        model.RoleType(e.Type),
+		Type:        e.Type,
 		Permissions: permissions,
 		CreatedAt:   e.CreatedAt,
 		UpdatedAt:   e.UpdatedAt,
@@ -35,7 +35,7 @@ func (m *RoleMapper) ToEntity(d *model.Role) *entity.Role {
 		Localize:    d.Localize,
 		Description: d.Description,
 		Sequence:    d.Sequence,
-		Type:        int8(d.Type),
+		Type:        d.Type,
 		Status:      d.Status,
 	}
 }

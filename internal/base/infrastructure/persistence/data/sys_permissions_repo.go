@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
 
@@ -190,7 +191,7 @@ func (r *sysMenuRepo) GetTreeByQuery(ctx context.Context, qb *db_query.QueryBuil
 // GetTreeByUserAndType 根据用户和类型获取权限树
 func (r *sysMenuRepo) GetTreeByUserAndType(ctx context.Context, userID string, permType int8) ([]*entity.Permissions, []*entity.PermissionsResource, error) {
 	var rolePerms []*entity.RolePermissions
-	var userRoles []*entity.Role
+	var userRoles []*entity.SysUserRole
 
 	// 查询用户角色
 	err := r.Db(ctx).Where("user_id = ?", userID).Find(&userRoles).Error
@@ -205,7 +206,7 @@ func (r *sysMenuRepo) GetTreeByUserAndType(ctx context.Context, userID string, p
 	// 获取角色ID列表
 	roleIDs := make([]int64, 0, len(userRoles))
 	for _, ur := range userRoles {
-		roleIDs = append(roleIDs, ur.ID)
+		roleIDs = append(roleIDs, ur.RoleID)
 	}
 
 	// 查询角色权限关联
@@ -351,4 +352,10 @@ func (r *sysMenuRepo) GetResourcesByRolesGrouped(ctx context.Context, roles []in
 	}
 
 	return resourceMap, nil
+}
+
+func (r *sysMenuRepo) ExistsById(ctx context.Context, id int64) (bool, error) {
+	var count int64
+	err := r.Db(ctx).Model(&entity.Permissions{}).Where("id = ?", id).Count(&count).Error
+	return count > 0, err
 }

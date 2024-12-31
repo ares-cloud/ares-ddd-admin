@@ -116,7 +116,7 @@ func (c *SysRoleController) RoleList(ctx context.Context, params *queries.ListRo
 // @Router /v1/sys/role [put]
 func (c *SysRoleController) UpdateRole(ctx context.Context, params *commands.UpdateRoleCommand) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
-	err := c.cmdHandel.HandleUpdate(ctx, *params)
+	err := c.cmdHandel.HandleUpdate(ctx, params)
 	if err != nil {
 		return result.WithError(err)
 	}
@@ -138,7 +138,7 @@ func (c *SysRoleController) UpdateRole(ctx context.Context, params *commands.Upd
 // @Router /v1/sys/role/{id} [delete]
 func (c *SysRoleController) DeleteRole(ctx context.Context, params *models.IntIdReq) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
-	err := c.cmdHandel.HandleDelete(ctx, commands.DeleteRoleCommand{ID: params.Id})
+	err := c.cmdHandel.HandleDelete(ctx, &commands.DeleteRoleCommand{ID: params.Id})
 	if err != nil {
 		return result.WithError(err)
 	}

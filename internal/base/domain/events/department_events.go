@@ -27,13 +27,13 @@ type DepartmentEvent struct {
 // NewDepartmentEvent 创建部门事件
 func NewDepartmentEvent(tenantID, deptID string, eventName string) *DepartmentEvent {
 	return &DepartmentEvent{
-		BaseTenantEvent: events.NewBaseTenantEvent(
-			eventName,
-			Version,
-			deptID,
-			DepartmentAggregate,
-			tenantID,
-		),
+		//BaseTenantEvent: events.NewBaseTenantEvent(
+		//	eventName,
+		//	Version,
+		//	deptID,
+		//	DepartmentAggregate,
+		//	tenantID,
+		//),
 	}
 }
 

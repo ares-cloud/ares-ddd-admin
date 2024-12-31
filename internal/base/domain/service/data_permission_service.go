@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"strconv"
-
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
@@ -28,16 +26,16 @@ func NewDataPermissionService(
 }
 
 // GetDataRoles 获取数据权限角色列表
-func (s *DataPermissionService) GetDataRoles(ctx context.Context) ([]*model.Role, error) {
-	// 查询数据权限类型的角色
-	return s.roleRepo.FindByType(ctx, int8(model.RoleTypeData))
-}
-
-// GetResourceRoles 获取资源角色列表
-func (s *DataPermissionService) GetResourceRoles(ctx context.Context) ([]*model.Role, error) {
-	// 查询资源类型的角色
-	return s.roleRepo.FindByType(ctx, int8(model.RoleTypeResource))
-}
+//func (s *DataPermissionService) GetDataRoles(ctx context.Context) ([]*model.Role, error) {
+//	// 查询数据权限类型的角色
+//	return s.roleRepo.FindByType(ctx, int8(model.RoleTypeData))
+//}
+//
+//// GetResourceRoles 获取资源角色列表
+//func (s *DataPermissionService) GetResourceRoles(ctx context.Context) ([]*model.Role, error) {
+//	// 查询资源类型的角色
+//	return s.roleRepo.FindByType(ctx, int8(model.RoleTypeResource))
+//}
 
 // GetDataScope 获取用户的数据权限范围
 func (s *DataPermissionService) GetDataScope(ctx context.Context, userID string) (*model.DataPermission, error) {
@@ -52,15 +50,15 @@ func (s *DataPermissionService) GetDataScope(ctx context.Context, userID string)
 
 	// 2. 只获取数据权限类型角色的权限
 	dataRoleIDs := make([]int64, 0)
-	for _, roleIDStr := range roleIDs {
-		roleID, err := strconv.ParseInt(roleIDStr, 10, 64)
-		if err != nil {
-			continue
-		}
-		if roleModel, err := s.roleRepo.FindByID(ctx, roleID); err == nil && roleModel.IsDataRole() {
-			dataRoleIDs = append(dataRoleIDs, roleID)
-		}
-	}
+	//for _, roleIDStr := range roleIDs {
+	//	roleID, err := strconv.ParseInt(roleIDStr, 10, 64)
+	//	if err != nil {
+	//		continue
+	//	}
+	//	if roleModel, err := s.roleRepo.FindByID(ctx, roleID); err == nil && roleModel.IsDataRole() {
+	//		dataRoleIDs = append(dataRoleIDs, roleID)
+	//	}
+	//}
 
 	// 3. 获取角色的数据权限
 	perms, err := s.permRepo.GetByRoleIDs(ctx, dataRoleIDs)

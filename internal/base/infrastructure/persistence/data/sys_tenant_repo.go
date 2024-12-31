@@ -217,3 +217,13 @@ func (r *sysTenantRepo) Unlock(ctx context.Context, tenantID string) error {
 			}).Error
 	})
 }
+
+// GetTenantRoles 获取租户角色
+func (r *sysTenantRepo) GetTenantRoles(ctx context.Context, tenantID string) ([]*entity.Role, error) {
+	var roles []*entity.Role
+	err := r.Db(ctx).Model(&entity.Role{}).
+		Joins("JOIN sys_tenant_role ON sys_tenant_role.role_id = sys_role.id").
+		Where("sys_tenant_role.tenant_id = ? AND sys_role.status = ?", tenantID, 1).
+		Find(&roles).Error
+	return roles, err
+}

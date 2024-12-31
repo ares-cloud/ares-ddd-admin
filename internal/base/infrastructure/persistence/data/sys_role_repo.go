@@ -115,13 +115,13 @@ func (r *sysRoleRepo) FindAllEnabled(ctx context.Context) ([]*entity.Role, error
 // UpdatePermissions 更新角色权限
 func (r *sysRoleRepo) UpdatePermissions(ctx context.Context, roleID int64, permIDs []int64) error {
 	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
-		// 1. 删除原有权限关联
+		// 1. 删除原有权限
 		if err := r.Db(ctx).Where("role_id = ?", roleID).
 			Delete(&entity.RolePermissions{}).Error; err != nil {
 			return err
 		}
 
-		// 2. 创建新的权限关联
+		// 2. 添加新权限
 		if len(permIDs) > 0 {
 			rolePerms := make([]*entity.RolePermissions, len(permIDs))
 			for i, permID := range permIDs {
@@ -134,6 +134,7 @@ func (r *sysRoleRepo) UpdatePermissions(ctx context.Context, roleID int64, permI
 				return err
 			}
 		}
+
 		return nil
 	})
 }
@@ -157,7 +158,7 @@ func (r *sysRoleRepo) GetRoleDataPermission(ctx context.Context, roleID int64) (
 func (r *sysRoleRepo) GetRolePermissions(ctx context.Context, roleID int64) ([]*entity.Permissions, error) {
 	var permissions []*entity.Permissions
 	err := r.Db(ctx).Model(&entity.Permissions{}).
-		Joins("JOIN sys_role_permissions ON sys_role_permissions.permission_id = sys_permission.id").
+		Joins("JOIN sys_role_permissions ON sys_role_permissions.permission_id = sys_permissions.id").
 		Where("sys_role_permissions.role_id = ?", roleID).
 		Find(&permissions).Error
 	return permissions, err
@@ -189,4 +190,34 @@ func (r *sysRoleRepo) GetPermissionsByRoleID(ctx context.Context, roleID int64) 
 		Where("role_id = ?", roleID).
 		Pluck("permission_id", &permIDs).Error
 	return permIDs, err
+}
+
+// HasPermission 检查是否有权限
+func (r *sysRoleRepo) HasPermission(ctx context.Context, roleID int64, permissionID int64) (bool, error) {
+	var count int64
+	err := r.Db(ctx).Model(&entity.RolePermissions{}).
+		Where("role_id = ? AND permission_id = ?", roleID, permissionID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+// GetIdsByUserId 获取用户的角色ID列表
+func (r *sysRoleRepo) GetIdsByUserId(ctx context.Context, userId string) ([]int64, error) {
+	var roleIds []int64
+	err := r.Db(ctx).Model(&entity.SysUserRole{}).
+		Where("user_id = ?", userId).
+		Pluck("role_id", &roleIds).Error
+	if err != nil {
+		return nil, err
+	}
+	return roleIds, nil
+}
+
+// GetUserCountByRoleID 获取角色关联的用户数量
+func (r *sysRoleRepo) GetUserCountByRoleID(ctx context.Context, roleID int64) (int64, error) {
+	var count int64
+	err := r.Db(ctx).Model(&entity.SysUserRole{}).
+		Where("role_id = ?", roleID).
+		Count(&count).Error
+	return count, err
 }

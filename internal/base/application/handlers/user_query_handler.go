@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
 	iQuery "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query"
@@ -12,10 +12,10 @@ import (
 )
 
 type UserQueryHandler struct {
-	queryService iQuery.UserQueryService
+	queryService iQuery.IUserQueryService
 }
 
-func NewUserQueryHandler(queryService iQuery.UserQueryService) *UserQueryHandler {
+func NewUserQueryHandler(queryService iQuery.IUserQueryService) *UserQueryHandler {
 	return &UserQueryHandler{
 		queryService: queryService,
 	}
@@ -27,7 +27,7 @@ func (h *UserQueryHandler) HandleGet(ctx context.Context, q queries.GetUserQuery
 	if err != nil {
 		return nil, herrors.QueryFail(err)
 	}
-	return dto.ToUserDto(user), nil
+	return user, nil
 }
 
 // HandleList 处理用户列表查询
@@ -64,7 +64,7 @@ func (h *UserQueryHandler) HandleList(ctx context.Context, q *queries.ListUsersQ
 	}
 
 	return &models.PageRes[dto.UserDto]{
-		List:  dto.ToUserDtoList(users),
+		List:  users,
 		Total: total,
 	}, nil
 }
@@ -94,7 +94,7 @@ func (h *UserQueryHandler) HandleGetUserInfo(ctx context.Context, q queries.GetU
 	}
 	// 4. 构建用户信息DTO
 	return &dto.UserInfoDto{
-		User:        dto.ToUserDto(user),
+		User:        user,
 		Roles:       roleCodes,
 		HomePage:    "User",
 		Permissions: permissions,
@@ -110,55 +110,5 @@ func (h *UserQueryHandler) HandleGetUserMenus(ctx context.Context, q queries.Get
 	}
 
 	// 转换为树形结构DTO
-	return dto.ToPermissionsTreeDtoList(menus), nil
+	return menus, nil
 }
-
-// HandleGetUserPermissions 处理获取用户权限查询
-func (h *UserQueryHandler) HandleGetUserPermissions(ctx context.Context, q *queries.GetUserPermissionsQuery) ([]string, herrors.Herr) {
-	permissions, err := h.queryService.GetUserPermissions(ctx, q.UserID)
-	if err != nil {
-		return nil, herrors.QueryFail(err)
-	}
-	return permissions, nil
-}
-
-// HandleGetUserRoles 处理获取用户角色查询
-func (h *UserQueryHandler) HandleGetUserRoles(ctx context.Context, q *queries.GetUserRolesQuery) ([]*dto.RoleDto, herrors.Herr) {
-	roles, err := h.queryService.GetUserRoles(ctx, q.UserID)
-	if err != nil {
-		return nil, herrors.QueryFail(err)
-	}
-	return dto.ToRoleDtoList(roles), nil
-}
-
-// HandleListDepartmentUsers 处理部门用户列表查询
-func (h *UserQueryHandler) HandleListDepartmentUsers(ctx context.Context, q *queries.ListDepartmentUsersQuery) (*models.PageRes[dto.UserDto], herrors.Herr) {
-	// 构建查询条件
-	qb := db_query.NewQueryBuilder()
-	if q.Username != "" {
-		qb.Where("username", db_query.Like, "%"+q.Username+"%")
-	}
-	if q.Name != "" {
-		qb.Where("name", db_query.Like, "%"+q.Name+"%")
-	}
-	qb.WithPage(&q.Page)
-
-	// 查询总数
-	total, err := h.queryService.CountUsersByDepartment(ctx, q.DeptID, q.ExcludeAdminID, qb)
-	if err != nil {
-		return nil, herrors.QueryFail(err)
-	}
-
-	// 查询数据
-	users, err := h.queryService.FindUsersByDepartment(ctx, q.DeptID, q.ExcludeAdminID, qb)
-	if err != nil {
-		return nil, herrors.QueryFail(err)
-	}
-
-	return &models.PageRes[dto.UserDto]{
-		List:  dto.ToUserDtoList(users),
-		Total: total,
-	}, nil
-}
-
-// 其他查询处理方法...

@@ -277,12 +277,12 @@ func (c *DepartmentController) SetAdmin(ctx context.Context, req *commands.SetDe
 // @Failure 500 {object} base_info.Swagger500Resp "内部错误"
 // @Router /v1/sys/dept/{id}/users [get]
 func (c *DepartmentController) GetDepartmentUsers(ctx context.Context, req *queries.GetDepartmentUsersQuery) *hserver.ResponseResult {
-	result := hserver.DefaultResponseResult()
-	data, err := c.queryHandler.HandleGetUsers(ctx, req)
-	if err != nil {
-		return result.WithError(err)
-	}
-	return result.WithData(data)
+	return hserver.DefaultResponseResult()
+	//data, err := c.queryHandler.HandleGetUsers(ctx, req)
+	//if err != nil {
+	//	return result.WithError(err)
+	//}
+	//return result.WithData(data)
 }
 
 // AssignUsers 分配用户到部门
@@ -338,12 +338,13 @@ func (c *DepartmentController) RemoveUsers(ctx context.Context, req *commands.Re
 // @Failure 500 {object} base_info.Swagger500Resp "内部错误"
 // @Router /v1/sys/dept/unassigned-users [get]
 func (c *DepartmentController) GetUnassignedUsers(ctx context.Context, req *queries.GetUnassignedUsersQuery) *hserver.ResponseResult {
-	result := hserver.DefaultResponseResult()
-	data, err := c.queryHandler.HandleGetUnassignedUsers(ctx, req)
-	if err != nil {
-		return result.WithError(err)
-	}
-	return result.WithData(data)
+	return hserver.DefaultResponseResult()
+	//result := hserver.DefaultResponseResult()
+	//data, err := c.queryHandler.HandleGetUnassignedUsers(ctx, req)
+	//if err != nil {
+	//	return result.WithError(err)
+	//}
+	//return result.WithData(data)
 }
 
 // TransferUser 人员部门调动

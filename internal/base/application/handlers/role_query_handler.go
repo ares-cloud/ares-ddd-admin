@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/converter"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/errors"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
@@ -16,14 +17,17 @@ import (
 )
 
 type RoleQueryHandler struct {
-	roleRepo repository.IRoleRepository
+	roleQuery query.IRoleQueryService
+	converter *converter.RoleConverter
 }
 
 func NewRoleQueryHandler(
-	roleRepo repository.IRoleRepository,
+	roleQuery query.IRoleQueryService,
+	converter *converter.RoleConverter,
 ) *RoleQueryHandler {
 	return &RoleQueryHandler{
-		roleRepo: roleRepo,
+		roleQuery: roleQuery,
+		converter: converter,
 	}
 }
 
@@ -49,84 +53,100 @@ func (h *RoleQueryHandler) HandleList(ctx context.Context, q *queries.ListRolesQ
 	qb.WithPage(&q.Page)
 
 	// 获取总数
-	total, err := h.roleRepo.Count(ctx, qb)
+	total, err := h.roleQuery.CountRoles(ctx, qb)
 	if err != nil {
-		return nil, herrors.NewErr(err)
+		hlog.CtxErrorf(ctx, "Failed to count roles: %s", err)
+		return nil, herrors.QueryFail(err)
 	}
 
 	// 查询数据
-	roles, err := h.roleRepo.Find(ctx, qb)
+	roles, err := h.roleQuery.FindRoles(ctx, qb)
 	if err != nil {
-		return nil, herrors.NewErr(err)
+		hlog.CtxErrorf(ctx, "Failed to find roles: %s", err)
+		return nil, herrors.QueryFail(err)
 	}
-
-	// 转换为DTO
-	dtoList := dto.ToRoleDtoList(roles)
-
 	return &models.PageRes[dto.RoleDto]{
-		List:  dtoList,
+		List:  roles,
 		Total: total,
 	}, nil
 }
 
 // HandleGet 处理获取角色查询
 func (h *RoleQueryHandler) HandleGet(ctx context.Context, query queries.GetRoleQuery) (*dto.RoleDto, herrors.Herr) {
-	// 1. 查询角色基本信息
-	role, err := h.roleRepo.FindByID(ctx, query.Id)
+	// 查询角色
+	role, err := h.roleQuery.GetRole(ctx, query.Id)
 	if err != nil {
 		hlog.CtxErrorf(ctx, "failed to get role: %s", err)
 		return nil, herrors.QueryFail(err)
 	}
 	if role == nil {
-		return nil, herrors.QueryFail(fmt.Errorf("role not found: %d", query.Id))
+		return nil, errors.RoleNotFound(query.Id)
 	}
 
-	// 2. 查询角色权限
-	permIDs, err := h.roleRepo.GetPermissionsByRoleID(ctx, query.Id)
+	// 查询角色权限
+	perms, err := h.roleQuery.GetRolePermissions(ctx, query.Id)
 	if err != nil {
 		hlog.CtxErrorf(ctx, "failed to get role permissions: %s", err)
 		return nil, herrors.QueryFail(err)
 	}
 
-	// 3. 转换为DTO并填充权限ID
-	roleDto := dto.ToRoleDto(role)
-	roleDto.PermIds = permIDs
+	// 转换为DTO并填充权限ID
+	role.PermIds = make([]int64, len(perms))
+	if len(perms) > 0 {
+		for i, perm := range perms {
+			role.PermIds[i] = perm.ID
+		}
+	}
 
-	return roleDto, nil
+	return role, nil
 }
 
 func (h *RoleQueryHandler) HandleGetUserRoles(ctx context.Context, query queries.GetUserRolesQuery) ([]*dto.RoleDto, herrors.Herr) {
-	roles, err := h.roleRepo.FindByUserID(ctx, query.UserID)
+	// 构建查询条件
+	qb := db_query.NewQueryBuilder()
+	qb.Where("user_id", db_query.Eq, query.UserID)
+
+	// 查询用户角色
+	roles, err := h.roleQuery.FindRoles(ctx, qb)
 	if err != nil {
+		hlog.CtxErrorf(ctx, "Failed to get user roles: %s", err)
 		return nil, herrors.QueryFail(err)
 	}
-	return dto.ToRoleDtoList(roles), nil
+
+	return roles, nil
 }
 
 // HandleGetAllEnabled 获取所有启用状态的角色
 func (h *RoleQueryHandler) HandleGetAllEnabled(ctx context.Context) ([]*dto.RoleDto, herrors.Herr) {
-	roles, err := h.roleRepo.FindAllEnabled(ctx)
+	// 构建查询条件
+	qb := db_query.NewQueryBuilder()
+	qb.Where("status", db_query.Eq, 1) // 状态为启用
+	qb.OrderBy("sequence", true)       // 按序号排序
+
+	// 查询角色列表
+	roles, err := h.roleQuery.FindRoles(ctx, qb)
 	if err != nil {
+		hlog.CtxErrorf(ctx, "Failed to get enabled roles: %s", err)
 		return nil, herrors.QueryFail(err)
 	}
-	return dto.ToRoleDtoList(roles), nil
+
+	return roles, nil
 }
 
-// HandleGetAllDataPermission 处理获取所有数据权限角色
+// HandleGetAllDataPermission 获取所有数据权限角色
 func (h *RoleQueryHandler) HandleGetAllDataPermission(ctx context.Context) ([]*dto.RoleDto, herrors.Herr) {
 	// 构建查询条件
 	qb := db_query.NewQueryBuilder()
-	qb.Where("type", db_query.Eq, int8(model.RoleTypeData))
-	qb.Where("status", db_query.Eq, 1) // 只查询启用状态的角色
-	qb.OrderBy("sequence", false)      // 按sequence排序
+	qb.Where("type", db_query.Eq, 2)   // 类型为数据权限
+	qb.Where("status", db_query.Eq, 1) // 状态为启用
+	qb.OrderBy("sequence", true)       // 按序号排序
 
-	// 查询角色
-	roles, err := h.roleRepo.Find(ctx, qb)
+	// 查询角色列表
+	roles, err := h.roleQuery.FindRoles(ctx, qb)
 	if err != nil {
-		hlog.CtxErrorf(ctx, "failed to get data permission roles: %s", err)
-		return nil, herrors.NewServerHError(err)
+		hlog.CtxErrorf(ctx, "Failed to get data permission roles: %s", err)
+		return nil, herrors.QueryFail(err)
 	}
 
-	// 使用已有的DTO转换方法
-	return dto.ToRoleDtoList(roles), nil
+	return roles, nil
 }

@@ -3,39 +3,46 @@ package keys
 import "fmt"
 
 const (
-	// 缓存键前缀
-	userKeyPrefix = "sys:user:"
-	roleKeyPrefix = "role:"
-	permKeyPrefix = "perm:"
-	menuKeyPrefix = "menu:"
+	userPrefix = "sys_user_cache:"
 )
 
-// 用户相关缓存键生成函数
+// UserKey 用户缓存key
 func UserKey(userID string) string {
-	return fmt.Sprintf("%s%s", userKeyPrefix, userID)
+	return fmt.Sprintf("%s:%s", userPrefix, userID)
 }
 
-func UserPermKey(userID string) string {
-	return fmt.Sprintf("%s%s:permissions", userKeyPrefix, userID)
+// UserPermissionsKey 用户权限缓存key
+func UserPermissionsKey(userID string) string {
+	return fmt.Sprintf("%s:permissions:%s", userPrefix, userID)
 }
 
-func UserRoleKey(userID string) string {
-	return fmt.Sprintf("%s%s:roles", userKeyPrefix, userID)
+// UserRolesKey 用户角色缓存key
+func UserRolesKey(userID string) string {
+	return fmt.Sprintf("%s:roles:%s", userPrefix, userID)
 }
 
-func UserMenuKey(userID string) string {
-	return fmt.Sprintf("%s%s:menus", userKeyPrefix, userID)
-}
-func UserMenuTreeKey(userID string) string {
-	return fmt.Sprintf("%s%s:menus_tree", userKeyPrefix, userID)
+// UserMenusKey 用户菜单缓存key
+func UserMenusKey(userID string) string {
+	return fmt.Sprintf("%s:menus:%s", userPrefix, userID)
 }
 
-// 列表缓存键
+// UserRoleCodesKey 用户角色编码缓存key
+func UserRoleCodesKey(userID string) string {
+	return fmt.Sprintf("%s:role:codes:%s", userPrefix, userID)
+}
+
+// UserKeys 生成用户相关的所有缓存key
+func UserKeys(userID string) []string {
+	return []string{
+		UserKey(userID),
+		UserPermissionsKey(userID),
+		UserRolesKey(userID),
+		UserMenusKey(userID),
+		UserRoleCodesKey(userID),
+	}
+}
+
+// UserListKey 用户列表缓存key
 func UserListKey() string {
-	return fmt.Sprintf("%slist", userKeyPrefix)
-}
-
-// 角色相关缓存键
-func RoleListKey() string {
-	return fmt.Sprintf("%slist", roleKeyPrefix)
+	return fmt.Sprintf("%s:list", userPrefix)
 }

@@ -9,9 +9,12 @@ import (
 var ProviderSet = wire.NewSet(
 	impl.NewUserQueryService,
 	impl.NewTenantQueryService,
+	impl.NewRoleQueryService,
 	cache.NewCacheEventHandler,
 	cache.NewUserQueryCache,
 	cache.NewTenantQueryCache,
-	wire.Bind(new(UserQueryService), new(*cache.UserQueryCache)),
-	wire.Bind(new(TenantQueryService), new(*cache.TenantQueryCache)),
+	cache.NewRoleQueryCache,
+	wire.Bind(new(IUserQueryService), new(*cache.UserQueryCache)),
+	wire.Bind(new(ITenantQueryService), new(*cache.TenantQueryCache)),
+	wire.Bind(new(IRoleQueryService), new(*cache.RoleQueryCache)),
 )

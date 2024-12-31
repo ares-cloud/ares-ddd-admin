@@ -30,6 +30,7 @@ type IPermissionsRepo interface {
 	GetResourcesByRoles(ctx context.Context, roles []int64) ([]*entity.PermissionsResource, error)
 	GetByRoles(ctx context.Context, roles []int64) ([]*entity.Permissions, error)
 	GetResourcesByRolesGrouped(ctx context.Context, roles []int64) (map[int64][]*entity.PermissionsResource, error)
+	ExistsById(ctx context.Context, permissionID int64) (bool, error)
 }
 
 type permissionsRepository struct {

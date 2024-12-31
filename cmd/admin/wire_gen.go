@@ -13,9 +13,9 @@ import (
 	service2 "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/oplog"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/converter"
 	handlers3 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/data"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/mapper"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
 	cache2 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/impl"
@@ -64,29 +64,31 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data, storageCon
 	iSysRoleRepo := data.NewSysRoleRepo(iDataBase)
 	iPermissionsRepo := data.NewSysMenuRepo(iDataBase)
 	iRoleRepository := repository.NewRoleRepository(iSysRoleRepo, iPermissionsRepo)
-	iPermissionsRepository := repository.NewPermissionsRepository(iPermissionsRepo)
-	casbinIPermissionsRepository := casbin.NewRepositoryImpl(iSysRoleRepo, iPermissionsRepo)
-	enforcer, err := server.NewCasBinEnforcer(redisClient, casbinIPermissionsRepository)
+	eventBus := events.NewEventBus()
+	roleCommandService := service2.NewRoleCommandService(iRoleRepository, eventBus)
+	roleCommandHandler := handlers2.NewRoleCommandHandler(roleCommandService)
+	roleConverter := converter.NewRoleConverter()
+	permissionsConverter := converter.NewPermissionsConverter()
+	roleQueryService := impl.NewRoleQueryService(iSysRoleRepo, roleConverter, permissionsConverter)
+	client := database.NewRc(redisClient)
+	cacheCache := cache.NewCache(redisClient, client)
+	cacheDecorator := cache.NewCacheDecorator(cacheCache)
+	roleQueryCache := cache2.NewRoleQueryCache(roleQueryService, cacheDecorator)
+	roleQueryHandler := handlers2.NewRoleQueryHandler(roleQueryCache, roleConverter)
+	iPermissionsRepository := casbin.NewRepositoryImpl(iSysRoleRepo, iPermissionsRepo)
+	enforcer, err := server.NewCasBinEnforcer(redisClient, iPermissionsRepository)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	roleCommandHandler := handlers2.NewRoleCommandHandler(iRoleRepository, iPermissionsRepository, enforcer)
-	roleQueryHandler := handlers2.NewRoleQueryHandler(iRoleRepository)
 	sysRoleController := rest2.NewSysRoleController(roleCommandHandler, roleQueryHandler, enforcer)
 	iSysUserRepo := data.NewSysUserRepo(iDataBase)
 	iUserRepository := repository.NewUserRepository(iSysUserRepo, iSysRoleRepo)
-	eventBus := events.NewEventBus()
 	userCommandService := service2.NewUserCommandService(iUserRepository, eventBus)
 	userCommandHandler := handlers2.NewUserCommandHandler(userCommandService)
-	userMapper := mapper.NewUserMapper()
-	roleMapper := mapper.NewRoleMapper()
-	permissionsMapper := mapper.NewPermissionsMapper()
-	userQueryService := impl.NewUserQueryService(iSysUserRepo, iSysRoleRepo, userMapper, roleMapper, permissionsMapper)
-	client := database.NewRc(redisClient)
-	cacheCache := cache.NewCache(redisClient, client)
-	cacheDecorator := cache.NewCacheDecorator(cacheCache)
+	userConverter := converter.NewUserConverter()
+	userQueryService := impl.NewUserQueryService(iSysUserRepo, iSysRoleRepo, iPermissionsRepo, userConverter, roleConverter, permissionsConverter)
 	userQueryCache := cache2.NewUserQueryCache(userQueryService, cacheDecorator)
 	userQueryHandler := handlers2.NewUserQueryHandler(userQueryCache)
 	sysUserController := rest2.NewSysUserController(userCommandHandler, userQueryHandler, enforcer)
@@ -94,13 +96,15 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data, storageCon
 	iTenantRepository := repository.NewTenantRepository(iSysTenantRepo, iSysUserRepo)
 	tenantCommandService := service2.NewTenantCommandService(iTenantRepository, eventBus)
 	tenantCommandHandler := handlers2.NewTenantCommandHandler(tenantCommandService)
-	tenantQueryService := impl.NewTenantQueryService(iSysTenantRepo, iSysUserRepo)
+	tenantConverter := converter.NewTenantConverter(userConverter)
+	tenantQueryService := impl.NewTenantQueryService(iSysTenantRepo, iSysUserRepo, iPermissionsRepo, tenantConverter, permissionsConverter)
 	tenantQueryCache := cache2.NewTenantQueryCache(tenantQueryService, cacheDecorator)
 	tenantQueryHandler := handlers2.NewTenantQueryHandler(tenantQueryCache)
 	sysTenantController := rest2.NewSysTenantController(tenantCommandHandler, tenantQueryHandler, enforcer)
-	permissionsCommandHandler := handlers2.NewPermissionsCommandHandler(iPermissionsRepository, enforcer)
-	permissionService := service2.NewPermissionService(iPermissionsRepository, iRoleRepository, iTenantRepository, eventBus)
-	permissionsQueryHandler := handlers2.NewPermissionsQueryHandler(iPermissionsRepository, permissionService)
+	repositoryIPermissionsRepository := repository.NewPermissionsRepository(iPermissionsRepo)
+	permissionsCommandHandler := handlers2.NewPermissionsCommandHandler(repositoryIPermissionsRepository, enforcer)
+	permissionService := service2.NewPermissionService(repositoryIPermissionsRepository, iRoleRepository, iTenantRepository, eventBus)
+	permissionsQueryHandler := handlers2.NewPermissionsQueryHandler(repositoryIPermissionsRepository, permissionService)
 	sysPermissionsController := rest2.NewSysPermissionsController(permissionsCommandHandler, permissionsQueryHandler, enforcer)
 	iAuthRepository := repository.NewAuthRepository(iUserRepository, redisClient)
 	iLoginLogRepository := repository.NewLoginLogRepository(iDataBase)

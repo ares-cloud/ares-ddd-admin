@@ -15,13 +15,13 @@ import (
 type AuthService struct {
 	userRepo     repository.IUserRepository
 	eventBus     *events.EventBus
-	queryService query.UserQueryService
+	queryService query.IUserQueryService
 }
 
 func NewAuthService(
 	userRepo repository.IUserRepository,
 	eventBus *events.EventBus,
-	queryService query.UserQueryService,
+	queryService query.IUserQueryService,
 ) *AuthService {
 	return &AuthService{
 		userRepo:     userRepo,

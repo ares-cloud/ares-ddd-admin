@@ -2,118 +2,164 @@ package service
 
 import (
 	"context"
-
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
-
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/events"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/errors"
+	domanevent "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/events"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-	pkgEvent "github.com/ares-cloud/ares-ddd-admin/pkg/events"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
-type RoleService struct {
+type RoleCommandService struct {
 	roleRepo repository.IRoleRepository
-	userRepo repository.IUserRepository
-	eventBus *pkgEvent.EventBus
+	eventBus *events.EventBus
 }
 
-func NewRoleService(roleRepo repository.IRoleRepository, userRepo repository.IUserRepository, eventBus *pkgEvent.EventBus) *RoleService {
-	return &RoleService{
+func NewRoleCommandService(
+	roleRepo repository.IRoleRepository,
+	eventBus *events.EventBus,
+) *RoleCommandService {
+	return &RoleCommandService{
 		roleRepo: roleRepo,
-		userRepo: userRepo,
 		eventBus: eventBus,
 	}
 }
 
-// CheckRolePermissions 检查角色是否具有特定权限
-func (s *RoleService) CheckRolePermissions(ctx context.Context, roleID int64, permissionCode string) (bool, error) {
-	role, err := s.roleRepo.FindByID(ctx, roleID)
-	if err != nil {
-		return false, err
+// CreateRole 创建角色
+func (s *RoleCommandService) CreateRole(ctx context.Context, role *model.Role) herrors.Herr {
+	// 1. 验证角色
+	if hr := role.Validate(); herrors.HaveError(hr) {
+		return hr
 	}
 
-	for _, perm := range role.Permissions {
-		if perm.Code == permissionCode {
-			return true, nil
+	// 2. 检查编码是否存在
+	exists, err := s.roleRepo.ExistsByCode(ctx, role.Code)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if exists {
+		return errors.RoleExists(role.Code)
+	}
+
+	// 3. 创建角色
+	if err := s.roleRepo.Create(ctx, role); err != nil {
+		return herrors.NewServerHError(err)
+	}
+
+	// 4. 发布角色创建事件
+	s.eventBus.Publish(ctx, domanevent.NewRoleCreatedEvent(role))
+
+	return nil
+}
+
+// UpdateRole 更新角色
+func (s *RoleCommandService) UpdateRole(ctx context.Context, role *model.Role) herrors.Herr {
+	// 1. 验证角色
+	if hr := role.Validate(); herrors.HaveError(hr) {
+		return hr
+	}
+
+	// 2. 检查编码是否存在
+	exists, err := s.roleRepo.FindByCode(ctx, role.Code)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if exists != nil && exists.ID != role.ID {
+		return errors.RoleExists(role.Code)
+	}
+
+	// 3. 更新角色
+	if err := s.roleRepo.Update(ctx, role); err != nil {
+		return herrors.NewServerHError(err)
+	}
+
+	// 4. 发布角色更新事件
+	s.eventBus.Publish(ctx, domanevent.NewRoleUpdatedEvent(role))
+
+	return nil
+}
+
+// DeleteRole 删除角色
+func (s *RoleCommandService) DeleteRole(ctx context.Context, id int64) herrors.Herr {
+	// 1. 检查角色是否存在
+	role, err := s.roleRepo.FindByID(ctx, id)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if role == nil {
+		return errors.RoleNotFound(id)
+	}
+
+	// 2. 检查角色是否被使用
+	used, err := s.roleRepo.IsRoleInUse(ctx, id)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if used {
+		return errors.RoleInUse(id)
+	}
+
+	// 3. 删除角色
+	if err := s.roleRepo.Delete(ctx, id); err != nil {
+		return herrors.NewServerHError(err)
+	}
+
+	// 4. 发布角色删除事件
+	s.eventBus.Publish(ctx, domanevent.NewRoleDeletedEvent(id))
+
+	return nil
+}
+
+// AssignPermissions 分配权限
+func (s *RoleCommandService) AssignPermissions(ctx context.Context, roleID int64, permissionIDs []int64) herrors.Herr {
+	// 1. 检查角色是否存在
+	role, err := s.roleRepo.FindByID(ctx, roleID)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if role == nil {
+		return errors.RoleNotFound(roleID)
+	}
+
+	// 2. 检查权限是否存在
+	if err := s.validatePermissions(ctx, permissionIDs); err != nil {
+		return herrors.NewServerHError(err)
+	}
+
+	// 3. 分配权限
+	if err := s.roleRepo.AssignPermissions(ctx, roleID, permissionIDs); err != nil {
+		return herrors.NewServerHError(err)
+	}
+
+	// 4. 发布权限分配事件
+	s.eventBus.Publish(ctx, domanevent.NewRolePermissionsAssignedEvent(roleID, permissionIDs))
+
+	return nil
+}
+
+// GetRole 获取角色
+func (s *RoleCommandService) GetRole(ctx context.Context, id int64) (*model.Role, herrors.Herr) {
+	role, err := s.roleRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, herrors.NewServerHError(err)
+	}
+	if role == nil {
+		return nil, errors.RoleNotFound(id)
+	}
+	return role, nil
+}
+
+// validatePermissions 验证权限是否存在
+func (s *RoleCommandService) validatePermissions(ctx context.Context, permissionIDs []int64) error {
+	for _, id := range permissionIDs {
+		exists, err := s.roleRepo.ExistsPermission(ctx, id)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return errors.PermissionNotFound(id)
 		}
 	}
-
-	return false, nil
-}
-
-// GetRolePermissionCodes 获取角色的所有权限代码
-func (s *RoleService) GetRolePermissionCodes(ctx context.Context, roleID int64) ([]string, error) {
-	role, err := s.roleRepo.FindByID(ctx, roleID)
-	if err != nil {
-		return nil, err
-	}
-
-	codes := make([]string, len(role.Permissions))
-	for i, perm := range role.Permissions {
-		codes[i] = perm.Code
-	}
-
-	return codes, nil
-}
-
-// GetAllDataPermissionRoles 获取所有数据权限角色
-func (s *RoleService) GetAllDataPermissionRoles(ctx context.Context) ([]*model.Role, error) {
-	// 构建查询条件
-	qb := db_query.NewQueryBuilder().
-		Where("type", db_query.Eq, int8(entity.RoleTypeData)).
-		Where("status", db_query.Eq, 1) // 只查询启用状态的角色
-
-	// 查询数据权限角色
-	roles, err := s.roleRepo.Find(ctx, qb)
-	if err != nil {
-		return nil, err
-	}
-
-	return roles, nil
-}
-
-func (s *RoleService) UpdateRole(ctx context.Context, role *model.Role) error {
-	if err := s.roleRepo.Update(ctx, role); err != nil {
-		return err
-	}
-
-	return s.publishRoleEvent(ctx, role.ID, role.TenantID)
-}
-
-func (s *RoleService) UpdateRolePermissions(ctx context.Context, roleID int64, permIDs []int64) error {
-	if err := s.roleRepo.UpdatePermissions(ctx, roleID, permIDs); err != nil {
-		return err
-	}
-
-	// 获取角色信息
-	role, err := s.roleRepo.FindByID(ctx, roleID)
-	if err != nil {
-		return err
-	}
-
-	return s.publishRoleEvent(ctx, roleID, role.TenantID)
-}
-
-// publishRoleEvent 发布角色相关事件
-func (s *RoleService) publishRoleEvent(ctx context.Context, roleID int64, tenantID string) error {
-	//// 获取角色关联的用户
-	//users, err := s.userRepo.FindByRoleID(ctx, roleID)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// 构建用户ID列表
-	//userIDs := make([]string, len(users))
-	//for i, user := range users {
-	//	userIDs[i] = user.ID
-	//}
-	//
-	//// 发布事件
-	//event := &events.RoleEvent{
-	//	BaseEvent: events.BaseEvent{TenantID: tenantID},
-	//	RoleID:    roleID,
-	//	UserIDs:   userIDs,
-	//}
-	//return s.eventBus.Publish(ctx, event)
 	return nil
 }

@@ -1,7 +1,5 @@
 package dto
 
-import "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
-
 // UserInfoDto 用户信息DTO
 type UserInfoDto struct {
 	User        *UserDto `json:"user"`
@@ -10,9 +8,9 @@ type UserInfoDto struct {
 	HomePage    string   `json:"homePage"`    // 首页
 }
 
-func ToUserInfoDto(user *model.User, permissions []string, roles []string) *UserInfoDto {
+func ToUserInfoDto(user *UserDto, permissions []string, roles []string) *UserInfoDto {
 	return &UserInfoDto{
-		User:        ToUserDto(user),
+		User:        user,
 		Permissions: permissions,
 		Roles:       roles,
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/service"
+	dto2 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
@@ -81,16 +82,16 @@ func (h *PermissionsQueryHandler) HandleGetTree(ctx context.Context, query queri
 	return dto.ToPermissionsDtoList(perms), nil
 }
 
-func (h *PermissionsQueryHandler) HandleGetPermissionsTree(ctx context.Context) (*dto.PermissionsTreeResult, herrors.Herr) {
+func (h *PermissionsQueryHandler) HandleGetPermissionsTree(ctx context.Context) (*dto2.PermissionsTreeResult, herrors.Herr) {
 	// 获取所有权限并构建树
-	permissions, ids, err := h.permRepo.FindAllTree(ctx)
-	if err != nil {
-		return nil, herrors.QueryFail(err)
-	}
+	//permissions, ids, err := h.permRepo.FindAllTree(ctx)
+	//if err != nil {
+	//	return nil, herrors.QueryFail(err)
+	//}
 
-	return &dto.PermissionsTreeResult{
-		Tree: dto.ToPermissionsTreeDtoList(permissions),
-		Ids:  ids,
+	return &dto2.PermissionsTreeResult{
+		//Tree: permissions,
+		//Ids: ids,
 	}, nil
 }
 

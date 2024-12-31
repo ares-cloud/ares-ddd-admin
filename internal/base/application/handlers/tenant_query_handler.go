@@ -3,9 +3,10 @@ package handlers
 import (
 	"context"
 
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
@@ -13,10 +14,10 @@ import (
 )
 
 type TenantQueryHandler struct {
-	queryService query.TenantQueryService
+	queryService query.ITenantQueryService
 }
 
-func NewTenantQueryHandler(queryService query.TenantQueryService) *TenantQueryHandler {
+func NewTenantQueryHandler(queryService query.ITenantQueryService) *TenantQueryHandler {
 	return &TenantQueryHandler{
 		queryService: queryService,
 	}
@@ -51,7 +52,7 @@ func (h *TenantQueryHandler) HandleList(ctx context.Context, q *queries.ListTena
 	}
 
 	return &models.PageRes[dto.TenantDto]{
-		List:  dto.ToTenantDtoList(tenants),
+		List:  tenants,
 		Total: total,
 	}, nil
 }
@@ -61,7 +62,7 @@ func (h *TenantQueryHandler) HandleGet(ctx context.Context, query queries.GetTen
 	if err != nil {
 		return nil, herrors.QueryFail(err)
 	}
-	return dto.ToTenantDto(tenant), nil
+	return tenant, nil
 }
 
 func (h *TenantQueryHandler) HandleGetPermissions(ctx context.Context, query queries.GetTenantPermissionsQuery) ([]*dto.PermissionsDto, herrors.Herr) {
@@ -78,5 +79,5 @@ func (h *TenantQueryHandler) HandleGetPermissions(ctx context.Context, query que
 	}
 
 	// 转换为DTO
-	return dto.ToPermissionsDtoList(permissions), nil
+	return permissions, nil
 }
