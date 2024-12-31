@@ -2,232 +2,340 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
-	"github.com/ares-cloud/ares-ddd-admin/pkg/events"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/errors"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 
-	domanevent "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/events"
-
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/events"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	pkgEvent "github.com/ares-cloud/ares-ddd-admin/pkg/events"
 )
 
 type DepartmentService struct {
-	repo     repository.IDepartmentRepository
-	eventBus *events.EventBus
+	deptRepo repository.IDepartmentRepository
+	userRepo repository.IUserRepository
+	eventBus *pkgEvent.EventBus
 }
 
-func NewDepartmentService(repo repository.IDepartmentRepository, eventBus *events.EventBus) *DepartmentService {
-	return &DepartmentService{repo: repo, eventBus: eventBus}
+func NewDepartmentService(
+	deptRepo repository.IDepartmentRepository,
+	userRepo repository.IUserRepository,
+	eventBus *pkgEvent.EventBus,
+) *DepartmentService {
+	return &DepartmentService{
+		deptRepo: deptRepo,
+		userRepo: userRepo,
+		eventBus: eventBus,
+	}
 }
 
 // CreateDepartment 创建部门
-func (s *DepartmentService) CreateDepartment(ctx context.Context, dept *model.Department) error {
-	// 1. 检查编码是否重复
-	exists, err := s.repo.GetByCode(ctx, dept.Code)
-	if err != nil {
+func (s *DepartmentService) CreateDepartment(ctx context.Context, dept *model.Department) herrors.Herr {
+	// 1. 验证部门信息
+	if err := dept.Validate(); herrors.HaveError(err) {
 		return err
 	}
-	if exists != nil {
-		return errors.New("部门编码已存在")
+
+	// 2. 检查部门编码是否存在
+	exists, err := s.deptRepo.ExistsByCode(ctx, dept.Code)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if exists {
+		return errors.DepartmentExists(dept.Code)
 	}
 
-	// 2. 检查父部门是否存在
-	if dept.ParentID != "" {
-		parent, err := s.repo.GetByID(ctx, dept.ParentID)
+	// 3. 如果有父部门,检查父部门是否存在
+	if dept.HasParent() {
+		parent, err := s.deptRepo.FindByID(ctx, dept.ParentID)
 		if err != nil {
-			return err
+			return herrors.NewServerHError(err)
 		}
 		if parent == nil {
-			return errors.New("父部门不存在")
+			return errors.ParentDepartmentNotFound(dept.ParentID)
+		}
+		if !parent.IsEnabled() {
+			return errors.ParentDepartmentDisabled(dept.ParentID)
 		}
 	}
 
 	// 4. 创建部门
-	return s.repo.Create(ctx, dept)
+	if err := s.deptRepo.Create(ctx, dept); err != nil {
+		return errors.DepartmentCreateFailed(err)
+	}
+
+	// 5. 发布部门创建事件
+	event := events.NewDepartmentCreatedEvent(actx.GetTenantId(ctx), dept.ID)
+	if err := s.eventBus.Publish(ctx, event); err != nil {
+		return herrors.NewServerHError(err)
+	}
+	return nil
 }
 
 // UpdateDepartment 更新部门
-func (s *DepartmentService) UpdateDepartment(ctx context.Context, dept *model.Department) error {
-	// 1. 检查部门是否存在
-	exists, err := s.repo.GetByID(ctx, dept.ID)
-	if err != nil {
+func (s *DepartmentService) UpdateDepartment(ctx context.Context, dept *model.Department) herrors.Herr {
+	// 1. 验证部门信息
+	if err := dept.Validate(); herrors.HaveError(err) {
 		return err
 	}
-	if exists == nil {
-		return errors.New("部门不存在")
+
+	// 2. 检查部门是否存在
+	oldDept, err := s.deptRepo.FindByID(ctx, dept.ID)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if oldDept == nil {
+		return errors.DepartmentNotFound(dept.ID)
 	}
 
-	// 2. 检查编码是否重复
-	if exists.Code != dept.Code {
-		codeExists, err := s.repo.GetByCode(ctx, dept.Code)
+	// 3. 如果修改了编码,检查新编码是否存在
+	if oldDept.Code != dept.Code {
+		exists, err := s.deptRepo.ExistsByCode(ctx, dept.Code)
 		if err != nil {
-			return err
+			return herrors.NewServerHError(err)
 		}
-		if codeExists != nil && codeExists.ID != dept.ID {
-			return errors.New("部门编码已存在")
+		if exists {
+			return errors.DepartmentExists(dept.Code)
 		}
 	}
 
-	// 3. 检查父部门是否存在
-	if dept.ParentID != "" && dept.ParentID != exists.ParentID {
-		parent, err := s.repo.GetByID(ctx, dept.ParentID)
+	// 4. 如果修改了父部门,检查父部门是否存在且有效
+	if oldDept.ParentID != dept.ParentID && dept.HasParent() {
+		parent, err := s.deptRepo.FindByID(ctx, dept.ParentID)
 		if err != nil {
-			return err
+			return herrors.NewServerHError(err)
 		}
 		if parent == nil {
-			return errors.New("父部门不存在")
+			return errors.ParentDepartmentNotFound(dept.ParentID)
+		}
+		if !parent.IsEnabled() {
+			return errors.ParentDepartmentDisabled(dept.ParentID)
 		}
 	}
 
-	if err := s.repo.Update(ctx, dept); err != nil {
-		return err
+	// 5. 更新部门
+	if err := s.deptRepo.Update(ctx, dept); err != nil {
+		return errors.DepartmentUpdateFailed(err)
 	}
 
-	// 获取部门下的用户
-	//users, err := s.repo.GetDepartmentUsers(ctx, dept.ID)
-	//if err != nil {
-	//	return err
-	//}
-
-	// 发布部门更新事件
-	//userIDs := make([]string, len(users))
-	//for i, user := range users {
-	//	userIDs[i] = user.ID
-	//}
-
-	event := domanevent.NewDepartmentEvent(dept.TenantID, dept.ID, domanevent.DepartmentUpdated)
-	return s.eventBus.Publish(ctx, event)
+	// 6. 发布部门更新事件
+	event := events.NewDepartmentUpdatedEvent(actx.GetTenantId(ctx), dept.ID)
+	if err := s.eventBus.Publish(ctx, event); err != nil {
+		return herrors.NewServerHError(err)
+	}
+	return nil
 }
 
 // DeleteDepartment 删除部门
-func (s *DepartmentService) DeleteDepartment(ctx context.Context, id string) error {
-	// 1. 检查是否有子部门
-	children, err := s.repo.GetByParentID(ctx, id)
+func (s *DepartmentService) DeleteDepartment(ctx context.Context, id string) herrors.Herr {
+	// 1. 检查部门是否存在
+	dept, err := s.deptRepo.FindByID(ctx, id)
 	if err != nil {
-		return err
+		return errors.DepartmentQueryFailed(err)
+	}
+	if dept == nil {
+		return errors.DepartmentNotFound(id)
+	}
+
+	// 2. 检查是否有子部门
+	children, err := s.deptRepo.GetTreeByParentID(ctx, id)
+	if err != nil {
+		return herrors.NewServerHError(err)
 	}
 	if len(children) > 0 {
-		return errors.New("存在子部门,不能删除")
+		return errors.HasChildDepartment(id)
 	}
 
-	return s.repo.Delete(ctx, id)
-}
+	// 3. 删除部门
+	if err := s.deptRepo.Delete(ctx, id); err != nil {
+		return errors.DepartmentDeleteFailed(err)
+	}
 
-// GetDepartmentList 获取部门列表
-func (s *DepartmentService) GetDepartmentList(ctx context.Context, query *repository.ListDepartmentQuery) ([]*model.Department, error) {
-	return s.repo.List(ctx, query)
+	// 4. 发布部门删除事件
+	event := events.NewDepartmentDeletedEvent(actx.GetTenantId(ctx), id)
+	if err := s.eventBus.Publish(ctx, event); err != nil {
+		return herrors.NewServerHError(err)
+	}
+	return nil
 }
 
 // GetDepartmentTree 获取部门树
-func (s *DepartmentService) GetDepartmentTree(ctx context.Context, parentID string) ([]*model.Department, error) {
-	return nil, nil //s.repo.GetDepartmentTree(ctx)
+func (s *DepartmentService) GetDepartmentTree(ctx context.Context, parentID string) ([]*model.Department, herrors.Herr) {
+	depts, err := s.deptRepo.GetTreeByParentID(ctx, parentID)
+	if err != nil {
+		return nil, herrors.NewServerHError(err)
+	}
+	return depts, nil
 }
 
-// MoveDepartment 移动部门
-func (s *DepartmentService) MoveDepartment(ctx context.Context, deptID, targetParentID string) error {
-	// 1. 检查部门是否存在
-	dept, err := s.repo.GetByID(ctx, deptID)
+// AssignUsers 分配用户到部门
+func (s *DepartmentService) AssignUsers(ctx context.Context, deptID string, userIDs []string) herrors.Herr {
+	// 1. 检查部门是否存在且有效
+	dept, err := s.deptRepo.FindByID(ctx, deptID)
 	if err != nil {
-		return err
+		return herrors.NewServerHError(err)
 	}
 	if dept == nil {
-		return fmt.Errorf("department not found: %s", deptID)
+		return errors.DepartmentNotFound(deptID)
+	}
+	if !dept.IsEnabled() {
+		return errors.DepartmentDisabled(deptID)
 	}
 
-	// 2. 检查目标父部门是否存在
-	if targetParentID != "" {
-		parent, err := s.repo.GetByID(ctx, targetParentID)
-		if err != nil {
-			return err
-		}
-		if parent == nil {
-			return fmt.Errorf("target parent department not found: %s", targetParentID)
-		}
+	// 2. 分配用户
+	if err := s.deptRepo.AssignUsers(ctx, deptID, userIDs); err != nil {
+		return errors.UserAssignFailed(err)
 	}
 
-	// 3. 检查是否形成循环引用
-	if err := s.checkCircularReference(ctx, deptID, targetParentID); err != nil {
-		return err
+	// 3. 发布用户分配事件
+	event := events.NewUserAssignedEvent(actx.GetTenantId(ctx), deptID, userIDs)
+	if err := s.eventBus.Publish(ctx, event); err != nil {
+		return herrors.NewServerHError(err)
 	}
-
-	// 4. 更新父部门
-	dept.UpdateParent(targetParentID)
-
-	// 5. 保存更新
-	return s.repo.Update(ctx, dept)
+	return nil
 }
 
-// checkCircularReference 检查是否形成循环引用
-func (s *DepartmentService) checkCircularReference(ctx context.Context, deptID, targetParentID string) error {
-	if targetParentID == "" {
-		return nil
+// RemoveUsers 从部门移除用户
+func (s *DepartmentService) RemoveUsers(ctx context.Context, deptID string, userIDs []string) herrors.Herr {
+	// 1. 检查部门是否存在
+	dept, err := s.deptRepo.FindByID(ctx, deptID)
+	if err != nil {
+		return errors.DepartmentQueryFailed(err)
+	}
+	if dept == nil {
+		return errors.DepartmentNotFound(deptID)
 	}
 
-	// 获取目标父部门的所有上级部门
-	var parentIDs []string
-	currentID := targetParentID
-	for currentID != "" {
-		parent, err := s.repo.GetByID(ctx, currentID)
-		if err != nil {
-			return err
-		}
-		if parent == nil {
-			break
-		}
-		// 检查是否形成循环
-		if parent.ID == deptID {
-			return fmt.Errorf("circular reference detected")
-		}
-		parentIDs = append(parentIDs, parent.ID)
-		currentID = parent.ParentID
+	// 2. 移除用户
+	if err := s.deptRepo.RemoveUsers(ctx, deptID, userIDs); err != nil {
+		return errors.UserRemoveFailed(err)
 	}
 
+	// 3. 发布用户移除事件
+	event := events.NewUserRemovedEvent(actx.GetTenantId(ctx), deptID, userIDs)
+	if err := s.eventBus.Publish(ctx, event); err != nil {
+		return herrors.NewServerHError(err)
+	}
 	return nil
 }
 
 // TransferUser 调动用户部门
-func (s *DepartmentService) TransferUser(ctx context.Context, userID string, fromDeptID string, toDeptID string) error {
+func (s *DepartmentService) TransferUser(ctx context.Context, userID string, fromDeptID string, toDeptID string) herrors.Herr {
 	// 1. 检查用户是否存在
-	//user, err := s.repo.FindByID(ctx, userID)
-	//if err != nil {
-	//	return err
-	//}
-	//if user == nil {
-	//	return fmt.Errorf("用户不存在: %s", userID)
-	//}
-
-	// 2. 检查原部门是否存在
-	fromDept, err := s.repo.GetByID(ctx, fromDeptID)
+	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return err
+		return herrors.NewServerHError(err)
 	}
-	if fromDept == nil {
-		return fmt.Errorf("原部门不存在: %s", fromDeptID)
+	if user == nil {
+		return errors.UserNotFound(userID)
 	}
 
-	// 3. 检查目标部门是否存在
-	toDept, err := s.repo.GetByID(ctx, toDeptID)
+	// 2. 检查目标部门是否存在且有效
+	toDept, err := s.deptRepo.FindByID(ctx, toDeptID)
 	if err != nil {
-		return err
+		return herrors.NewServerHError(err)
 	}
 	if toDept == nil {
-		return fmt.Errorf("目标部门不存在: %s", toDeptID)
+		return errors.DepartmentNotFound(toDeptID)
+	}
+	if !toDept.IsEnabled() {
+		return errors.DepartmentDisabled(toDeptID)
 	}
 
-	//// 4. 执行部门调动
-	//if err := s.repo.TransferUser(ctx, userID, fromDeptID, toDeptID); err != nil {
-	//	return err
-	//}
-	//
-	//// 5. 发布用户部门变更事件
-	//event := domanevent.NewUserDeptEvent(user.TenantID, userID, fromDeptID, toDeptID)
-	//return s.eventBus.Publish(ctx, event)
+	// 3. 执行调动
+	if err = s.deptRepo.TransferUser(ctx, userID, fromDeptID, toDeptID); err != nil {
+		return errors.UserTransferFailed(err)
+	}
+
+	// 4. 发布用户调动事件
+	event := events.NewUserTransferredEvent(actx.GetTenantId(ctx), userID, fromDeptID, toDeptID)
+	if err := s.eventBus.Publish(ctx, event); err != nil {
+		return herrors.NewServerHError(err)
+	}
 	return nil
 }
 
-func (s *DepartmentService) GetDepartmentUsers(ctx context.Context, deptID string) ([]*model.User, error) {
-	//return s.repo.GetDepartmentUsers(ctx, deptID)
-	return nil, nil
+// GetByID 获取部门
+func (s *DepartmentService) GetByID(ctx context.Context, id string) (*model.Department, herrors.Herr) {
+	dept, err := s.deptRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, errors.DepartmentQueryFailed(err)
+	}
+	if dept == nil {
+		return nil, errors.DepartmentNotFound(id)
+	}
+	return dept, nil
+}
+
+// MoveDepartment 移动部门
+func (s *DepartmentService) MoveDepartment(ctx context.Context, id string, targetParentID string) herrors.Herr {
+	// 1. 检查部门是否存在
+	dept, err := s.deptRepo.FindByID(ctx, id)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if dept == nil {
+		return errors.DepartmentNotFound(id)
+	}
+
+	// 获取原父部门ID
+	oldParentID := dept.ParentID
+
+	// 2. 更新父部门
+	dept.UpdateParent(targetParentID)
+	if err := s.deptRepo.Update(ctx, dept); err != nil {
+		return herrors.NewServerHError(err)
+	}
+
+	// 3. 发布部门移动事件
+	event := events.NewDepartmentMovedEvent(actx.GetTenantId(ctx), id, oldParentID, targetParentID)
+	if err := s.eventBus.Publish(ctx, event); err != nil {
+		return herrors.NewServerHError(err)
+	}
+	return nil
+}
+
+// SetDepartmentAdmin 设置部门管理员
+func (s *DepartmentService) SetDepartmentAdmin(ctx context.Context, deptID string, adminID string) herrors.Herr {
+	// 1. 检查部门是否存在
+	dept, err := s.deptRepo.FindByID(ctx, deptID)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if dept == nil {
+		return errors.DepartmentNotFound(deptID)
+	}
+
+	// 2. 检查用户是否存在
+	user, err := s.userRepo.FindByID(ctx, adminID)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if user == nil {
+		return errors.UserNotFound(adminID)
+	}
+
+	// 3. 检查用户是否属于该部门
+	belongs, err := s.userRepo.BelongsToDepartment(ctx, adminID, deptID)
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
+	if !belongs {
+		return errors.UserDepartmentNotFound(adminID, deptID)
+	}
+
+	// 4. 设置管理员
+	dept.SetAdmin(adminID)
+	if err := s.deptRepo.Update(ctx, dept); err != nil {
+		return herrors.NewServerHError(err)
+	}
+
+	// 5. 发布管理员设置事件
+	event := events.NewDepartmentAdminSetEvent(actx.GetTenantId(ctx), deptID, adminID)
+	if err := s.eventBus.Publish(ctx, event); err != nil {
+		return herrors.NewServerHError(err)
+	}
+	return nil
 }

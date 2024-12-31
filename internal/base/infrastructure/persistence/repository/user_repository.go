@@ -26,7 +26,6 @@ type ISysUserRepo interface {
 	CountUnassignedUsers(ctx context.Context, qb *db_query.QueryBuilder) (int64, error)
 	FindByRoleID(ctx context.Context, roleID int64) ([]*entity.SysUser, error)
 	AssignUsersToDepartment(ctx context.Context, deptID string, userIDs []string) error
-	TransferUserDepartment(ctx context.Context, userID string, fromDeptID string, toDeptID string) error
 }
 
 type userRepository struct {
@@ -181,11 +180,6 @@ func (r *userRepository) Delete(ctx context.Context, id string) error {
 // BelongsToDepartment 检查用户是否属于指定部门
 func (r *userRepository) BelongsToDepartment(ctx context.Context, userID string, deptID string) (bool, error) {
 	return r.repo.BelongsToDepartment(ctx, userID, deptID)
-}
-
-// TransferUser 调动用户部门
-func (r *userRepository) TransferUser(ctx context.Context, userID string, fromDeptID string, toDeptID string) error {
-	return r.repo.TransferUserDepartment(ctx, userID, fromDeptID, toDeptID)
 }
 
 // AssignRoles 分配角色给用户

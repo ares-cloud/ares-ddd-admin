@@ -10,7 +10,7 @@ type CreateDepartmentCommand struct {
 	ParentID    string `json:"parentId"`                                            // 父部门ID
 	Name        string `json:"name" validate:"required" label:"部门名称"`               // 必须是中文
 	Code        string `json:"code" validate:"required,min=2,max=50" label:"部门编码"`  // 部门编码
-	Sort        int    `json:"sort" validate:"gte=0,lte=999" label:"显示顺序"`          // 排序
+	Sort        int32  `json:"sort" validate:"gte=0,lte=999" label:"显示顺序"`          // 排序
 	Leader      string `json:"leader" validate:"omitempty" label:"负责人"`             // 必须是中文
 	Phone       string `json:"phone" validate:"omitempty,mobile" label:"联系电话"`      // 必须是手机号
 	Email       string `json:"email" validate:"omitempty,email,max=100" label:"邮箱"` // 邮箱
@@ -29,7 +29,7 @@ type UpdateDepartmentCommand struct {
 	ParentID    string `json:"parentId"`
 	Name        string `json:"name" validate:"required" label:"部门名称"`
 	Code        string `json:"code" validate:"required,min=2,max=50" label:"部门编码"`
-	Sort        int    `json:"sort" validate:"gte=0,lte=999" label:"显示顺序"`
+	Sort        int32  `json:"sort" validate:"gte=0,lte=999" label:"显示顺序"`
 	Leader      string `json:"leader" validate:"omitempty,max=50" label:"负责人"`
 	Phone       string `json:"phone" validate:"omitempty,e164" label:"联系电话"`
 	Email       string `json:"email" validate:"omitempty,email,max=100" label:"邮箱"`

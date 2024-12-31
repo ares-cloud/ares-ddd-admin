@@ -36,7 +36,7 @@ func ToDepartmentDto(dept *model.Department) *DepartmentDto {
 		ParentID:    dept.ParentID,
 		Name:        dept.Name,
 		Code:        dept.Code,
-		Sort:        int32(dept.Sort),
+		Sort:        dept.Sequence,
 		AdminID:     dept.AdminID,
 		Leader:      dept.Leader,
 		Phone:       dept.Phone,

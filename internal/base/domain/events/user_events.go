@@ -1,8 +1,6 @@
 package events
 
 import (
-	"time"
-
 	"github.com/ares-cloud/ares-ddd-admin/pkg/events"
 )
 
@@ -89,15 +87,6 @@ type UserTransferEvent struct {
 	FromDept  string `json:"from_dept"`
 	ToDept    string `json:"to_dept"`
 	Timestamp int64  `json:"timestamp"`
-}
-
-func NewUserTransferEvent(tenantID, userID, fromDept, toDept string) *UserTransferEvent {
-	return &UserTransferEvent{
-		UserEvent: *NewUserEvent(tenantID, userID, UserDeptChanged),
-		FromDept:  fromDept,
-		ToDept:    toDept,
-		Timestamp: time.Now().Unix(),
-	}
 }
 
 func (e *UserTransferEvent) GetTopic() string {

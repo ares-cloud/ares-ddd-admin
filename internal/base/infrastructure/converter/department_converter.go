@@ -21,7 +21,7 @@ func (c *DepartmentConverter) ToDTO(dept *entity.Department) *dto.DepartmentDto 
 		ParentID:    dept.ParentID,
 		Name:        dept.Name,
 		Code:        dept.Code,
-		Sort:        dept.Sort,
+		Sequence:    dept.Sequence,
 		AdminID:     dept.AdminID,
 		Leader:      dept.Leader,
 		Phone:       dept.Phone,

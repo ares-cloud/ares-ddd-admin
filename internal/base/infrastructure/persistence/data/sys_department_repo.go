@@ -2,9 +2,9 @@ package data
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/baserepo"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
@@ -38,7 +38,7 @@ func (r *sysDepartmentRepo) GetByCode(ctx context.Context, code string) (*entity
 // GetByParentID 获取子部门
 func (r *sysDepartmentRepo) GetByParentID(ctx context.Context, parentID string) ([]*entity.Department, error) {
 	var depts []*entity.Department
-	err := r.Db(ctx).Where("parent_id = ?", parentID).Order("sort").Find(&depts).Error
+	err := r.Db(ctx).Where("parent_id = ?", parentID).Order("sequence").Find(&depts).Error
 	if err != nil {
 		return nil, err
 	}
@@ -62,38 +62,43 @@ func (r *sysDepartmentRepo) FindByIds(ctx context.Context, ids []string) ([]*ent
 	return depts, nil
 }
 
-// DelById 删除部门（包括关联关系）
-func (r *sysDepartmentRepo) DelById(ctx context.Context, id string) error {
+// AssignUsers 分配用户到部门
+func (r *sysDepartmentRepo) AssignUsers(ctx context.Context, deptID string, userIDs []string) error {
 	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
-		// 删除用户部门关联
-		if err := r.Db(ctx).Where("dept_id = ?", id).Delete(&entity.UserDepartment{}).Error; err != nil {
-			return err
+		// 批量创建用户部门关联
+		userDepts := make([]*entity.UserDepartment, 0, len(userIDs))
+		for _, userID := range userIDs {
+			userDepts = append(userDepts, &entity.UserDepartment{
+				ID:     r.GenInt64Id(),
+				UserID: userID,
+				DeptID: deptID,
+			})
 		}
-
-		// 删除部门
-		return r.Db(ctx).Delete(&entity.Department{}, "id = ?", id).Error
+		return r.Db(ctx).Create(&userDepts).Error
 	})
 }
 
-// DelByIdUnScoped 硬删除部门（包括关联关系）
-func (r *sysDepartmentRepo) DelByIdUnScoped(ctx context.Context, id string) error {
+// RemoveUsers 从部门移除用户
+func (r *sysDepartmentRepo) RemoveUsers(ctx context.Context, deptID string, userIDs []string) error {
+	return r.Db(ctx).Where("dept_id = ? AND user_id IN ?", deptID, userIDs).
+		Delete(&entity.UserDepartment{}).Error
+}
+
+// TransferUser 调动用户部门
+func (r *sysDepartmentRepo) TransferUser(ctx context.Context, userID string, fromDeptID string, toDeptID string) error {
 	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
-		// 删除用户部门关联
-		if err := r.Db(ctx).Unscoped().Where("dept_id = ?", id).Delete(&entity.UserDepartment{}).Error; err != nil {
+		// 1. 如果有原部门，先移除
+		if fromDeptID != "" {
+			if err := r.RemoveUsers(ctx, fromDeptID, []string{userID}); err != nil {
+				return err
+			}
+		}
+
+		// 2. 添加到新部门
+		if err := r.AssignUsers(ctx, toDeptID, []string{userID}); err != nil {
 			return err
 		}
 
-		// 删除部门
-		return r.Db(ctx).Unscoped().Delete(&entity.Department{}, "id = ?", id).Error
+		return nil
 	})
-}
-
-// FindAllEnabled 查询所有启用的部门
-func (r *sysDepartmentRepo) FindAllEnabled(ctx context.Context) ([]*entity.Department, error) {
-	var list []*entity.Department
-	err := r.Db(ctx).Where("status = 1").Order("sort").Find(&list).Error
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
 }

@@ -187,32 +187,3 @@ func (r *sysUserRepo) AssignUsersToDepartment(ctx context.Context, deptID string
 		return r.Db(ctx).Create(&userDepts).Error
 	})
 }
-
-// TransferUserDepartment 调动用户部门
-func (r *sysUserRepo) TransferUserDepartment(ctx context.Context, userID string, fromDeptID string, toDeptID string) error {
-	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
-		// 1. 删除原部门关联
-		if err := r.Db(ctx).Where("user_id = ? AND dept_id = ?", userID, fromDeptID).
-			Delete(&entity.UserDepartment{}).Error; err != nil {
-			return err
-		}
-
-		// 2. 创建新部门关联
-		userDept := &entity.UserDepartment{
-			UserID: userID,
-			DeptID: toDeptID,
-		}
-		if err := r.Db(ctx).Create(userDept).Error; err != nil {
-			return err
-		}
-
-		// 3. 更新用户主部门信息
-		if err := r.Db(ctx).Model(&entity.SysUser{}).
-			Where("id = ?", userID).
-			Update("dept_id", toDeptID).Error; err != nil {
-			return err
-		}
-
-		return nil
-	})
-}

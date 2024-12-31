@@ -144,45 +144,6 @@ func (s *UserCommandService) BelongsToDepartment(ctx context.Context, userID str
 	return belongs, nil
 }
 
-// TransferUser 调动用户部门
-func (s *UserCommandService) TransferUser(ctx context.Context, userID, fromDeptID, toDeptID string) herrors.Herr {
-	// 1. 检查用户是否存在
-	user, err := s.userRepo.FindByID(ctx, userID)
-	if err != nil {
-		return herrors.NewServerHError(err)
-	}
-	if user == nil {
-		return errors.UserNotFound(userID)
-	}
-
-	// 2. 检查用户是否被锁定
-	if locked, reason := user.IsLocked(); locked {
-		return errors.UserDisabled(reason)
-	}
-
-	// 3. 检查用户是否属于原部门
-	belongs, err := s.userRepo.BelongsToDepartment(ctx, userID, fromDeptID)
-	if err != nil {
-		return herrors.NewServerHError(err)
-	}
-	if !belongs {
-		return errors.UserInvalidField("department", "user does not belong to the source department")
-	}
-
-	// 4. 执行部门调动
-	if err := s.userRepo.TransferUser(ctx, userID, fromDeptID, toDeptID); err != nil {
-		return herrors.NewServerHError(err)
-	}
-
-	// 5. 发布用户部门调动事件
-	event := domanevent.NewUserTransferEvent(user.TenantID, userID, fromDeptID, toDeptID)
-	if err := s.eventBus.Publish(ctx, event); err != nil {
-		return herrors.NewServerHError(err)
-	}
-
-	return nil
-}
-
 // GetUser 获取用户信息
 func (s *UserCommandService) GetUser(ctx context.Context, userID string) (*model.User, herrors.Herr) {
 	user, err := s.userRepo.FindByID(ctx, userID)

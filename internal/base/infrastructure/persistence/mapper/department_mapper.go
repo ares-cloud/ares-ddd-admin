@@ -3,6 +3,7 @@ package mapper
 import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 )
 
 type DepartmentMapper struct{}
@@ -17,7 +18,7 @@ func (m *DepartmentMapper) ToDomain(e *entity.Department) *model.Department {
 		ParentID:    e.ParentID,
 		Code:        e.Code,
 		Name:        e.Name,
-		Sort:        e.Sort,
+		Sequence:    e.Sequence,
 		Leader:      e.Leader,
 		Phone:       e.Phone,
 		Email:       e.Email,
@@ -49,13 +50,17 @@ func (m *DepartmentMapper) ToEntity(d *model.Department) *entity.Department {
 		ParentID:    d.ParentID,
 		Code:        d.Code,
 		Name:        d.Name,
-		Sort:        d.Sort,
+		Sequence:    d.Sequence,
 		Leader:      d.Leader,
 		Phone:       d.Phone,
 		Email:       d.Email,
 		Status:      d.Status,
 		Description: d.Description,
-		CreatedAt:   d.CreatedAt,
-		UpdatedAt:   d.UpdatedAt,
+		BaseModel: database.BaseModel{
+			BaseIntTime: database.BaseIntTime{
+				CreatedAt: d.CreatedAt,
+				UpdatedAt: d.UpdatedAt,
+			},
+		},
 	}
 }

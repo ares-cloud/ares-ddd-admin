@@ -6,7 +6,7 @@ type DepartmentDto struct {
 	ParentID    string           `json:"parentId"`    // 父部门ID
 	Name        string           `json:"name"`        // 部门名称
 	Code        string           `json:"code"`        // 部门编码
-	Sort        int              `json:"sort"`        // 排序
+	Sequence    int32            `json:"sequence"`    // 排序
 	AdminID     string           `json:"adminId"`     // 管理员ID
 	Leader      string           `json:"leader"`      // 负责人
 	Phone       string           `json:"phone"`       // 联系电话

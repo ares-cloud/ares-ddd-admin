@@ -23,5 +23,4 @@ type IUserRepository interface {
 
 	// 部门相关
 	BelongsToDepartment(ctx context.Context, userID string, deptID string) (bool, error)
-	TransferUser(ctx context.Context, userID string, fromDeptID string, toDeptID string) error
 }
