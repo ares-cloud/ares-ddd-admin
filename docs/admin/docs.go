@@ -207,6 +207,136 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/data-permission/assign": {
+            "post": {
+                "description": "为角色分配数据权限范围",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "数据权限"
+                ],
+                "summary": "分配数据权限",
+                "parameters": [
+                    {
+                        "description": "分配数据权限参数",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.AssignDataPermissionCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/data-permission/remove": {
+            "post": {
+                "description": "移除角色的数据权限配置",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "数据权限"
+                ],
+                "summary": "移除数据权限",
+                "parameters": [
+                    {
+                        "description": "移除数据权限参数",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.RemoveDataPermissionCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/data-permission/{id}": {
+            "get": {
+                "description": "获取指定角色ID的数据权限配置",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "数据权限"
+                ],
+                "summary": "获取角色的数据权限",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "角色ID",
+                        "name": "roleId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.DataPermissionDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/metrics/system": {
             "get": {
                 "description": "获取Go运行时内存、GC等指标",
@@ -855,6 +985,91 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/storage/folders/root": {
+            "get": {
+                "description": "获取租户的一级文件夹列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "获取一级文件夹",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.FolderDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/storage/folders/sub/:id": {
+            "get": {
+                "description": "获取指定文件夹的下级文件夹列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "存储管理"
+                ],
+                "summary": "获取下级文件夹",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "父文件夹ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.FolderDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/storage/folders/tree": {
             "get": {
                 "description": "获取文件夹树形结构",
@@ -905,7 +1120,7 @@ const docTemplate = `{
                 "tags": [
                     "存储管理"
                 ],
-                "summary": "查询回收��文件列表",
+                "summary": "查询回收站文件列表",
                 "parameters": [
                     {
                         "type": "string",
@@ -1005,6 +1220,808 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/dept": {
+            "get": {
+                "description": "获取部门列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统部门"
+                ],
+                "summary": "获取部门列表",
+                "parameters": [
+                    {
+                        "maxLength": 50,
+                        "type": "string",
+                        "description": "部门编码",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码，从1开始",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "maxLength": 50,
+                        "type": "string",
+                        "description": "部门名称",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "parentId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码大小，最大100",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            0,
+                            1
+                        ],
+                        "type": "integer",
+                        "description": "部门状态",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.DepartmentDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新部门信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统部门"
+                ],
+                "summary": "更新部门",
+                "operationId": "UpdateDepartment",
+                "parameters": [
+                    {
+                        "description": "部门信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.UpdateDepartmentCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "添加部门",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统部门"
+                ],
+                "summary": "添加部门",
+                "operationId": "AddDepartment",
+                "parameters": [
+                    {
+                        "description": "部门信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.CreateDepartmentCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/dept/admin": {
+            "post": {
+                "description": "设置部门管理员,同时更新部门负责人信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "部门管理"
+                ],
+                "summary": "设置部门管理员",
+                "parameters": [
+                    {
+                        "description": "设置部门管理员参数",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.SetDepartmentAdminCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/dept/move": {
+            "post": {
+                "description": "移动部门位置",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统部门"
+                ],
+                "summary": "移动部门",
+                "operationId": "MoveDepartment",
+                "parameters": [
+                    {
+                        "description": "移动信息",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.MoveDepartmentCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/dept/transfer": {
+            "post": {
+                "description": "将用户从一个部门调动到另一个部门",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "部门管理"
+                ],
+                "summary": "人员部门调动",
+                "parameters": [
+                    {
+                        "description": "调动参数",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.TransferUserCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/dept/tree": {
+            "get": {
+                "description": "获取部门树形结构",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统部门"
+                ],
+                "summary": "获取部门树",
+                "operationId": "GetDepartmentTree",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "父部门ID,为空则查询全部",
+                        "name": "parentId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Department"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/dept/unassigned-users": {
+            "get": {
+                "description": "获取未分配部门的用户列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "部门管理"
+                ],
+                "summary": "获取未分配部门的用户列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码，从1开始",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "maxLength": 50,
+                        "type": "string",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码大小，最大100",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "maxLength": 50,
+                        "type": "string",
+                        "name": "username",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.PageRes-dto_UserDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/dept/users": {
+            "post": {
+                "description": "分配用户到部门",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "部门管理"
+                ],
+                "summary": "分配用户到部门",
+                "parameters": [
+                    {
+                        "description": "分配用户参数",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.AssignUsersToDepartmentCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "从部门移除用户",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "部门管理"
+                ],
+                "summary": "从部门移除用户",
+                "parameters": [
+                    {
+                        "description": "移除用户参数",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/commands.RemoveUsersFromDepartmentCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/dept/{id}": {
+            "get": {
+                "description": "获取部门详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统部门"
+                ],
+                "summary": "获取部门详情",
+                "operationId": "GetDepartmentDetails",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "部门ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Department"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除部门",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统部门"
+                ],
+                "summary": "删除部门",
+                "operationId": "DeleteDepartment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "部门ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sys/dept/{id}/users": {
+            "get": {
+                "description": "获取部门下的用户列表(分页)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "部门管理"
+                ],
+                "summary": "获取部门用户列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "部门ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "pageNum",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页大小",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户名",
+                        "name": "username",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "姓名",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.PageRes-dto_UserDto"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
                         }
                     }
                 }
@@ -1670,6 +2687,12 @@ const docTemplate = `{
                         "description": "角色状态（禁用、启用）",
                         "name": "status",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "类型",
+                        "name": "type",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1874,6 +2897,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/sys/role/data-permission": {
+            "get": {
+                "description": "获取系统中所有数据权限类型的角色列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统角色"
+                ],
+                "summary": "获取所有数据权限角色",
+                "operationId": "GetAllDataPermissionRoles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/base_info.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.RoleDto"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger400Resp"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger401Resp"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/base_info.Swagger500Resp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sys/role/enabled": {
             "get": {
                 "description": "获取系统中所有启用状态的角色列表",
@@ -1933,7 +3013,7 @@ const docTemplate = `{
         },
         "/v1/sys/role/{id}": {
             "delete": {
-                "description": "删除指定ID��角色",
+                "description": "删除指定ID的角色",
                 "consumes": [
                     "application/json"
                 ],
@@ -2354,19 +3434,16 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "用户邮箱",
                         "name": "email",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "用户姓名",
                         "name": "name",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "用户手机号",
                         "name": "phone",
                         "in": "query"
                     },
@@ -2378,13 +3455,11 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "角色状态（禁用、启用）",
                         "name": "status",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "登录用户名",
                         "name": "username",
                         "in": "query"
                     }
@@ -2866,6 +3941,36 @@ const docTemplate = `{
                 }
             }
         },
+        "commands.AssignDataPermissionCommand": {
+            "type": "object",
+            "required": [
+                "roleId"
+            ],
+            "properties": {
+                "deptIds": {
+                    "description": "部门ID列表(自定义数据权限时使用)",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "roleId": {
+                    "description": "修改为int64",
+                    "type": "integer"
+                },
+                "scope": {
+                    "description": "数据范围",
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5
+                    ]
+                }
+            }
+        },
         "commands.AssignTenantPermissionsCommand": {
             "type": "object",
             "required": [
@@ -2884,10 +3989,29 @@ const docTemplate = `{
                 }
             }
         },
+        "commands.AssignUsersToDepartmentCommand": {
+            "type": "object",
+            "required": [
+                "deptId",
+                "userIds"
+            ],
+            "properties": {
+                "deptId": {
+                    "type": "string"
+                },
+                "userIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "commands.BatchDeleteFilesCommand": {
             "type": "object",
             "properties": {
-                "file_ids": {
+                "fileIds": {
                     "description": "文件ID列表",
                     "type": "array",
                     "items": {
@@ -2899,16 +4023,71 @@ const docTemplate = `{
         "commands.BatchMoveFilesCommand": {
             "type": "object",
             "properties": {
-                "file_ids": {
+                "fileIds": {
                     "description": "文件ID列表",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "target_folder_id": {
+                "targetFolderId": {
                     "description": "目标文件夹ID",
                     "type": "string"
+                }
+            }
+        },
+        "commands.CreateDepartmentCommand": {
+            "type": "object",
+            "required": [
+                "code",
+                "name"
+            ],
+            "properties": {
+                "code": {
+                    "description": "部门编码",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 2
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "email": {
+                    "description": "邮箱",
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "leader": {
+                    "description": "必须是中文",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "必须是中文",
+                    "type": "string"
+                },
+                "parentId": {
+                    "description": "父部门ID",
+                    "type": "string"
+                },
+                "phone": {
+                    "description": "必须是手机号",
+                    "type": "string"
+                },
+                "sort": {
+                    "description": "排序",
+                    "type": "integer",
+                    "maximum": 999,
+                    "minimum": 0
+                },
+                "status": {
+                    "description": "部门状态(0停用 1启用)",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
                 }
             }
         },
@@ -2919,7 +4098,7 @@ const docTemplate = `{
                     "description": "文件夹名称",
                     "type": "string"
                 },
-                "parent_id": {
+                "parentId": {
                     "description": "父文件夹ID",
                     "type": "string"
                 }
@@ -2937,7 +4116,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 200
                 },
                 "icon": {
                     "type": "string"
@@ -2964,10 +4144,16 @@ const docTemplate = `{
                     }
                 },
                 "sequence": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "type": {
-                    "type": "integer"
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
                 }
             }
         },
@@ -2979,7 +4165,13 @@ const docTemplate = `{
             ],
             "properties": {
                 "method": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE"
+                    ]
                 },
                 "path": {
                     "type": "string"
@@ -2990,28 +4182,32 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "code",
-                "name"
+                "name",
+                "type"
             ],
             "properties": {
                 "code": {
+                    "description": "角色编码",
                     "type": "string"
                 },
                 "description": {
+                    "description": "描述",
                     "type": "string"
                 },
                 "localize": {
+                    "description": "多语言标识",
                     "type": "string"
                 },
                 "name": {
+                    "description": "角色名称",
                     "type": "string"
                 },
-                "permIds": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "sequence": {
+                    "description": "排序",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "角色类型",
                     "type": "integer"
                 }
             }
@@ -3031,13 +4227,18 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 200
                 },
                 "expireTime": {
                     "type": "integer"
                 },
                 "isDefault": {
-                    "type": "integer"
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
                 },
                 "name": {
                     "type": "string"
@@ -3047,33 +4248,44 @@ const docTemplate = `{
         "commands.CreateUserCommand": {
             "type": "object",
             "required": [
-                "name",
                 "password",
                 "username"
             ],
             "properties": {
-                "email": {
+                "avatar": {
+                    "description": "头像",
                     "type": "string"
                 },
-                "invitation_code": {
+                "email": {
+                    "description": "邮箱",
                     "type": "string"
                 },
                 "name": {
+                    "description": "名称",
+                    "type": "string"
+                },
+                "nickname": {
+                    "description": "昵称",
                     "type": "string"
                 },
                 "password": {
-                    "type": "string"
+                    "description": "密码",
+                    "type": "string",
+                    "minLength": 6
                 },
                 "phone": {
+                    "description": "手机号",
                     "type": "string"
                 },
                 "roleIds": {
+                    "description": "角色ID列表",
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
                 "username": {
+                    "description": "用户名",
                     "type": "string"
                 }
             }
@@ -3096,20 +4308,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ip": {
-                    "description": "登录IP",
                     "type": "string"
                 },
                 "location": {
-                    "description": "登录地点",
                     "type": "string"
                 },
                 "login_type": {
-                    "description": "登录类型",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/commands.LoginType"
-                        }
-                    ]
+                    "$ref": "#/definitions/commands.LoginType"
                 },
                 "password": {
                     "type": "string"
@@ -3118,7 +4323,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_agent": {
-                    "description": "User-Agent",
                     "type": "string"
                 },
                 "username": {
@@ -3141,6 +4345,21 @@ const docTemplate = `{
                 "LoginTypeMember"
             ]
         },
+        "commands.MoveDepartmentCommand": {
+            "type": "object",
+            "required": [
+                "id",
+                "targetParent"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "targetParent": {
+                    "type": "string"
+                }
+            }
+        },
         "commands.RefreshTokenCommand": {
             "type": "object",
             "required": [
@@ -3152,20 +4371,137 @@ const docTemplate = `{
                 }
             }
         },
+        "commands.RemoveDataPermissionCommand": {
+            "type": "object",
+            "properties": {
+                "roleId": {
+                    "description": "修改为int64",
+                    "type": "integer"
+                }
+            }
+        },
+        "commands.RemoveUsersFromDepartmentCommand": {
+            "type": "object",
+            "required": [
+                "deptId",
+                "userIds"
+            ],
+            "properties": {
+                "deptId": {
+                    "type": "string"
+                },
+                "userIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "commands.SetDepartmentAdminCommand": {
+            "type": "object",
+            "required": [
+                "adminId",
+                "deptId"
+            ],
+            "properties": {
+                "adminId": {
+                    "type": "string"
+                },
+                "deptId": {
+                    "type": "string"
+                }
+            }
+        },
         "commands.ShareFileCommand": {
             "type": "object",
             "properties": {
-                "expire_time": {
+                "expireTime": {
                     "description": "过期时间",
                     "type": "integer"
                 },
-                "file_id": {
+                "fileId": {
                     "description": "文件ID",
                     "type": "string"
                 },
                 "password": {
                     "description": "访问密码",
                     "type": "string"
+                }
+            }
+        },
+        "commands.TransferUserCommand": {
+            "type": "object",
+            "required": [
+                "fromDeptId",
+                "toDeptId",
+                "userId"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "fromDeptId": {
+                    "type": "string"
+                },
+                "toDeptId": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "commands.UpdateDepartmentCommand": {
+            "type": "object",
+            "required": [
+                "code",
+                "id",
+                "name"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 2
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "email": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "id": {
+                    "type": "string"
+                },
+                "leader": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parentId": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "sort": {
+                    "type": "integer",
+                    "maximum": 999,
+                    "minimum": 0
+                },
+                "status": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
                 }
             }
         },
@@ -3176,7 +4512,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 200
                 },
                 "icon": {
                     "type": "string"
@@ -3206,44 +4543,55 @@ const docTemplate = `{
                     }
                 },
                 "sequence": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "status": {
-                    "type": "integer"
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
                 },
                 "type": {
-                    "type": "integer"
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
                 }
             }
         },
         "commands.UpdateRoleCommand": {
             "type": "object",
             "required": [
-                "id"
+                "id",
+                "name"
             ],
             "properties": {
                 "description": {
+                    "description": "描述",
                     "type": "string"
                 },
                 "id": {
+                    "description": "角色ID",
                     "type": "integer"
                 },
                 "localize": {
+                    "description": "多语言标识",
                     "type": "string"
                 },
                 "name": {
+                    "description": "角色名称",
                     "type": "string"
                 },
-                "permIds": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "sequence": {
+                    "description": "排序",
                     "type": "integer"
                 },
                 "status": {
+                    "description": "状态",
                     "type": "integer"
                 }
             }
@@ -3255,7 +4603,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 200
                 },
                 "expireTime": {
                     "type": "integer"
@@ -3264,7 +4613,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "isDefault": {
-                    "type": "integer"
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
                 },
                 "name": {
                     "type": "string"
@@ -3273,23 +4626,27 @@ const docTemplate = `{
         },
         "commands.UpdateUserCommand": {
             "type": "object",
+            "required": [
+                "id"
+            ],
             "properties": {
-                "email": {
+                "avatar": {
                     "type": "string"
                 },
-                "faceUrl": {
+                "email": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
                 "name": {
+                    "description": "名称",
+                    "type": "string"
+                },
+                "nickname": {
                     "type": "string"
                 },
                 "phone": {
-                    "type": "string"
-                },
-                "remark": {
                     "type": "string"
                 },
                 "roleIds": {
@@ -3299,21 +4656,30 @@ const docTemplate = `{
                     }
                 },
                 "status": {
-                    "type": "integer"
-                },
-                "username": {
-                    "type": "string"
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2
+                    ]
                 }
             }
         },
         "commands.UpdateUserStatusCommand": {
             "type": "object",
+            "required": [
+                "id",
+                "status"
+            ],
             "properties": {
                 "id": {
                     "type": "string"
                 },
                 "status": {
-                    "type": "integer"
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2
+                    ]
                 }
             }
         },
@@ -3345,26 +4711,110 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.DataPermissionDto": {
+            "type": "object",
+            "properties": {
+                "deptIds": {
+                    "description": "自定义部门ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "string"
+                },
+                "roleId": {
+                    "description": "角色ID",
+                    "type": "integer"
+                },
+                "scope": {
+                    "description": "数据范围(1:全部数据 2:本部门数据 3:本部门及下级数据 4:仅本人数据 5:自定义部门数据)",
+                    "type": "integer"
+                },
+                "tenantId": {
+                    "description": "租户ID",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DepartmentDto": {
+            "type": "object",
+            "properties": {
+                "adminId": {
+                    "description": "管理员ID",
+                    "type": "string"
+                },
+                "children": {
+                    "description": "子部门",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DepartmentDto"
+                    }
+                },
+                "code": {
+                    "description": "部门编码",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "邮箱",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "部门ID",
+                    "type": "string"
+                },
+                "leader": {
+                    "description": "负责人",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "部门名称",
+                    "type": "string"
+                },
+                "parentId": {
+                    "description": "父部门ID",
+                    "type": "string"
+                },
+                "phone": {
+                    "description": "联系电话",
+                    "type": "string"
+                },
+                "sequence": {
+                    "description": "排序",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "部门状态",
+                    "type": "integer"
+                }
+            }
+        },
         "dto.FileDto": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "createdAt": {
                     "description": "创建时间",
                     "type": "integer"
                 },
-                "created_by": {
+                "createdBy": {
                     "description": "创建人",
                     "type": "string"
                 },
-                "deleted_at": {
+                "deletedAt": {
                     "description": "删除时间",
                     "type": "integer"
                 },
-                "deleted_by": {
+                "deletedBy": {
                     "description": "删除人",
                     "type": "string"
                 },
-                "folder_id": {
+                "folderId": {
                     "description": "文件夹ID",
                     "type": "string"
                 },
@@ -3372,7 +4822,7 @@ const docTemplate = `{
                     "description": "ID",
                     "type": "string"
                 },
-                "is_deleted": {
+                "isDeleted": {
                     "description": "是否已删除",
                     "type": "boolean"
                 },
@@ -3388,7 +4838,7 @@ const docTemplate = `{
                     "description": "文件大小(字节)",
                     "type": "integer"
                 },
-                "storage_type": {
+                "storageType": {
                     "description": "存储类型",
                     "type": "string"
                 },
@@ -3405,22 +4855,22 @@ const docTemplate = `{
         "dto.FileShareDto": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "createdAt": {
                     "type": "integer"
                 },
-                "created_by": {
+                "createdBy": {
                     "type": "string"
                 },
-                "expire_time": {
+                "expireTime": {
                     "type": "integer"
                 },
-                "file_id": {
+                "fileId": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "share_code": {
+                "shareCode": {
                     "type": "string"
                 }
             }
@@ -3428,11 +4878,11 @@ const docTemplate = `{
         "dto.FolderDto": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "createdAt": {
                     "description": "创建时间",
                     "type": "integer"
                 },
-                "created_by": {
+                "createdBy": {
                     "description": "创建人",
                     "type": "string"
                 },
@@ -3444,7 +4894,7 @@ const docTemplate = `{
                     "description": "文件夹名",
                     "type": "string"
                 },
-                "parent_id": {
+                "parentId": {
                     "description": "父文件夹ID",
                     "type": "string"
                 },
@@ -3464,11 +4914,11 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.FolderTreeDto"
                     }
                 },
-                "created_at": {
+                "createdAt": {
                     "description": "创建时间",
                     "type": "integer"
                 },
-                "created_by": {
+                "createdBy": {
                     "description": "创建人",
                     "type": "string"
                 },
@@ -3480,7 +4930,7 @@ const docTemplate = `{
                     "description": "文件夹名",
                     "type": "string"
                 },
-                "parent_id": {
+                "parentId": {
                     "description": "父文件夹ID",
                     "type": "string"
                 },
@@ -3614,6 +5064,13 @@ const docTemplate = `{
         "dto.PermissionsDto": {
             "type": "object",
             "properties": {
+                "children": {
+                    "description": "子权限",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PermissionsDto"
+                    }
+                },
                 "code": {
                     "description": "编码",
                     "type": "string"
@@ -3646,7 +5103,7 @@ const docTemplate = `{
                     "description": "父级ID",
                     "type": "integer"
                 },
-                "parent_path": {
+                "parentPath": {
                     "description": "父级路径",
                     "type": "string"
                 },
@@ -3780,7 +5237,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
-                    "description": "编码",
+                    "description": "角色代码",
                     "type": "string"
                 },
                 "createdAt": {
@@ -3792,25 +5249,38 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "description": "ID",
+                    "description": "角色ID",
                     "type": "integer"
                 },
                 "localize": {
+                    "description": "国际化key",
                     "type": "string"
                 },
                 "name": {
-                    "description": "名称",
+                    "description": "角色名称",
                     "type": "string"
                 },
                 "permIds": {
-                    "description": "权限ID列表",
+                    "description": "权限id",
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
+                "sequence": {
+                    "description": "排序",
+                    "type": "integer"
+                },
                 "status": {
                     "description": "状态",
+                    "type": "integer"
+                },
+                "tenantId": {
+                    "description": "租户ID",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "角色类型(1:资源角色 2:数据权限角色)",
                     "type": "integer"
                 },
                 "updatedAt": {
@@ -3924,7 +5394,12 @@ const docTemplate = `{
                     "description": "描述",
                     "type": "string"
                 },
+                "domain": {
+                    "description": "域名",
+                    "type": "string"
+                },
                 "expireTime": {
+                    "description": "过期时间",
                     "type": "integer"
                 },
                 "id": {
@@ -3952,6 +5427,10 @@ const docTemplate = `{
         "dto.UserDto": {
             "type": "object",
             "properties": {
+                "avatar": {
+                    "description": "头像",
+                    "type": "string"
+                },
                 "createdAt": {
                     "description": "创建时间",
                     "type": "integer"
@@ -3961,15 +5440,27 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "description": "ID",
+                    "description": "用户ID",
+                    "type": "string"
+                },
+                "invitationCode": {
+                    "description": "邀请码",
                     "type": "string"
                 },
                 "name": {
                     "description": "姓名",
                     "type": "string"
                 },
+                "nickname": {
+                    "description": "昵称",
+                    "type": "string"
+                },
                 "phone": {
                     "description": "手机号",
+                    "type": "string"
+                },
+                "remark": {
+                    "description": "备注",
                     "type": "string"
                 },
                 "roleIds": {
@@ -3980,8 +5471,12 @@ const docTemplate = `{
                     }
                 },
                 "status": {
-                    "description": "状态",
+                    "description": "状态,1启用,2禁用",
                     "type": "integer"
+                },
+                "tenantId": {
+                    "description": "租户ID",
+                    "type": "string"
                 },
                 "updatedAt": {
                     "description": "更新时间",
@@ -4019,6 +5514,59 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Department": {
+            "type": "object",
+            "properties": {
+                "adminID": {
+                    "type": "string"
+                },
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Department"
+                    }
+                },
+                "code": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "leader": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parentID": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "sequence": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "tenantID": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.PageRes-dto_TenantDto": {
             "type": "object",
             "properties": {
@@ -4026,6 +5574,20 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dto.TenantDto"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.PageRes-dto_UserDto": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserDto"
                     }
                 },
                 "total": {

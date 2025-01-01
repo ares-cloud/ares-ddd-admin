@@ -39,6 +39,9 @@ func (c *PermissionsQueryCache) FindByID(ctx context.Context, id int64) (*dto.Pe
 		return err
 	})
 	if err != nil {
+		if herrors.IsHError(err) {
+			return nil, herrors.TohError(err)
+		}
 		return nil, herrors.NewServerHError(err)
 	}
 	return permission, nil
@@ -92,6 +95,9 @@ func (c *PermissionsQueryCache) GetSimplePermissionsTree(ctx context.Context) ([
 		return err
 	})
 	if err != nil {
+		if herrors.IsHError(err) {
+			return nil, herrors.TohError(err)
+		}
 		return nil, herrors.NewServerHError(err)
 	}
 	return permissions, nil

@@ -2,23 +2,25 @@ package oplog
 
 import (
 	"context"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
+
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/oplog"
 )
 
 type DbOperationLogWriter struct {
-	repo repository.IOperationLogRepository
+	repo repository.IOperationLogRepo
 }
 
-func NewDbOperationLogWriter(repo repository.IOperationLogRepository) oplog.IDbOperationLogWrite {
+func NewDbOperationLogWriter(repo repository.IOperationLogRepo) oplog.IDbOperationLogWrite {
 	return &DbOperationLogWriter{
 		repo: repo,
 	}
 }
 
 func (w *DbOperationLogWriter) Save(ctx context.Context, data *oplog.OperationLog) error {
-	log := &model.OperationLog{
+	log := &entity.OperationLog{
 		UserID:    data.UserID,
 		Username:  data.Username,
 		TenantID:  data.TenantID,
@@ -33,7 +35,9 @@ func (w *DbOperationLogWriter) Save(ctx context.Context, data *oplog.OperationLo
 		Duration:  data.Duration,
 		Module:    data.Module,
 		Action:    data.Action,
-		CreatedAt: data.CreatedAt.Unix(),
+		BaseIntTime: database.BaseIntTime{
+			CreatedAt: data.CreatedAt.Unix(),
+		},
 	}
 	return w.repo.Create(ctx, log)
 }

@@ -14,6 +14,8 @@ var ProviderSet = wire.NewSet(
 	impl.NewTenantQueryService,
 	impl.NewDepartmentQueryService,
 	impl.NewDataPermissionQueryService,
+	impl.NewOperationLogQueryService,
+	impl.NewLoginLogQueryService,
 
 	cache.NewUserQueryCache,
 	cache.NewRoleQueryCache,
@@ -30,4 +32,6 @@ var ProviderSet = wire.NewSet(
 	wire.Bind(new(IDepartmentQueryService), new(*cache.DepartmentQueryCache)),
 	wire.Bind(new(IPermissionsQuery), new(*cache.PermissionsQueryCache)),
 	wire.Bind(new(IDataPermissionQuery), new(*cache.DataPermissionQueryCache)),
+	wire.Bind(new(IOperationLogQuery), new(*impl.OperationLogQueryService)),
+	wire.Bind(new(ILoginLogQuery), new(*impl.LoginLogQueryService)),
 )

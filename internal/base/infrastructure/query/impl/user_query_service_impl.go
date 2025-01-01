@@ -116,7 +116,7 @@ func (u *UserQueryService) GetUserPermissions(ctx context.Context, userID string
 	// 获取角色对应的权限
 	permissions := make([]string, 0)
 	for _, role := range roles {
-		perms, err := u.roleRepo.GetRolePermissions(ctx, role.ID)
+		perms, err := u.roleRepo.GetRolePermissions(ctx, role.RoleID)
 		if err != nil {
 			return nil, err
 		}

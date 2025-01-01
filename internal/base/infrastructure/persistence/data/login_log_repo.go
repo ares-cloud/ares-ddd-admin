@@ -1,4 +1,4 @@
-package repository
+package data
 
 import (
 	"context"
@@ -6,44 +6,45 @@ import (
 	"time"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
-type IOperationLogRepo interface {
-	Create(ctx context.Context, log *entity.OperationLog) error
-	Find(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) ([]*entity.OperationLog, error)
-	Count(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) (int64, error)
-}
-type operationLogRepository struct {
+type loginLogRepo struct {
 	db database.IDataBase
 }
 
-func NewOperationLogRepository(db database.IDataBase) IOperationLogRepo {
-	return &operationLogRepository{
+func NewLoginLogRepo(db database.IDataBase) repository.ILoginLogRepo {
+	return &loginLogRepo{
 		db: db,
 	}
 }
 
-// Create 创建操作日志
-func (r *operationLogRepository) Create(ctx context.Context, log *entity.OperationLog) error {
-	t := time.Unix(log.CreatedAt, 0)
-	// 确保表存在
+func (r *loginLogRepo) Create(ctx context.Context, log *entity.LoginLog) error {
+	t := time.Unix(log.LoginTime, 0)
 	if err := r.EnsureTable(ctx, log.TenantID, t); err != nil {
 		return err
 	}
-
 	return r.db.DB(ctx).Table(r.GetTableName(log.TenantID, t)).Create(log).Error
 }
 
-// Find 查询操作日志列表
-func (r *operationLogRepository) Find(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) ([]*entity.OperationLog, error) {
+func (r *loginLogRepo) FindByID(ctx context.Context, id int64) (*entity.LoginLog, error) {
+	var entity entity.LoginLog
+	err := r.db.DB(ctx).First(&entity, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &entity, nil
+}
+
+func (r *loginLogRepo) Find(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) ([]*entity.LoginLog, error) {
 	// 确保表存在
 	if err := r.EnsureTable(ctx, tenantID, month); err != nil {
 		return nil, err
 	}
 
-	var entities []*entity.OperationLog
+	var entities []*entity.LoginLog
 	db := r.db.DB(ctx).Table(r.GetTableName(tenantID, month))
 
 	// 添加查询条件
@@ -69,8 +70,7 @@ func (r *operationLogRepository) Find(ctx context.Context, tenantID string, mont
 	return entities, nil
 }
 
-// Count 统计数量
-func (r *operationLogRepository) Count(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) (int64, error) {
+func (r *loginLogRepo) Count(ctx context.Context, tenantID string, month time.Time, qb *db_query.QueryBuilder) (int64, error) {
 	// 确保表存在
 	if err := r.EnsureTable(ctx, tenantID, month); err != nil {
 		return 0, err
@@ -91,8 +91,7 @@ func (r *operationLogRepository) Count(ctx context.Context, tenantID string, mon
 	return count, nil
 }
 
-// EnsureTable 确保表存在
-func (r *operationLogRepository) EnsureTable(ctx context.Context, tenantID string, month time.Time) error {
+func (r *loginLogRepo) EnsureTable(ctx context.Context, tenantID string, month time.Time) error {
 	tableName := r.GetTableName(tenantID, month)
 
 	// 检查表是否存在
@@ -100,16 +99,15 @@ func (r *operationLogRepository) EnsureTable(ctx context.Context, tenantID strin
 		return nil
 	}
 
-	// 创建表结构
-	type OperationLogTable struct {
-		entity.OperationLog
+	// 创建一个临时结构体
+	type LoginLogTable struct {
+		entity.LoginLog
 	}
 
 	// 使用 GORM 自动迁移创建表
-	return r.db.DB(ctx).Table(tableName).AutoMigrate(&OperationLogTable{})
+	return r.db.DB(ctx).Table(tableName).AutoMigrate(&LoginLogTable{})
 }
 
-// GetTableName 获取表名
-func (r *operationLogRepository) GetTableName(tenantID string, month time.Time) string {
-	return fmt.Sprintf("sys_operation_log_%s_%s", tenantID, month.Format("200601"))
+func (r *loginLogRepo) GetTableName(tenantID string, month time.Time) string {
+	return fmt.Sprintf("sys_login_log_%s_%s", tenantID, month.Format("200601"))
 }

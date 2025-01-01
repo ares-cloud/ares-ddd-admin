@@ -2,27 +2,29 @@ package handlers
 
 import (
 	"context"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"time"
 
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 )
 
 type LoginLogQueryHandler struct {
-	loginLogRepo repository.ILoginLogRepository
+	query query.ILoginLogQuery
 }
 
-func NewLoginLogQueryHandler(loginLogRepo repository.ILoginLogRepository) *LoginLogQueryHandler {
+func NewLoginLogQueryHandler(query query.ILoginLogQuery) *LoginLogQueryHandler {
 	return &LoginLogQueryHandler{
-		loginLogRepo: loginLogRepo,
+		query: query,
 	}
 }
+
 func (h *LoginLogQueryHandler) HandleAppList(ctx context.Context, q *queries.ListLoginLogsQuery) (*models.PageRes[dto.LoginLogDto], herrors.Herr) {
 	// 构建查询条件
 	qb := db_query.NewQueryBuilder()
@@ -72,22 +74,19 @@ func (h *LoginLogQueryHandler) HandleList(ctx context.Context, qb *db_query.Quer
 
 	tenant := actx.GetTenantId(ctx)
 	// 获取总数
-	total, err := h.loginLogRepo.Count(ctx, tenant, tm, qb)
+	total, err := h.query.Count(ctx, tenant, tm, qb)
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
 
 	// 查询数据
-	logs, err := h.loginLogRepo.Find(ctx, tenant, tm, qb)
+	logs, err := h.query.Find(ctx, tenant, tm, qb)
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
 
-	// 转换为DTO
-	dtoList := dto.ToLoginLogDtoList(logs)
-
 	return &models.PageRes[dto.LoginLogDto]{
-		List:  dtoList,
+		List:  logs,
 		Total: total,
 	}, nil
 }

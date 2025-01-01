@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
 )
 
 type LoginLogDto struct {
@@ -19,7 +19,7 @@ type LoginLogDto struct {
 	LoginTime int64  `json:"loginTime"` // 登录时间
 }
 
-func ToLoginLogDto(log *model.LoginLog) *LoginLogDto {
+func ToLoginLogDto(log *entity.LoginLog) *LoginLogDto {
 	if log == nil {
 		return nil
 	}
@@ -39,7 +39,7 @@ func ToLoginLogDto(log *model.LoginLog) *LoginLogDto {
 	}
 }
 
-func ToLoginLogDtoList(logs []*model.LoginLog) []*LoginLogDto {
+func ToLoginLogDtoList(logs []*entity.LoginLog) []*LoginLogDto {
 	if logs == nil {
 		return nil
 	}

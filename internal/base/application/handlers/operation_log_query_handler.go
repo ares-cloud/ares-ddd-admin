@@ -2,24 +2,25 @@ package handlers
 
 import (
 	"context"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"time"
 
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
 type OperationLogQueryHandler struct {
-	repo repository.IOperationLogRepository
+	query query.IOperationLogQuery
 }
 
-func NewOperationLogQueryHandler(repo repository.IOperationLogRepository) *OperationLogQueryHandler {
+func NewOperationLogQueryHandler(query query.IOperationLogQuery) *OperationLogQueryHandler {
 	return &OperationLogQueryHandler{
-		repo: repo,
+		query: query,
 	}
 }
 
@@ -61,22 +62,19 @@ func (h *OperationLogQueryHandler) HandleList(ctx context.Context, q *queries.Li
 
 	tenant := actx.GetTenantId(ctx)
 	// 获取总数
-	total, err := h.repo.Count(ctx, tenant, tm, qb)
+	total, err := h.query.Count(ctx, tenant, tm, qb)
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
 
 	// 查询数据
-	logs, err := h.repo.Find(ctx, tenant, tm, qb)
+	logs, err := h.query.Find(ctx, tenant, tm, qb)
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
 
-	// 转换为DTO
-	dtoList := dto.ToOperationLogDtoList(logs)
-
 	return &models.PageRes[dto.OperationLogDto]{
-		List:  dtoList,
+		List:  logs,
 		Total: total,
 	}, nil
 }

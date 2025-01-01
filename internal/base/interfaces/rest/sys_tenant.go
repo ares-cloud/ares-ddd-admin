@@ -9,7 +9,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/oplog"
 
-	_ "github.com/ares-cloud/ares-ddd-admin/internal/base/shared/dto"
+	_ "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver"
 	_ "github.com/ares-cloud/ares-ddd-admin/pkg/hserver/base_info"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"

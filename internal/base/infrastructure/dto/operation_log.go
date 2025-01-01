@@ -1,6 +1,8 @@
 package dto
 
-import "github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
+import (
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
+)
 
 // OperationLogDto 操作日志DTO
 type OperationLogDto struct {
@@ -23,7 +25,7 @@ type OperationLogDto struct {
 }
 
 // ToOperationLogDto 转换为DTO
-func ToOperationLogDto(model *model.OperationLog) *OperationLogDto {
+func ToOperationLogDto(model *entity.OperationLog) *OperationLogDto {
 	return &OperationLogDto{
 		ID:        model.ID,
 		UserID:    model.UserID,
@@ -45,7 +47,7 @@ func ToOperationLogDto(model *model.OperationLog) *OperationLogDto {
 }
 
 // ToOperationLogDtoList 转换为DTO列表
-func ToOperationLogDtoList(models []*model.OperationLog) []*OperationLogDto {
+func ToOperationLogDtoList(models []*entity.OperationLog) []*OperationLogDto {
 	dtos := make([]*OperationLogDto, 0, len(models))
 	for _, m := range models {
 		dtos = append(dtos, ToOperationLogDto(m))

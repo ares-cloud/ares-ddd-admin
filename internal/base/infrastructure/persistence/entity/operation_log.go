@@ -4,6 +4,13 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 )
 
+const (
+	OperationTypeQuery  = 1 // 查询
+	OperationTypeCreate = 2 // 创建
+	OperationTypeUpdate = 3 // 更新
+	OperationTypeDelete = 4 // 删除
+)
+
 // OperationLog 操作日志实体
 type OperationLog struct {
 	database.BaseIntTime

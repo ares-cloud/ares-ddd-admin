@@ -7,6 +7,7 @@ import (
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
+	_ "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/token"
 	"github.com/cloudwego/hertz/pkg/route"

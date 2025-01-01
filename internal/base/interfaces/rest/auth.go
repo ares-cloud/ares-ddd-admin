@@ -3,9 +3,9 @@ package rest
 import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/commands"
+	_ "github.com/ares-cloud/ares-ddd-admin/internal/base/application/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
-
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/device"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/token"

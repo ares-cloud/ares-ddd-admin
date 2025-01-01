@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
-
+	_ "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"

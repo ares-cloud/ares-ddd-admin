@@ -116,7 +116,7 @@ func (c *DepartmentController) AddDepartment(ctx context.Context, params *comman
 // @Accept json
 // @Produce json
 // @Param req query queries.ListDepartmentsQuery true "查询参数"
-// @Success 200 {object} base_info.Success{data=dto.PageResult[dto.DepartmentDto]}
+// @Success 200 {object} base_info.Success{data=[]dto.DepartmentDto}
 // @Failure 400 {object} base_info.Swagger400Resp "参数错误"
 // @Failure 401 {object} base_info.Swagger401Resp "未授权"
 // @Failure 500 {object} base_info.Swagger500Resp "内部错误"
