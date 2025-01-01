@@ -2,272 +2,328 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"path"
-	"path/filepath"
-	"strings"
+	"math/rand"
 	"time"
 
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/storage"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/errors"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/storage"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
-	"github.com/google/uuid"
 )
 
 type StorageService struct {
-	repo           repository.IStorageRepository
-	storageFactory storage.StorageFactory
+	repo    repository.IStorageRepository
+	storage storage.StorageFactory
 }
 
-func NewStorageService(repo repository.IStorageRepository, factory storage.StorageFactory) *StorageService {
-	return &StorageService{
-		repo:           repo,
-		storageFactory: factory,
+func NewStorageService(repo repository.IStorageRepository, storage storage.StorageFactory) *StorageService {
+	return &StorageService{repo: repo, storage: storage}
+}
+
+// UploadFile 上传文件
+func (s *StorageService) UploadFile(ctx context.Context, reader io.Reader, fileName string, size int64, folderID, tenantID, createdBy string) (*model.File, herrors.Herr) {
+	// 1. 检查文件夹是否存在
+	if folderID != "" && folderID != "0" {
+		folder, err := s.repo.GetFolder(ctx, folderID)
+		if err != nil {
+			return nil, errors.StorageError(err)
+		}
+		if folder == nil {
+			return nil, errors.FolderNotFound(folderID)
+		}
 	}
-}
 
-// GetDefaultStorageType 获取默认存储类型
-func (s *StorageService) GetDefaultStorageType(ctx context.Context) (model.StorageType, error) {
-	// 从配置中获取默认存储类型
-	return model.StorageTypeMinio, nil // 这里可以根据实际配置返回
-}
-
-// CreateDefaultFolder 创建默认文件夹(按月份)
-func (s *StorageService) CreateDefaultFolder(ctx context.Context, tenantID, createdBy string) (*model.Folder, error) {
-	now := time.Now()
-	yearStr := now.Format("2006")
-	monthStr := now.Format("01")
-
-	// 1. 获取或创建年份文件夹
-	yearFolder, err := s.getOrCreateFolder(ctx, "0", yearStr, tenantID, createdBy)
+	// 2. 获取当前存储实例
+	storage, err := s.storage.GetCurrentStorage()
 	if err != nil {
-		return nil, fmt.Errorf("create year folder error: %v", err)
+		return nil, errors.StorageError(err)
 	}
 
-	// 2. 获取或创建月份文件夹
-	monthFolder, err := s.getOrCreateFolder(ctx, yearFolder.ID, monthStr, tenantID, createdBy)
+	// 3. 构建文件对象
+	file := &model.File{
+		Name:        fileName,
+		Size:        size,
+		FolderID:    folderID,
+		TenantID:    tenantID,
+		CreatedBy:   createdBy,
+		StorageType: model.StorageTypeLocal, // 使用当前配置的存储类型
+		CreatedAt:   time.Now().Unix(),
+	}
+
+	// 4. 验证文件属性
+	if err := file.Validate(); err != nil {
+		return nil, errors.InvalidFileName(err.Error())
+	}
+
+	// 5. 上传文件到存储
+	uploadedFile, err := storage.Upload(ctx, reader, fileName, size, folderID)
 	if err != nil {
-		return nil, fmt.Errorf("create month folder error: %v", err)
+		return nil, errors.StorageError(err)
 	}
 
-	return monthFolder, nil
+	// 6. 更新文件信息
+	file.Path = uploadedFile.Path
+	file.URL = uploadedFile.URL
+	file.StorageType = uploadedFile.StorageType
+
+	// 7. 保存到数据库
+	savedFile, err := s.repo.SaveFile(ctx, file, nil)
+	if err != nil {
+		// 删除已上传的文件
+		_ = storage.Delete(ctx, uploadedFile)
+		return nil, errors.StorageError(err)
+	}
+
+	return savedFile, nil
 }
 
-// getOrCreateFolder 获取或创建文件夹
-func (s *StorageService) getOrCreateFolder(ctx context.Context, parentID string, name, tenantID, createdBy string) (*model.Folder, error) {
-	// 1. 查询是否存在
-	folders, total, err := s.repo.ListFolders(ctx, parentID, db_query.NewQueryBuilder().
-		Where("name", db_query.Eq, name).
-		Where("tenant_id", db_query.Eq, tenantID))
+// CreateFolder 创建文件夹
+func (s *StorageService) CreateFolder(ctx context.Context, folder *model.Folder) herrors.Herr {
+	// 1. 验证文件夹属性
+	if err := folder.Validate(); err != nil {
+		return herrors.NewBadReqError(err.Error())
+	}
+
+	// 2. 检查父文件夹是否存在
+	if folder.ParentID != "" && folder.ParentID != "0" {
+		parent, err := s.repo.GetFolder(ctx, folder.ParentID)
+		if err != nil {
+			return errors.StorageError(err)
+		}
+		if parent == nil {
+			return errors.FolderNotFound(folder.ParentID)
+		}
+	}
+
+	// 3. 创建文件夹
+	if err := s.repo.SaveFolder(ctx, folder); err != nil {
+		return errors.StorageError(err)
+	}
+
+	return nil
+}
+
+// DeleteFile 删除文件
+func (s *StorageService) DeleteFile(ctx context.Context, id string) herrors.Herr {
+	// 1. 检查文件是否存在
+	file, err := s.repo.GetFile(ctx, id)
 	if err != nil {
-		return nil, err
+		return errors.StorageError(err)
+	}
+	if file == nil {
+		return errors.FileNotFound(id)
 	}
 
-	// 2. 已存在则直接返回
-	if total > 0 {
-		return folders[0], nil
+	// 2. 获取存储实例
+	storage, err := s.storage.GetStorage(file.StorageType)
+	if err != nil {
+		return errors.StorageError(err)
 	}
 
-	// 3. 不存在则创建
+	// 3. 从存储中删除文件
+	if err := storage.Delete(ctx, file); err != nil {
+		return errors.StorageError(err)
+	}
+
+	// 4. 从数据库中删除记录
+	if err := s.repo.DeleteFile(ctx, id); err != nil {
+		return errors.StorageError(err)
+	}
+
+	return nil
+}
+
+// GetFolder 获取文件夹
+func (s *StorageService) GetFolder(ctx context.Context, id string) (*model.Folder, herrors.Herr) {
+	folder, err := s.repo.GetFolder(ctx, id)
+	if err != nil {
+		return nil, errors.StorageError(err)
+	}
+	if folder == nil {
+		return nil, errors.FolderNotFound(id)
+	}
+	return folder, nil
+}
+
+// MoveFile 移动文件
+func (s *StorageService) MoveFile(ctx context.Context, fileID string, targetFolderID string) herrors.Herr {
+	// 1. 检查文件是否存在
+	file, err := s.repo.GetFile(ctx, fileID)
+	if err != nil {
+		return errors.StorageError(err)
+	}
+	if file == nil {
+		return errors.FileNotFound(fileID)
+	}
+
+	// 2. 检查目标文件夹是否存在
+	var targetFolder *model.Folder
+	if targetFolderID != "0" {
+		targetFolder, err = s.repo.GetFolder(ctx, targetFolderID)
+		if err != nil {
+			return errors.StorageError(err)
+		}
+		if targetFolder == nil {
+			return errors.FolderNotFound(targetFolderID)
+		}
+	}
+
+	// 3. 获取存储实例
+	storage, err := s.storage.GetStorage(file.StorageType)
+	if err != nil {
+		return errors.StorageError(err)
+	}
+
+	// 4. 构建新路径
+	newPath := ""
+	if targetFolder != nil {
+		newPath = targetFolder.Path + "/" + file.Name
+	} else {
+		newPath = "/" + file.Name
+	}
+
+	// 5. 在存储中移动文件
+	if err := storage.Move(ctx, file, newPath); err != nil {
+		return errors.StorageError(err)
+	}
+
+	// 6. 更新数据库记录
+	file.FolderID = targetFolderID
+	file.Path = newPath
+	if _, err := s.repo.SaveFile(ctx, file, nil); err != nil {
+		return errors.StorageError(err)
+	}
+
+	return nil
+}
+
+// CreateDefaultFolder 创建默认文件夹
+func (s *StorageService) CreateDefaultFolder(ctx context.Context, tenantID, createdBy string) (*model.Folder, herrors.Herr) {
+	// 1. 构建默认文件夹对象
 	folder := &model.Folder{
-		Name:      name,
-		ParentID:  parentID,
+		Name:      "默认文件夹",
+		ParentID:  "0",
 		TenantID:  tenantID,
 		CreatedBy: createdBy,
 		CreatedAt: time.Now().Unix(),
-		UpdatedAt: time.Now().Unix(),
 	}
 
-	// 4. 设置完整路径
-	if parentID != "0" {
-		parent, err := s.repo.GetFolder(ctx, parentID)
-		if err != nil {
-			return nil, err
-		}
-		folder.Path = path.Join(parent.Path, name)
-	} else {
-		folder.Path = name
+	// 2. 验证文件夹属性
+	if err := folder.Validate(); err != nil {
+		return nil, herrors.NewBadReqError(err.Error())
 	}
 
-	// 5. 保存到数据库
-	if err := s.repo.CreateFolder(ctx, folder); err != nil {
-		return nil, err
+	// 3. 创建文件夹
+	if err := s.repo.SaveFolder(ctx, folder); err != nil {
+		return nil, errors.StorageError(err)
 	}
 
 	return folder, nil
 }
 
-// generateUniqueFileName 生成唯一文件名
-func (s *StorageService) generateUniqueFileName(originalName string) string {
-	ext := path.Ext(originalName)
-	nameWithoutExt := strings.TrimSuffix(originalName, ext)
-	timestamp := time.Now().UnixNano()
-	return fmt.Sprintf("%s_%d%s", nameWithoutExt, timestamp, ext)
-}
-
-// UploadFile 上传文件
-func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filename string, size int64, folderID string, tenantID, createdBy string) (*model.File, error) {
-	// 如果没有指定文件夹，创建默认文件夹
-	if folderID == "0" {
-		folder, err := s.CreateDefaultFolder(ctx, tenantID, createdBy)
-		if err != nil {
-			return nil, err
-		}
-		folderID = folder.ID
-	}
-
-	// 获取存储实现
-	store, err := s.storageFactory.GetCurrentStorage()
-	if err != nil {
-		return nil, err
-	}
-
-	// 获取文件夹信息(用于构建存储路径)
-	folder, err := s.repo.GetFolder(ctx, folderID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 生成唯一文件名
-	generatedName := s.generateUniqueFileName(filename)
-
-	// 上传文件(使用生成的文件名)
-	fileModel, err := store.Upload(ctx, file, generatedName, size, folder.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	// 设置文件信息
-	fileModel.Name = filename               // 保存原始文件名
-	fileModel.GeneratedName = generatedName // 保存生成的文件名
-	fileModel.FolderID = folderID
-	fileModel.Type = filepath.Ext(filename)
-	fileModel.CreatedBy = createdBy
-	fileModel.TenantID = tenantID
-
-	// 保存到数据库
-	if err := s.repo.CreateFile(ctx, fileModel); err != nil {
-		// 删除已上传的文件
-		_ = store.Delete(ctx, fileModel)
-		return nil, err
-	}
-
-	return fileModel, nil
-}
-
-// DeleteFile 删除文件
-func (s *StorageService) DeleteFile(ctx context.Context, id string) error {
-	// 获取文件信息
-	file, err := s.repo.GetFile(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	// 获取存储实现
-	store, err := s.storageFactory.GetStorage(file.StorageType)
-	if err != nil {
-		return err
-	}
-
-	// 删除存储中的文件
-	if err := store.Delete(ctx, file); err != nil {
-		return err
-	}
-
-	// 从数据库删除
-	return s.repo.DeleteFile(ctx, id)
-}
-
 // DeleteFolder 删除文件夹
-func (s *StorageService) DeleteFolder(ctx context.Context, id string) error {
-	// 获取文件夹下的所有文件
-	files, _, err := s.repo.ListFiles(ctx, id, db_query.NewQueryBuilder())
+func (s *StorageService) DeleteFolder(ctx context.Context, id string) herrors.Herr {
+	// 1. 检查文件夹是否存在
+	folder, err := s.repo.GetFolder(ctx, id)
 	if err != nil {
-		return err
+		return errors.StorageError(err)
+	}
+	if folder == nil {
+		return errors.FolderNotFound(id)
 	}
 
-	// 删除所有文件
-	for _, file := range files {
-		if err := s.DeleteFile(ctx, file.ID); err != nil {
-			return err
-		}
-	}
-
-	// 获取文件夹
-	folders, _, err := s.repo.ListFolders(ctx, id, db_query.NewQueryBuilder())
+	// 2. 检查文件夹是否为空
+	files, total, err := s.repo.ListFiles(ctx, id, db_query.NewQueryBuilder())
 	if err != nil {
-		return err
+		return errors.StorageError(err)
+	}
+	if total > 0 {
+		return errors.FolderNotEmpty(id, len(files))
 	}
 
-	// 递归删除子文件夹
-	for _, folder := range folders {
-		if err := s.DeleteFolder(ctx, folder.ID); err != nil {
-			return err
-		}
+	// 3. 检查是否有子文件夹
+	subFolders, total, err := s.repo.ListFolders(ctx, id, db_query.NewQueryBuilder())
+	if err != nil {
+		return errors.StorageError(err)
+	}
+	if total > 0 {
+		return errors.FolderNotEmpty(id, len(subFolders))
 	}
 
-	// 删除文件夹
-	return s.repo.DeleteFolder(ctx, id)
+	// 4. 删除文件夹
+	if err := s.repo.DeleteFolder(ctx, id); err != nil {
+		return errors.StorageError(err)
+	}
+
+	return nil
 }
 
 // RenameFolder 重命名文件夹
-func (s *StorageService) RenameFolder(ctx context.Context, id string, newName string) error {
-	// 获取文件夹信息
+func (s *StorageService) RenameFolder(ctx context.Context, id string, newName string) herrors.Herr {
+	// 1. 检查文件夹是否存在
 	folder, err := s.repo.GetFolder(ctx, id)
 	if err != nil {
-		return err
+		return errors.StorageError(err)
+	}
+	if folder == nil {
+		return errors.FolderNotFound(id)
 	}
 
-	// 更新名称
-	folder.Name = newName
-	folder.UpdatedAt = time.Now().Unix()
+	// 2. 更新文件夹名
+	if err := folder.SetName(newName); err != nil {
+		return errors.InvalidFolderName(newName, err.Error())
+	}
 
-	// 更新数据库
-	return s.repo.UpdateFolder(ctx, folder)
+	if err := s.repo.SaveFolder(ctx, folder); err != nil {
+		return errors.StorageError(err)
+	}
+
+	return nil
 }
 
-// MoveFile 移动文件
-func (s *StorageService) MoveFile(ctx context.Context, id string, targetFolderID string) error {
-	// 获取文件信息
-	file, err := s.repo.GetFile(ctx, id)
+// MoveFolder 移动文件夹
+func (s *StorageService) MoveFolder(ctx context.Context, id string, targetParentID string) herrors.Herr {
+	// 1. 检查文件夹是否存在
+	folder, err := s.repo.GetFolder(ctx, id)
 	if err != nil {
-		return err
+		return errors.StorageError(err)
+	}
+	if folder == nil {
+		return errors.FolderNotFound(id)
 	}
 
-	// 获取目标文件夹信息
-	targetFolder, err := s.repo.GetFolder(ctx, targetFolderID)
-	if err != nil {
-		return err
+	// 2. 检查目标父文件夹是否存在
+	if targetParentID != "0" {
+		parent, err := s.repo.GetFolder(ctx, targetParentID)
+		if err != nil {
+			return errors.StorageError(err)
+		}
+		if parent == nil {
+			return errors.FolderNotFound(targetParentID)
+		}
+		// 检查是否移动到自己的子文件夹
+		if isSubFolder(ctx, s.repo, targetParentID, id) {
+			return errors.InvalidMoveOperation("cannot move folder to its subfolder")
+		}
 	}
 
-	// 获取存储实现
-	store, err := s.storageFactory.GetStorage(file.StorageType)
-	if err != nil {
-		return err
+	// 3. 更新文件夹
+	folder.ParentID = targetParentID
+	folder.UpdatedAt = time.Now().Unix()
+	if err := s.repo.SaveFolder(ctx, folder); err != nil {
+		return errors.StorageError(err)
 	}
 
-	// 更新文件路径
-	oldPath := file.Path
-	file.FolderID = targetFolderID
-	file.Path = path.Join(targetFolder.Path, file.Name)
-	file.UpdatedAt = time.Now().Unix()
-
-	// 移动存储中的文件
-	if err := store.Move(ctx, file, oldPath); err != nil {
-		return err
-	}
-
-	// 更新数据库
-	return s.repo.UpdateFile(ctx, file)
+	return nil
 }
 
 // BatchDeleteFiles 批量删除文件
-func (s *StorageService) BatchDeleteFiles(ctx context.Context, ids []string) error {
-	for _, id := range ids {
+func (s *StorageService) BatchDeleteFiles(ctx context.Context, fileIDs []string) herrors.Herr {
+	for _, id := range fileIDs {
 		if err := s.DeleteFile(ctx, id); err != nil {
 			return err
 		}
@@ -276,8 +332,8 @@ func (s *StorageService) BatchDeleteFiles(ctx context.Context, ids []string) err
 }
 
 // BatchMoveFiles 批量移动文件
-func (s *StorageService) BatchMoveFiles(ctx context.Context, ids []string, targetFolderID string) error {
-	for _, id := range ids {
+func (s *StorageService) BatchMoveFiles(ctx context.Context, fileIDs []string, targetFolderID string) herrors.Herr {
+	for _, id := range fileIDs {
 		if err := s.MoveFile(ctx, id, targetFolderID); err != nil {
 			return err
 		}
@@ -286,251 +342,183 @@ func (s *StorageService) BatchMoveFiles(ctx context.Context, ids []string, targe
 }
 
 // ShareFile 分享文件
-func (s *StorageService) ShareFile(ctx context.Context, id string, expireTime int64, password string, createdBy string) (*model.FileShare, error) {
-	// 获取文件信息
-	file, err := s.repo.GetFile(ctx, id)
+func (s *StorageService) ShareFile(ctx context.Context, fileID string, expireTime int64, password string, createdBy string) (*model.FileShare, herrors.Herr) {
+	// 1. 检查文件是否存在
+	file, err := s.repo.GetFile(ctx, fileID)
 	if err != nil {
-		return nil, err
+		return nil, errors.StorageError(err)
+	}
+	if file == nil {
+		return nil, errors.FileNotFound(fileID)
 	}
 
-	// 生成分享码
-	shareCode := generateShareCode()
-
-	// 创建分享记录
+	// 2. 创建分享记录
 	share := &model.FileShare{
-		FileID:     file.ID,
-		ShareCode:  shareCode,
+		FileID:     fileID,
+		ShareCode:  generateShareCode(), // 生成分享码
 		Password:   password,
-		ExpireTime: time.Now().Add(time.Duration(expireTime) * time.Second).Unix(),
-		CreatedAt:  time.Now().Unix(),
+		ExpireTime: expireTime,
 		CreatedBy:  createdBy,
+		CreatedAt:  time.Now().Unix(),
 	}
 
-	// 保存分享记录
+	// 3. 验证分享属性
+	if err := share.Validate(); err != nil {
+		return nil, herrors.NewBadReqError(err.Error())
+	}
+
+	// 4. 保存分享记录
 	if err := s.repo.CreateFileShare(ctx, share); err != nil {
-		return nil, err
+		return nil, errors.StorageError(err)
 	}
 
 	return share, nil
 }
 
 // RecycleFile 回收文件
-func (s *StorageService) RecycleFile(ctx context.Context, id string, deletedBy string) error {
-	// 获取文件信息
+func (s *StorageService) RecycleFile(ctx context.Context, id string, deletedBy string) herrors.Herr {
+	// 1. 检查文件是否存在
 	file, err := s.repo.GetFile(ctx, id)
 	if err != nil {
-		return err
+		return errors.StorageError(err)
+	}
+	if file == nil {
+		return errors.FileNotFound(id)
 	}
 
-	// 更新文件状态
+	// 2. 获取存储实例
+	storage, err := s.storage.GetStorage(file.StorageType)
+	if err != nil {
+		return errors.StorageError(err)
+	}
+
+	// 3. 构建回收站路径
+	recyclePath := "/recycle/" + file.Name
+
+	// 4. 在存储中移动文件到回收站
+	if err := storage.Move(ctx, file, recyclePath); err != nil {
+		return errors.StorageError(err)
+	}
+
+	// 5. 更新文件状态
 	file.IsDeleted = true
-	file.DeletedAt = time.Now().Unix()
 	file.DeletedBy = deletedBy
-	file.OriginalPath = file.Path
-	// 移动到回收站目录
-	recyclePath := path.Join("recycle", file.Path)
-	store, err := s.storageFactory.GetStorage(file.StorageType)
-	if err != nil {
-		return err
-	}
-
-	//移动文件
-	oldPath := file.Path
-	file.Path = recyclePath
-	if err = store.Move(ctx, file, oldPath); err != nil {
-		return err
-	}
-	// 更新��据库
-	return s.repo.UpdateFile(ctx, file)
-}
-
-// RestoreFile 恢复文件
-func (s *StorageService) RestoreFile(ctx context.Context, id string) error {
-	// 获取文件信息
-	file, err := s.repo.GetFile(ctx, id)
-	if err != nil {
-		return herrors.NewServerHError(err)
-	}
-
-	if !file.IsDeleted {
-		return herrors.NewBadReqError("file is not in recycle bin")
-	}
-
-	// 恢复文件状态
-	file.IsDeleted = false
 	file.DeletedAt = time.Now().Unix()
-	file.DeletedBy = ""
-	// 从回收站恢复
-	store, err := s.storageFactory.GetStorage(file.StorageType)
-	if err != nil {
-		return err
-	}
-	oldPath := file.Path
-	file.Path = file.OriginalPath
-	if err := store.Move(ctx, file, oldPath); err != nil {
-		return err
-	}
-	file.OriginalPath = ""
-	// 更新数据库
-	return s.repo.UpdateFile(ctx, file)
-}
+	file.OriginalPath = file.Path
+	file.Path = recyclePath
 
-// generateShareCode 生成分享码
-func generateShareCode() string {
-	return uuid.New().String()[:8]
-}
-
-// GetShareFile 获取分享文件
-func (s *StorageService) GetShareFile(ctx context.Context, shareCode, password string) (*model.File, error) {
-	// 获取分享信息
-	share, err := s.repo.GetFileShare(ctx, shareCode)
-	if err != nil {
-		return nil, herrors.NewServerHError(err)
-	}
-
-	// 检查是否过期
-	if time.Now().After(time.Unix(share.ExpireTime, 0)) {
-		return nil, herrors.NewBadReqError("share link expired")
-	}
-
-	// 检查密码
-	if share.Password != "" && share.Password != password {
-		return nil, herrors.NewBadReqError("invalid password")
-	}
-
-	// 获取文件信息
-	file, err := s.repo.GetFile(ctx, share.FileID)
-	if err != nil {
-		return nil, herrors.NewServerHError(err)
-	}
-
-	return file, nil
-}
-
-// PreviewFile 预览文件
-func (s *StorageService) PreviewFile(ctx context.Context, id string) (string, error) {
-	// 获取文件信息
-	file, err := s.repo.GetFile(ctx, id)
-	if err != nil {
-		return "", err
-	}
-
-	// 获取存储实现
-	store, err := s.storageFactory.GetStorage(file.StorageType)
-	if err != nil {
-		return "", err
-	}
-
-	// 获取预览URL
-	return store.GetPreviewURL(ctx, file)
-}
-
-// DownloadFile 下载文件
-func (s *StorageService) DownloadFile(ctx context.Context, id string) (io.ReadCloser, string, error) {
-	// 获取文件信息
-	file, err := s.repo.GetFile(ctx, id)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// 获取存储实现
-	store, err := s.storageFactory.GetStorage(file.StorageType)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// 下载文件
-	reader, err := store.Download(ctx, file)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return reader, file.Name, nil
-}
-
-// CreateFolder 创建文件夹
-func (s *StorageService) CreateFolder(ctx context.Context, folder *model.Folder) error {
-	// 1. 检查父文件夹是否存在
-	if folder.ParentID != "0" {
-		parent, err := s.repo.GetFolder(ctx, folder.ParentID)
-		if err != nil {
-			return herrors.NewServerHError(err)
-		}
-		// 设置完整路径
-		folder.Path = path.Join(parent.Path, folder.Name)
-	} else {
-		folder.Path = folder.Name
-	}
-
-	// 2. ���查同名文件夹是否存在
-	qb := db_query.NewQueryBuilder().
-		Where("parent_id", db_query.Eq, folder.ParentID).
-		Where("name", db_query.Eq, folder.Name).
-		Where("tenant_id", db_query.Eq, folder.TenantID)
-
-	_, total, err := s.repo.ListFolders(ctx, folder.ParentID, qb)
-	if err != nil {
-		return herrors.NewServerHError(err)
-	}
-	if total > 0 {
-		return herrors.NewBadReqError("folder already exists")
-	}
-
-	// 3. 设置创建时间
-	now := time.Now().Unix()
-	folder.CreatedAt = now
-	folder.UpdatedAt = now
-
-	// 4. 创建文件夹
-	if err := s.repo.CreateFolder(ctx, folder); err != nil {
-		return herrors.NewServerHError(err)
+	// 6. 更新数据库记录
+	if _, err := s.repo.SaveFile(ctx, file, nil); err != nil {
+		return errors.StorageError(err)
 	}
 
 	return nil
 }
 
-// MoveFolder 移动文件夹
-func (s *StorageService) MoveFolder(ctx context.Context, id string, newParentID string) error {
-	// 1. 获取文件夹信息
-	folder, err := s.repo.GetFolder(ctx, id)
+// RestoreFile 恢复文件
+func (s *StorageService) RestoreFile(ctx context.Context, id string) herrors.Herr {
+	// 1. 检查文件是否存在
+	file, err := s.repo.GetFile(ctx, id)
 	if err != nil {
-		return herrors.NewServerHError(err)
+		return errors.StorageError(err)
+	}
+	if file == nil {
+		return errors.FileNotFound(id)
 	}
 
-	// 2. 检查新父文件夹是否存在
-	newParent, err := s.repo.GetFolder(ctx, newParentID)
+	// 2. 检查文件是否在回收站
+	if !file.IsDeleted {
+		return errors.InvalidOperation("file is not in recycle bin")
+	}
+
+	// 3. 获取存储实例
+	storage, err := s.storage.GetStorage(file.StorageType)
 	if err != nil {
-		return herrors.NewServerHError(err)
+		return errors.StorageError(err)
 	}
 
-	// 3. 检查是否移动到自己的子文件夹
-	if s.isSubFolder(ctx, folder.ID, newParentID) {
-		return herrors.NewBadReqError("cannot move folder to its subfolder")
+	// 4. 在存储中恢复文件
+	if err := storage.Move(ctx, file, file.OriginalPath); err != nil {
+		return errors.StorageError(err)
 	}
 
-	// 4. 更新文件夹路径
-	oldPath := folder.Path
-	folder.ParentID = newParentID
-	folder.Path = path.Join(newParent.Path, folder.Name)
-	folder.UpdatedAt = time.Now().Unix()
+	// 5. 恢复文件状态
+	file.IsDeleted = false
+	file.DeletedBy = ""
+	file.DeletedAt = 0
+	file.Path = file.OriginalPath
+	file.OriginalPath = ""
 
-	// 5. 更新所有子文件夹和文件的路径
-	if err := s.updateSubPaths(ctx, folder.ID, oldPath, folder.Path); err != nil {
-		return herrors.NewServerHError(err)
+	// 6. 更新数据库记录
+	if _, err := s.repo.SaveFile(ctx, file, nil); err != nil {
+		return errors.StorageError(err)
 	}
 
-	// 6. 更新数据库
-	return s.repo.UpdateFolder(ctx, folder)
+	return nil
 }
 
+// PreviewFile 预览文件
+func (s *StorageService) PreviewFile(ctx context.Context, fileID string) (string, herrors.Herr) {
+	// 1. 获取文件信息
+	file, err := s.repo.GetFile(ctx, fileID)
+	if err != nil {
+		return "", errors.StorageError(err)
+	}
+	if file == nil {
+		return "", errors.FileNotFound(fileID)
+	}
+
+	// 2. 获取存储实例
+	storage, err := s.storage.GetStorage(file.StorageType)
+	if err != nil {
+		return "", errors.StorageError(err)
+	}
+
+	// 3. 获取预览URL
+	previewURL, err := storage.GetPreviewURL(ctx, file)
+	if err != nil {
+		return "", errors.StorageError(err)
+	}
+
+	return previewURL, nil
+}
+
+// DownloadFile 下载文件
+func (s *StorageService) DownloadFile(ctx context.Context, fileID string) (io.ReadCloser, string, herrors.Herr) {
+	// 1. 获取文件信息
+	file, err := s.repo.GetFile(ctx, fileID)
+	if err != nil {
+		return nil, "", errors.StorageError(err)
+	}
+	if file == nil {
+		return nil, "", errors.FileNotFound(fileID)
+	}
+
+	// 2. 获取存储实例
+	storage, err := s.storage.GetStorage(file.StorageType)
+	if err != nil {
+		return nil, "", errors.StorageError(err)
+	}
+
+	// 3. 下载文件
+	reader, err := storage.Download(ctx, file)
+	if err != nil {
+		return nil, "", errors.StorageError(err)
+	}
+
+	return reader, file.Name, nil
+}
+
+// 辅助函数
+
 // isSubFolder 检查是否是子文件夹
-func (s *StorageService) isSubFolder(ctx context.Context, parentID, folderID string) bool {
-	if parentID == folderID {
+func isSubFolder(ctx context.Context, repo repository.IStorageRepository, parentID, childID string) bool {
+	if parentID == childID {
 		return true
 	}
 
-	folder, err := s.repo.GetFolder(ctx, folderID)
-	if err != nil {
+	folder, err := repo.GetFolder(ctx, parentID)
+	if err != nil || folder == nil {
 		return false
 	}
 
@@ -538,121 +526,16 @@ func (s *StorageService) isSubFolder(ctx context.Context, parentID, folderID str
 		return false
 	}
 
-	return s.isSubFolder(ctx, parentID, folder.ParentID)
+	return isSubFolder(ctx, repo, folder.ParentID, childID)
 }
 
-// updateSubPaths 更新子路径
-func (s *StorageService) updateSubPaths(ctx context.Context, folderID string, oldPath, newPath string) error {
-	// 1. 更新子文件夹路径
-	folders, _, err := s.repo.ListFolders(ctx, folderID, db_query.NewQueryBuilder())
-	if err != nil {
-		return err
+// generateShareCode 生成分享码
+func generateShareCode() string {
+	// 生成8位随机字符串
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, 8)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
 	}
-
-	for _, folder := range folders {
-		folder.Path = strings.Replace(folder.Path, oldPath, newPath, 1)
-		if err := s.repo.UpdateFolder(ctx, folder); err != nil {
-			return err
-		}
-		// 递归更新子文件夹
-		if err := s.updateSubPaths(ctx, folder.ID, oldPath, newPath); err != nil {
-			return err
-		}
-	}
-
-	// 2. 更新文件路径
-	files, _, err := s.repo.ListFiles(ctx, folderID, db_query.NewQueryBuilder())
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		file.Path = strings.Replace(file.Path, oldPath, newPath, 1)
-		if err := s.repo.UpdateFile(ctx, file); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// GetFolderTree 获取文件夹树形结构
-func (s *StorageService) GetFolderTree(ctx context.Context, tenantID string) ([]*model.FolderTree, error) {
-	return s.repo.GetFolderTree(ctx, tenantID)
-}
-
-// validateCreateFolder 验证创建文件夹业务逻辑
-func (s *StorageService) validateCreateFolder(ctx context.Context, folder *model.Folder) error {
-	// 检查父文件夹是否存在
-	if folder.ParentID != "0" {
-		parent, err := s.repo.GetFolder(ctx, folder.ParentID)
-		if err != nil {
-			return herrors.NewBadReqError("parent folder not found")
-		}
-		if parent.TenantID != folder.TenantID {
-			return herrors.NewBadReqError("parent folder belongs to different tenant")
-		}
-	}
-
-	// 检查同名文件夹是否存在
-	qb := db_query.NewQueryBuilder().
-		Where("parent_id", db_query.Eq, folder.ParentID).
-		Where("name", db_query.Eq, folder.Name).
-		Where("tenant_id", db_query.Eq, folder.TenantID)
-
-	_, total, err := s.repo.ListFolders(ctx, folder.ParentID, qb)
-	if err != nil {
-		return herrors.NewServerHError(err)
-	}
-	if total > 0 {
-		return herrors.NewBadReqError("folder already exists")
-	}
-
-	return nil
-}
-
-// validateMoveFolder 验证移动文件夹业务逻辑
-func (s *StorageService) validateMoveFolder(ctx context.Context, folderID, newParentID string) error {
-	// 获取文件夹信息
-	folder, err := s.repo.GetFolder(ctx, folderID)
-	if err != nil {
-		return herrors.NewServerHError(err)
-	}
-
-	// 检查新父文件夹是否存在
-	newParent, err := s.repo.GetFolder(ctx, newParentID)
-	if err != nil {
-		return herrors.NewServerHError(err)
-	}
-
-	// 检查租户权限
-	if folder.TenantID != newParent.TenantID {
-		return fmt.Errorf("folders belong to different tenants")
-	}
-
-	// 检查是否移动到子文件夹
-	if s.isSubFolder(ctx, folder.ID, newParentID) {
-		return fmt.Errorf("cannot move folder to its child")
-	}
-
-	return nil
-}
-
-// GetFolder 获取文件夹信息
-func (s *StorageService) GetFolder(ctx context.Context, id string) (*model.Folder, error) {
-	// 1. 参数验证
-	if id == "" {
-		return nil, herrors.NewBadReqError("folder id is empty")
-	}
-
-	// 2. 从仓储获取文件夹
-	folder, err := s.repo.GetFolder(ctx, id)
-	if err != nil {
-		if database.IfErrorNotFound(err) {
-			return nil, herrors.DataIsExist
-		}
-		return nil, herrors.NewServerHError(err)
-	}
-
-	return folder, nil
+	return string(b)
 }

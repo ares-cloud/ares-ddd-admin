@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/data"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/query/impl"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/storage"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"github.com/cloudwego/hertz/pkg/route"
@@ -16,8 +18,10 @@ import (
 
 // ProviderSet is storage providers.
 var ProviderSet = wire.NewSet(
+	data.NewStorageRepo,
 	repository.NewStorageRepository,
 	service.NewStorageService,
+	impl.NewStorageQueryService,
 	handlers.NewStorageQueryHandler,
 	handlers.NewStorageCommandHandler,
 	rest.NewStorageController,

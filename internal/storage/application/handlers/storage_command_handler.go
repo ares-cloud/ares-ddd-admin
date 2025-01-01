@@ -3,11 +3,13 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"io"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/dto"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/application/commands"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/service"
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/shared/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
@@ -88,6 +90,24 @@ func (h *StorageCommandHandler) HandleDeleteFile(ctx context.Context, cmd *comma
 		return herrors.NewErr(err)
 	}
 	return nil
+}
+
+// PreviewFile 预览文件
+func (h *StorageCommandHandler) PreviewFile(ctx context.Context, fileID string) (string, error) {
+	previewURL, err := h.service.PreviewFile(ctx, fileID)
+	if err != nil {
+		return "", err
+	}
+	return previewURL, nil
+}
+
+// DownloadFile 下载文件
+func (h *StorageCommandHandler) DownloadFile(ctx context.Context, fileID string) (io.ReadCloser, string, error) {
+	reader, filename, err := h.service.DownloadFile(ctx, fileID)
+	if err != nil {
+		return nil, "", err
+	}
+	return reader, filename, nil
 }
 
 // HandleDeleteFolder 处理删除文件夹

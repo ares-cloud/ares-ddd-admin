@@ -90,9 +90,7 @@ func (r *sysUserRepo) FindByDepartment(ctx context.Context, deptID string, exclu
 	}
 
 	// 应用查询条件
-	if err := qb.Build(db); err != nil {
-		return nil, err
-	}
+	db = qb.Build(db)
 
 	var users []*entity.SysUser
 	if err := db.Find(&users).Error; err != nil {
@@ -112,9 +110,7 @@ func (r *sysUserRepo) CountByDepartment(ctx context.Context, deptID string, excl
 		db = db.Where("sys_user.id != ?", excludeAdminID)
 	}
 
-	if err := qb.Build(db); err != nil {
-		return 0, err
-	}
+	db = qb.Build(db)
 
 	err := db.Count(&count).Error
 	return count, err
@@ -129,9 +125,7 @@ func (r *sysUserRepo) FindUnassignedUsers(ctx context.Context, qb *db_query.Quer
 	db := r.Db(ctx).Model(&entity.SysUser{}).
 		Where("id NOT IN (?)", subQuery)
 
-	if err := qb.Build(db); err != nil {
-		return nil, err
-	}
+	db = qb.Build(db)
 
 	var users []*entity.SysUser
 	if err := db.Find(&users).Error; err != nil {
@@ -150,9 +144,7 @@ func (r *sysUserRepo) CountUnassignedUsers(ctx context.Context, qb *db_query.Que
 	db := r.Db(ctx).Model(&entity.SysUser{}).
 		Where("id NOT IN (?)", subQuery)
 
-	if err := qb.Build(db); err != nil {
-		return 0, err
-	}
+	db = qb.Build(db)
 
 	err := db.Count(&count).Error
 	return count, err

@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 	"io"
 	"net/http"
@@ -13,8 +14,6 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/application/commands"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/application/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/application/queries"
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/service"
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/shared/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/middleware/jwt"
@@ -27,18 +26,15 @@ import (
 type StorageController struct {
 	queryHandler   *handlers.StorageQueryHandler
 	commandHandler *handlers.StorageCommandHandler
-	service        *service.StorageService
 }
 
 func NewStorageController(
 	queryHandler *handlers.StorageQueryHandler,
 	commandHandler *handlers.StorageCommandHandler,
-	service *service.StorageService,
 ) *StorageController {
 	return &StorageController{
 		queryHandler:   queryHandler,
 		commandHandler: commandHandler,
-		service:        service,
 	}
 }
 
@@ -296,7 +292,7 @@ func (s *StorageController) PreviewFile(ctx context.Context, q *queries.GetFileP
 	result := hserver.DefaultResponseResult()
 
 	// 获取预览URL
-	previewURL, err := s.service.PreviewFile(ctx, q.ID)
+	previewURL, err := s.commandHandler.PreviewFile(ctx, q.ID)
 	if err != nil {
 		return result.WithError(herrors.NewErr(err))
 	}
@@ -321,7 +317,7 @@ func (s *StorageController) DownloadFile(ctx context.Context, c *app.RequestCont
 	}
 
 	// 下载文件
-	reader, filename, err := s.service.DownloadFile(ctx, fileID)
+	reader, filename, err := s.commandHandler.DownloadFile(ctx, fileID)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -356,7 +352,7 @@ func (s *StorageController) GetFileShare(ctx context.Context, c *app.RequestCont
 	password := c.Query("password")
 
 	// 获取分享文件
-	file, err := s.service.GetShareFile(ctx, shareCode, password)
+	file, err := s.queryHandler.GetShareFile(ctx, shareCode, password)
 	if err != nil {
 		c.JSON(http.StatusOK, result.WithError(herrors.NewErr(err)))
 		return

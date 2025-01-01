@@ -62,15 +62,15 @@ func (s *AliyunStorage) Delete(ctx context.Context, file *model.File) error {
 	return nil
 }
 
-func (s *AliyunStorage) Move(ctx context.Context, file *model.File, oldPath string) error {
+func (s *AliyunStorage) Move(ctx context.Context, file *model.File, toPath string) error {
 	// 1. 复制文件(使用生成的文件名)
-	_, err := s.bucket.CopyObject(oldPath, file.Path)
+	_, err := s.bucket.CopyObject(file.Path, toPath)
 	if err != nil {
 		return herrors.NewServerHError(err)
 	}
 
 	// 2. 删除源文件
-	err = s.bucket.DeleteObject(oldPath)
+	err = s.bucket.DeleteObject(file.Path)
 	if err != nil {
 		return herrors.NewServerHError(err)
 	}

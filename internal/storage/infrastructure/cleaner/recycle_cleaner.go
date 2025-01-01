@@ -3,15 +3,15 @@ package cleaner
 import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/repository"
 	"time"
 
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/repository"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/service"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 )
 
 type RecycleCleaner struct {
-	repo    repository.IStorageRepository
+	repo    repository.IStorageRepos
 	service *service.StorageService
 	// 保留天数
 	retentionDays int
@@ -21,7 +21,7 @@ type RecycleCleaner struct {
 	stopChan chan struct{}
 }
 
-func NewRecycleCleaner(repo repository.IStorageRepository, service *service.StorageService, conf *configs.StorageConfig) *RecycleCleaner {
+func NewRecycleCleaner(repo repository.IStorageRepos, service *service.StorageService, conf *configs.StorageConfig) *RecycleCleaner {
 	return &RecycleCleaner{
 		repo:          repo,
 		service:       service,

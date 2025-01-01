@@ -133,7 +133,7 @@ func (qb *QueryBuilder) BuildLimit() (string, []int) {
 }
 
 // Build 将查询条件应用到GORM的DB对象上
-func (qb *QueryBuilder) Build(db *gorm.DB) error {
+func (qb *QueryBuilder) Build(db *gorm.DB) *gorm.DB {
 	// 1. 应用WHERE条件
 	for _, cond := range qb.conditions {
 		switch cond.Operator {
@@ -165,7 +165,7 @@ func (qb *QueryBuilder) Build(db *gorm.DB) error {
 		db = db.Offset(qb.page.Offset()).Limit(qb.page.Limit())
 	}
 
-	return nil
+	return db
 }
 
 // GetConditions 获取查询条件

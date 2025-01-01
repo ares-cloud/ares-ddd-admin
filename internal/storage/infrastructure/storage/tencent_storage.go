@@ -70,19 +70,19 @@ func (s *TencentStorage) Delete(ctx context.Context, file *model.File) error {
 }
 
 // Move 移动文件
-func (s *TencentStorage) Move(ctx context.Context, file *model.File, oldPath string) error {
+func (s *TencentStorage) Move(ctx context.Context, file *model.File, toPath string) error {
 	// 1. 构建源对象URL
 	sourceURL := fmt.Sprintf("%s-%s.cos.%s.myqcloud.com/%s",
-		s.bucket, s.client.BaseURL.BucketURL.Host, s.region, oldPath)
+		s.bucket, s.client.BaseURL.BucketURL.Host, s.region, file.Path)
 
 	// 2. 复制对象(使用生成的文件名)
-	_, _, err := s.client.Object.Copy(ctx, file.Path, sourceURL, nil)
+	_, _, err := s.client.Object.Copy(ctx, toPath, sourceURL, nil)
 	if err != nil {
 		return herrors.NewServerHError(err)
 	}
 
 	// 3. 删除源文件
-	_, err = s.client.Object.Delete(ctx, oldPath)
+	_, err = s.client.Object.Delete(ctx, file.Path)
 	if err != nil {
 		return herrors.NewServerHError(err)
 	}

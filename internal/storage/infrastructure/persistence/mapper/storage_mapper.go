@@ -2,8 +2,8 @@ package mapper
 
 import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/model"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/entity"
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/shared/dto"
 )
 
 type StorageMapper struct{}

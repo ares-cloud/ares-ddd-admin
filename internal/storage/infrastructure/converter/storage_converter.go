@@ -1,12 +1,12 @@
 package converter
 
 import (
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/model"
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/shared/dto"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/dto"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/entity"
 )
 
 // ToFileDto 将 File 模型转换为 FileDto
-func ToFileDto(file *model.File) *dto.FileDto {
+func ToFileDto(file *entity.File) *dto.FileDto {
 	return &dto.FileDto{
 		ID:          file.ID,
 		Name:        file.Name,
@@ -25,7 +25,7 @@ func ToFileDto(file *model.File) *dto.FileDto {
 }
 
 // ToFolderDto 将 Folder 模型转换为 FolderDto
-func ToFolderDto(folder *model.Folder) *dto.FolderDto {
+func ToFolderDto(folder *entity.Folder) *dto.FolderDto {
 	return &dto.FolderDto{
 		ID:        folder.ID,
 		Name:      folder.Name,
@@ -37,15 +37,15 @@ func ToFolderDto(folder *model.Folder) *dto.FolderDto {
 }
 
 // ToFolderTreeDto 将 Folder 模型转换为 FolderTreeDto
-func ToFolderTreeDto(folder *model.Folder) *dto.FolderTreeDto {
+func ToFolderTreeDto(folder *dto.FolderDto) *dto.FolderTreeDto {
 	return &dto.FolderTreeDto{
-		FolderDto: *ToFolderDto(folder),
+		FolderDto: *folder,
 		Children:  make([]*dto.FolderTreeDto, 0),
 	}
 }
 
 // ToFileShareDto 将 FileShare 模型转换为 FileShareDto
-func ToFileShareDto(share *model.FileShare) *dto.FileShareDto {
+func ToFileShareDto(share *entity.FileShare) *dto.FileShareDto {
 	return &dto.FileShareDto{
 		ID:         share.ID,
 		FileID:     share.FileID,
@@ -57,7 +57,7 @@ func ToFileShareDto(share *model.FileShare) *dto.FileShareDto {
 }
 
 // ToFileDtoList 将 File 模型列表转换为 FileDto 列表
-func ToFileDtoList(files []*model.File) []*dto.FileDto {
+func ToFileDtoList(files []*entity.File) []*dto.FileDto {
 	dtos := make([]*dto.FileDto, len(files))
 	for i, file := range files {
 		dtos[i] = ToFileDto(file)
@@ -66,7 +66,7 @@ func ToFileDtoList(files []*model.File) []*dto.FileDto {
 }
 
 // ToFolderDtoList 将 Folder 模型列表转换为 FolderDto 列表
-func ToFolderDtoList(folders []*model.Folder) []*dto.FolderDto {
+func ToFolderDtoList(folders []*entity.Folder) []*dto.FolderDto {
 	dtos := make([]*dto.FolderDto, len(folders))
 	for i, folder := range folders {
 		dtos[i] = ToFolderDto(folder)

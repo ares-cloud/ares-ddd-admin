@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"fmt"
+	"io"
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/common/hlog"
@@ -15,216 +15,141 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 )
 
+// IStorageRepos 存储仓储接口(数据库操作)
+type IStorageRepos interface {
+	// 文件相关
+	CreateFile(ctx context.Context, file *entity.File) error
+	UpdateFile(ctx context.Context, file *entity.File) error
+	DeleteFile(ctx context.Context, id string) error
+	GetFile(ctx context.Context, id string) (*entity.File, error)
+	ListFiles(ctx context.Context, folderID string, qb *db_query.QueryBuilder) ([]*entity.File, int64, error)
+
+	// 文件夹相关
+	CreateFolder(ctx context.Context, folder *entity.Folder) error
+	UpdateFolder(ctx context.Context, folder *entity.Folder) error
+	DeleteFolder(ctx context.Context, id string) error
+	GetFolder(ctx context.Context, id string) (*entity.Folder, error)
+	ListFolders(ctx context.Context, parentID string, qb *db_query.QueryBuilder) ([]*entity.Folder, int64, error)
+
+	// 文件分享相关
+	GetFileShare(ctx context.Context, shareCode string) (*entity.FileShare, error)
+	CreateFileShare(ctx context.Context, share *entity.FileShare) error
+
+	// 其他
+	GetExpiredRecycleFiles(ctx context.Context, expireTime time.Time) ([]*entity.File, error)
+}
+
 type storageRepository struct {
 	db     database.IDataBase
+	repo   IStorageRepos
 	mapper *mapper.StorageMapper
 }
 
-func NewStorageRepository(db database.IDataBase) repository.IStorageRepository {
+func NewStorageRepository(db database.IDataBase, repo IStorageRepos) repository.IStorageRepository {
 	// 同步表
 	if err := db.DB(context.Background()).AutoMigrate(&entity.Folder{}, &entity.File{}, &entity.FileShare{}); err != nil {
 		hlog.Fatalf("sync sys storage tables to db error: %v", err)
 	}
 	return &storageRepository{
 		db:     db,
+		repo:   repo,
 		mapper: &mapper.StorageMapper{},
 	}
 }
 
-// genStringId 生成字符串ID
-func (r *storageRepository) genStringId() string {
-	return r.db.GenStringId()
+// GetFile 获取文件
+func (r *storageRepository) GetFile(ctx context.Context, id string) (*model.File, error) {
+	file, err := r.repo.GetFile(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return r.mapper.ToFileDomain(file), nil
 }
 
-// CreateFile 创建文件
-func (r *storageRepository) CreateFile(ctx context.Context, file *model.File) error {
-	// 生成ID
-	file.ID = r.genStringId()
-	return r.db.DB(ctx).Create(r.mapper.ToFileEntity(file)).Error
-}
+// SaveFile 保存文件
+func (r *storageRepository) SaveFile(ctx context.Context, file *model.File, reader io.Reader) (*model.File, error) {
 
-// UpdateFile 更新文件
-func (r *storageRepository) UpdateFile(ctx context.Context, file *model.File) error {
-	return r.db.DB(ctx).Save(r.mapper.ToFileEntity(file)).Error
+	// 2. 转换为实体
+	fileEntity := r.mapper.ToFileEntity(file) // 1. 生成ID
+	if file.ID == "" {
+		fileEntity.ID = r.db.GenStringId()
+		// 3. 保存到数据库
+		if err := r.repo.CreateFile(ctx, fileEntity); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := r.repo.UpdateFile(ctx, fileEntity); err != nil {
+			return nil, err
+		}
+	}
+	return r.mapper.ToFileDomain(fileEntity), nil
 }
 
 // DeleteFile 删除文件
 func (r *storageRepository) DeleteFile(ctx context.Context, id string) error {
-	return r.db.DB(ctx).Delete(&entity.File{}, id).Error
-}
-
-// GetFile 获取文件
-func (r *storageRepository) GetFile(ctx context.Context, id string) (*model.File, error) {
-	var ent entity.File
-	if err := r.db.DB(ctx).First(&ent, "id = ?", id).Error; err != nil {
-		return nil, err
-	}
-	return r.mapper.ToFileDomain(&ent), nil
+	return r.repo.DeleteFile(ctx, id)
 }
 
 // ListFiles 查询文件列表
 func (r *storageRepository) ListFiles(ctx context.Context, folderID string, qb *db_query.QueryBuilder) ([]*model.File, int64, error) {
-	db := r.db.DB(ctx).Model(&entity.File{})
-
-	// 添加文件夹条件
-	if folderID != "0" && folderID != "" {
-		db = db.Where("folder_id = ?", folderID)
-	}
-
-	// 添加查询条件
-	if where, values := qb.BuildWhere(); where != "" {
-		db = db.Where(where, values...)
-	}
-
-	// 获取总数
-	var total int64
-	if err := db.Count(&total).Error; err != nil {
+	files, total, err := r.repo.ListFiles(ctx, folderID, qb)
+	if err != nil {
 		return nil, 0, err
 	}
-
-	// 添加排序和分页
-	if orderBy := qb.BuildOrderBy(); orderBy != "" {
-		db = db.Order(orderBy)
-	}
-	if limit, offset := qb.BuildLimit(); limit != "" {
-		db = db.Limit(offset[1]).Offset(offset[0])
-	}
-
-	// 查询数据
-	var entities []*entity.File
-	if err := db.Find(&entities).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return r.mapper.ToFileDomainList(entities), total, nil
-}
-
-// CreateFolder 创建文件夹
-func (r *storageRepository) CreateFolder(ctx context.Context, folder *model.Folder) error {
-	// 生成ID
-	folder.ID = r.genStringId()
-	return r.db.DB(ctx).Create(r.mapper.ToFolderEntity(folder)).Error
-}
-
-// UpdateFolder 更新文件夹
-func (r *storageRepository) UpdateFolder(ctx context.Context, folder *model.Folder) error {
-	return r.db.DB(ctx).Updates(r.mapper.ToFolderEntity(folder)).Error
-}
-
-// DeleteFolder 删除文件夹
-func (r *storageRepository) DeleteFolder(ctx context.Context, id string) error {
-	return r.db.DB(ctx).Delete(&entity.Folder{}, id).Error
+	return r.mapper.ToFileDomainList(files), total, nil
 }
 
 // GetFolder 获取文件夹
 func (r *storageRepository) GetFolder(ctx context.Context, id string) (*model.Folder, error) {
-	var ent entity.Folder
-	if err := r.db.DB(ctx).First(&ent, "id = ?", id).Error; err != nil {
-		return nil, fmt.Errorf("get folder error: %v", err)
+	folder, err := r.repo.GetFolder(ctx, id)
+	if err != nil {
+		return nil, err
 	}
-	return r.mapper.ToFolderDomain(&ent), nil
+	return r.mapper.ToFolderDomain(folder), nil
+}
+
+// SaveFolder 保存文件夹
+func (r *storageRepository) SaveFolder(ctx context.Context, folder *model.Folder) error {
+	// 1. 生成ID
+	if folder.ID == "" {
+		folder.ID = r.db.GenStringId()
+	}
+
+	// 2. 转换为实体
+	folderEntity := r.mapper.ToFolderEntity(folder)
+
+	// 3. 保存到数据库
+	if err := r.repo.CreateFolder(ctx, folderEntity); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteFolder 删除文件夹
+func (r *storageRepository) DeleteFolder(ctx context.Context, id string) error {
+	return r.repo.DeleteFolder(ctx, id)
 }
 
 // ListFolders 查询文件夹列表
 func (r *storageRepository) ListFolders(ctx context.Context, parentID string, qb *db_query.QueryBuilder) ([]*model.Folder, int64, error) {
-	db := r.db.DB(ctx).Model(&entity.Folder{})
-
-	// 添加父文件夹条件
-	if parentID != "0" {
-		db = db.Where("parent_id = ?", parentID)
-	}
-
-	// 添加查询条件
-	if where, values := qb.BuildWhere(); where != "" {
-		db = db.Where(where, values...)
-	}
-
-	// 获取总数
-	var total int64
-	if err := db.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("count folders error: %v", err)
-	}
-
-	// 添加排序和分页
-	if orderBy := qb.BuildOrderBy(); orderBy != "" {
-		db = db.Order(orderBy)
-	}
-	if limit, offset := qb.BuildLimit(); limit != "" {
-		db = db.Limit(offset[1]).Offset(offset[0])
-	}
-
-	// 查询数据
-	var entities []*entity.Folder
-	if err := db.Find(&entities).Error; err != nil {
-		return nil, 0, fmt.Errorf("list folders error: %v", err)
-	}
-
-	return r.mapper.ToFolderDomainList(entities), total, nil
-}
-
-// GetExpiredRecycleFiles 获取过期的回收站文件
-func (r *storageRepository) GetExpiredRecycleFiles(ctx context.Context, expireTime time.Time) ([]*model.File, error) {
-	var entities []*entity.File
-
-	// 查询条件：
-	// 1. 已删除的文件
-	// 2. 删除时间早于过期时间
-	err := r.db.DB(ctx).
-		Where("is_deleted = ?", true).
-		Where("deleted_at < ?", expireTime.Unix()).
-		Find(&entities).Error
+	folders, total, err := r.repo.ListFolders(ctx, parentID, qb)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
-	return r.mapper.ToFileDomainList(entities), nil
-}
-
-// GetFileShare 获取文件分享信息
-func (r *storageRepository) GetFileShare(ctx context.Context, shareCode string) (*model.FileShare, error) {
-	var ent entity.FileShare
-	if err := r.db.DB(ctx).Where("share_code = ?", shareCode).First(&ent).Error; err != nil {
-		return nil, err
-	}
-	return r.mapper.ToFileShareDomain(&ent), nil
+	return r.mapper.ToFolderDomainList(folders), total, nil
 }
 
 // CreateFileShare 创建文件分享记录
 func (r *storageRepository) CreateFileShare(ctx context.Context, share *model.FileShare) error {
-	// 生成ID
-	share.ID = r.genStringId()
-	return r.db.DB(ctx).Create(r.mapper.ToFileShareEntity(share)).Error
-}
-
-// GetFolderTree 获取文件夹树形结构
-func (r *storageRepository) GetFolderTree(ctx context.Context, tenantID string) ([]*model.FolderTree, error) {
-	// 1. 获取所有文件夹
-	qb := db_query.NewQueryBuilder().Where("tenant_id", db_query.Eq, tenantID)
-	folders, _, err := r.ListFolders(ctx, "0", qb)
-	if err != nil {
-		return nil, err
+	// 1. 生成ID
+	if share.ID == "" {
+		share.ID = r.db.GenStringId()
 	}
 
-	// 2. 构建文件夹映射
-	folderMap := make(map[string]*model.FolderTree)
-	var roots []*model.FolderTree
+	// 2. 转换为实体
+	shareEntity := r.mapper.ToFileShareEntity(share)
 
-	// 3. 构建树形结构
-	for _, folder := range folders {
-		node := &model.FolderTree{
-			Folder:   folder,
-			Children: make([]*model.FolderTree, 0),
-		}
-		folderMap[folder.ID] = node
-
-		if folder.ParentID == "0" {
-			roots = append(roots, node)
-		} else {
-			if parent, ok := folderMap[folder.ParentID]; ok {
-				parent.Children = append(parent.Children, node)
-			}
-		}
-	}
-
-	return roots, nil
+	// 3. 保存到数据库
+	return r.repo.CreateFileShare(ctx, shareEntity)
 }

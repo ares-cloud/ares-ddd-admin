@@ -32,7 +32,9 @@ import (
 	handlers5 "github.com/ares-cloud/ares-ddd-admin/internal/storage/application/handlers"
 	service3 "github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/cleaner"
+	data2 "github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/data"
 	repository2 "github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/repository"
+	impl2 "github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/query/impl"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/storage"
 	rest3 "github.com/ares-cloud/ares-ddd-admin/internal/storage/interfaces/rest"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/snowflake_id"
@@ -143,13 +145,15 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data, storageCon
 	handlerEvent := handlers4.NewHandlerEvent(eventBus, eventHandler, userEventHandler)
 	baseServer := base.NewBaseServer(sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController, departmentController, dataPermissionController, handlerEvent)
 	monitoringServer := monitoring.NewServer(metricsController)
-	iStorageRepository := repository2.NewStorageRepository(iDataBase)
-	storageQueryHandler := handlers5.NewStorageQueryHandler(iStorageRepository)
+	iStorageRepos := data2.NewStorageRepo(iDataBase)
 	storageFactory := storage.NewStorageFactory(storageConfig, redisClient)
+	iStorageQueryService := impl2.NewStorageQueryService(iStorageRepos, storageFactory)
+	storageQueryHandler := handlers5.NewStorageQueryHandler(iStorageQueryService)
+	iStorageRepository := repository2.NewStorageRepository(iDataBase, iStorageRepos)
 	storageService := service3.NewStorageService(iStorageRepository, storageFactory)
 	storageCommandHandler := handlers5.NewStorageCommandHandler(storageService)
-	storageController := rest3.NewStorageController(storageQueryHandler, storageCommandHandler, storageService)
-	recycleCleaner := cleaner.NewRecycleCleaner(iStorageRepository, storageService, storageConfig)
+	storageController := rest3.NewStorageController(storageQueryHandler, storageCommandHandler)
+	recycleCleaner := cleaner.NewRecycleCleaner(iStorageRepos, storageService, storageConfig)
 	storageServer, cleanup3, err := storage2.NewServer(storageController, recycleCleaner)
 	if err != nil {
 		cleanup2()

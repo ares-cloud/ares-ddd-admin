@@ -2,22 +2,23 @@ package handlers
 
 import (
 	"context"
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/shared/converter"
+
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/converter"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/dto"
+	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/query"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/models"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/application/queries"
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/repository"
-	"github.com/ares-cloud/ares-ddd-admin/internal/storage/shared/dto"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
 type StorageQueryHandler struct {
-	repo repository.IStorageRepository
+	repo query.IStorageQueryService
 }
 
-func NewStorageQueryHandler(repo repository.IStorageRepository) *StorageQueryHandler {
+func NewStorageQueryHandler(repo query.IStorageQueryService) *StorageQueryHandler {
 	return &StorageQueryHandler{
 		repo: repo,
 	}
@@ -40,13 +41,9 @@ func (h *StorageQueryHandler) HandleListFolders(ctx context.Context, q *queries.
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
-
-	// 转换为DTO
-	dtos := converter.ToFolderDtoList(folders)
-
 	return &models.PageRes[dto.FolderDto]{
 		Total: total,
-		List:  dtos,
+		List:  folders,
 	}, nil
 }
 
@@ -74,11 +71,8 @@ func (h *StorageQueryHandler) HandleListFiles(ctx context.Context, q *queries.Li
 		return nil, herrors.NewErr(err)
 	}
 
-	// 转换为DTO
-	dtos := converter.ToFileDtoList(files)
-
 	return &models.PageRes[dto.FileDto]{
-		List:  dtos,
+		List:  files,
 		Total: total,
 	}, nil
 }
@@ -87,7 +81,7 @@ func (h *StorageQueryHandler) HandleListFiles(ctx context.Context, q *queries.Li
 func (h *StorageQueryHandler) HandleGetFolderTree(ctx context.Context) ([]*dto.FolderTreeDto, herrors.Herr) {
 	// 1. 获取所有文件夹
 	qb := db_query.NewQueryBuilder()
-	folders, _, err := h.repo.ListFolders(ctx, "0", qb)
+	folders, _, err := h.repo.ListFolders(ctx, "", qb)
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
@@ -135,12 +129,8 @@ func (h *StorageQueryHandler) HandleListRecycleFiles(ctx context.Context, q *que
 	if err != nil {
 		return nil, herrors.NewErr(err)
 	}
-
-	// 转换为DTO
-	dtos := converter.ToFileDtoList(files)
-
 	return &models.PageRes[dto.FileDto]{
-		List:  dtos,
+		List:  files,
 		Total: total,
 	}, nil
 }
@@ -157,7 +147,7 @@ func (h *StorageQueryHandler) HandleGetSubFolders(ctx context.Context, parentID 
 		return nil, herrors.NewServerHError(err)
 	}
 	// 转换为DTO
-	return converter.ToFolderDtoList(folders), nil
+	return folders, nil
 }
 
 // HandleGetRootFolders 处理获取一级文件夹
@@ -172,5 +162,16 @@ func (h *StorageQueryHandler) HandleGetRootFolders(ctx context.Context) ([]*dto.
 		return nil, herrors.NewServerHError(err)
 	}
 	// 转换为DTO
-	return converter.ToFolderDtoList(folders), nil
+	return folders, nil
+}
+
+// GetShareFile 获取分享文件
+func (h *StorageQueryHandler) GetShareFile(ctx context.Context, shareCode string, password string) (*dto.FileDto, herrors.Herr) {
+	// 1. 获取分享文件
+	file, err := h.repo.GetShareFile(ctx, shareCode, password)
+	if err != nil {
+		return nil, herrors.NewErr(err)
+	}
+
+	return file, nil
 }
