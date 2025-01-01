@@ -47,11 +47,6 @@ func (c *PermissionsQueryCache) FindByID(ctx context.Context, id int64) (*dto.Pe
 	return permission, nil
 }
 
-// Find 查询权限列表(不缓存)
-func (c *PermissionsQueryCache) Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*dto.PermissionsDto, int64, herrors.Herr) {
-	return c.next.Find(ctx, qb)
-}
-
 // FindTreeByType 查询权限树(带缓存)
 func (c *PermissionsQueryCache) FindTreeByType(ctx context.Context, permType int8) ([]*dto.PermissionsDto, herrors.Herr) {
 	tenantID := actx.GetTenantId(ctx)
@@ -101,6 +96,11 @@ func (c *PermissionsQueryCache) GetSimplePermissionsTree(ctx context.Context) ([
 		return nil, herrors.NewServerHError(err)
 	}
 	return permissions, nil
+}
+
+// Find 查询权限列表(不缓存)
+func (c *PermissionsQueryCache) Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*dto.PermissionsDto, int64, herrors.Herr) {
+	return c.next.Find(ctx, qb)
 }
 
 // InvalidatePermissionCache 使权限缓存失效

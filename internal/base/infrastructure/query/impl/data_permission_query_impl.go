@@ -2,11 +2,11 @@ package impl
 
 import (
 	"context"
+
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/converter"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
 type DataPermissionQueryService struct {
@@ -25,10 +25,10 @@ func NewDataPermissionQueryService(
 }
 
 // GetByRoleID 获取角色的数据权限
-func (s *DataPermissionQueryService) GetByRoleID(ctx context.Context, roleID int64) (*dto.DataPermissionDto, herrors.Herr) {
+func (s *DataPermissionQueryService) GetByRoleID(ctx context.Context, roleID int64) (*dto.DataPermissionDto, error) {
 	perm, err := s.repo.FindByRoleID(ctx, roleID)
 	if err != nil {
-		return nil, herrors.NewServerHError(err)
+		return nil, err
 	}
 	if perm == nil {
 		return nil, nil

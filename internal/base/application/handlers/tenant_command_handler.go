@@ -58,7 +58,7 @@ func (h *TenantCommandHandler) HandleCreate(ctx context.Context, cmd *commands.C
 
 func (h *TenantCommandHandler) HandleUpdate(ctx context.Context, cmd commands.UpdateTenantCommand) herrors.Herr {
 	// 查找现有租户
-	tenant, err := h.tenantService.GetTenant(ctx, cmd.ID)
+	tenant, err := h.tenantService.GetTenant(context.Background(), cmd.ID)
 	if err != nil {
 		return err
 	}

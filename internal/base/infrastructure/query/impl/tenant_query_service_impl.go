@@ -43,7 +43,7 @@ func (t *TenantQueryService) GetTenant(ctx context.Context, id string) (*dto.Ten
 	}
 
 	// 获取管理员用户
-	adminUser, err := t.userRepo.FindById(ctx, tenant.AdminUserID)
+	adminUser, err := t.userRepo.FindById(context.Background(), tenant.AdminUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,27 +65,14 @@ func (t *TenantQueryService) CountTenants(ctx context.Context, qb *db_query.Quer
 
 func (t *TenantQueryService) GetTenantPermissions(ctx context.Context, tenantID string) ([]*dto.PermissionsDto, error) {
 	// 1. 获取租户的角色
-	roles, err := t.tenantRepo.GetTenantRoles(ctx, tenantID)
+	permissions, err := t.tenantRepo.GetPermissionsByTenantID(ctx, tenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(roles) == 0 {
+	if len(permissions) == 0 {
 		return []*dto.PermissionsDto{}, nil
 	}
-
-	// 2. 获取角色ID列表
-	roleIDs := make([]int64, len(roles))
-	for i, role := range roles {
-		roleIDs[i] = role.ID
-	}
-
-	// 3. 获取角色对应的权限
-	permissions, err := t.permissionsRepo.GetByRoles(ctx, roleIDs)
-	if err != nil {
-		return nil, err
-	}
-
 	// 4. 转换为DTO
 	return t.permissionsConverter.ToDTOList(permissions), nil
 }
