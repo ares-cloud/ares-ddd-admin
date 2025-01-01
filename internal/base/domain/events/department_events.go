@@ -23,7 +23,7 @@ const (
 type DepartmentEvent struct {
 	events.BaseEvent
 	tenantID string
-	deptID   string
+	DeptID   string
 }
 
 // NewDepartmentEvent 创建部门事件
@@ -31,12 +31,12 @@ func NewDepartmentEvent(tenantID, deptID string, eventName string) *DepartmentEv
 	return &DepartmentEvent{
 		BaseEvent: events.NewBaseEvent(eventName),
 		tenantID:  tenantID,
-		deptID:    deptID,
+		DeptID:    deptID,
 	}
 }
 
 func (e *DepartmentEvent) DepartmentID() string {
-	return e.deptID
+	return e.tenantID
 }
 
 func (e *DepartmentEvent) TenantID() string {
@@ -134,20 +134,20 @@ func (e *UserRemovedEvent) UserIDs() []string {
 // UserTransferredEvent 用户调动事件
 type UserTransferredEvent struct {
 	DepartmentEvent
-	userID     string
-	fromDeptID string
-	toDeptID   string
-	timestamp  int64
+	UserID     string
+	FromDeptID string
+	ToDeptID   string
+	Timestamp  int64
 }
 
 // NewUserTransferredEvent 创建用户调动事件
 func NewUserTransferredEvent(tenantID, userID, fromDeptID, toDeptID string) *UserTransferredEvent {
 	return &UserTransferredEvent{
 		DepartmentEvent: *NewDepartmentEvent(tenantID, toDeptID, UserTransferred),
-		userID:          userID,
-		fromDeptID:      fromDeptID,
-		toDeptID:        toDeptID,
-		timestamp:       time.Now().Unix(),
+		UserID:          userID,
+		FromDeptID:      fromDeptID,
+		ToDeptID:        toDeptID,
+		Timestamp:       time.Now().Unix(),
 	}
 }
 

@@ -49,3 +49,8 @@ func NewDataPermissionRemovedEvent(tenantID string, roleID int64) *DataPermissio
 		DataPermissionEvent: NewDataPermissionEvent(tenantID, roleID, DataPermissionRemoved),
 	}
 }
+
+// EventName 获取事件名称
+func (e *DataPermissionEvent) EventName() string {
+	return e.BaseEvent.EventName()
+}

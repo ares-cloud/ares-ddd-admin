@@ -13,7 +13,7 @@ func UserKey(userID string) string {
 
 // UserPermissionsKey 用户权限缓存key
 func UserPermissionsKey(userID string) string {
-	return fmt.Sprintf("%s:permissions:%s", userPrefix, userID)
+	return fmt.Sprintf("user:permissions:%s", userID)
 }
 
 // UserRolesKey 用户角色缓存key
@@ -23,12 +23,17 @@ func UserRolesKey(userID string) string {
 
 // UserMenusKey 用户菜单缓存key
 func UserMenusKey(userID string) string {
-	return fmt.Sprintf("%s:menus:%s", userPrefix, userID)
+	return fmt.Sprintf("user:menus:%s", userID)
 }
 
 // UserRoleCodesKey 用户角色编码缓存key
 func UserRoleCodesKey(userID string) string {
 	return fmt.Sprintf("%s:role:codes:%s", userPrefix, userID)
+}
+
+// UserDepartmentKey 用户部门缓存key
+func UserDepartmentKey(userID string) string {
+	return fmt.Sprintf("user:department:%s", userID)
 }
 
 // UserKeys 生成用户相关的所有缓存key

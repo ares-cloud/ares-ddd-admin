@@ -12,18 +12,21 @@ import (
 type RoleQueryService struct {
 	roleRepo             repository.ISysRoleRepo
 	converter            *converter.RoleConverter
+	userConverter        *converter.UserConverter
 	permissionsConverter *converter.PermissionsConverter
 }
 
 func NewRoleQueryService(
 	roleRepo repository.ISysRoleRepo,
 	converter *converter.RoleConverter,
+	userConverter *converter.UserConverter,
 	permissionsConverter *converter.PermissionsConverter,
 ) *RoleQueryService {
 	return &RoleQueryService{
 		roleRepo:             roleRepo,
 		converter:            converter,
 		permissionsConverter: permissionsConverter,
+		userConverter:        userConverter,
 	}
 }
 
@@ -78,4 +81,22 @@ func (r *RoleQueryService) GetRoleByCode(ctx context.Context, code string) (*dto
 		return nil, err
 	}
 	return r.converter.ToDTO(role, nil), nil
+}
+
+// GetRoleUsers 获取角色下的用户列表
+func (r *RoleQueryService) GetRoleUsers(ctx context.Context, roleID int64) ([]*dto.UserDto, error) {
+	users, err := r.roleRepo.GetUsersByRoleID(ctx, roleID)
+	if err != nil {
+		return nil, err
+	}
+	return r.userConverter.ToDTOList(users), nil
+}
+
+// GetTenantRoles 获取租户下的角色列表
+func (r *RoleQueryService) GetTenantRoles(ctx context.Context, tenantID string) ([]*dto.RoleDto, error) {
+	roles, err := r.roleRepo.GetByTenantID(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	return r.converter.ToDTOList(roles), nil
 }

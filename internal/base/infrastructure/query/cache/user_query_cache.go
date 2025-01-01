@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"fmt"
+
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
@@ -120,15 +121,19 @@ func (c *UserQueryCache) InvalidateUserListCache(ctx context.Context) error {
 	return c.decorator.InvalidateCache(ctx, keys.UserListKey())
 }
 
-// InvalidateUserPermissionCache 使用户权限缓存失效
+// InvalidateUserPermissionCache 清除用户权限缓存
 func (c *UserQueryCache) InvalidateUserPermissionCache(ctx context.Context, userID string) error {
-	keys := []string{
-		keys.UserPermissionsKey(userID),
-		keys.UserRolesKey(userID),
-		keys.UserMenusKey(userID),
-		keys.UserRoleCodesKey(userID),
-	}
-	return c.decorator.InvalidateCache(ctx, keys...)
+	return c.decorator.InvalidateCache(ctx, keys.UserPermissionsKey(userID))
+}
+
+// InvalidateUserMenuCache 清除用户菜单缓存
+func (c *UserQueryCache) InvalidateUserMenuCache(ctx context.Context, userID string) error {
+	return c.decorator.InvalidateCache(ctx, keys.UserMenusKey(userID))
+}
+
+// InvalidateUserDepartmentCache 清除用户部门缓存
+func (c *UserQueryCache) InvalidateUserDepartmentCache(ctx context.Context, userID string) error {
+	return c.decorator.InvalidateCache(ctx, keys.UserDepartmentKey(userID))
 }
 
 // InvalidateRoleListCache 使角色列表缓存失效
@@ -140,27 +145,17 @@ func (c *UserQueryCache) InvalidateRoleListCache(ctx context.Context) error {
 func (c *UserQueryCache) WarmupUserCache(ctx context.Context, userID string) error {
 	// 1. 预热用户基本信息
 	if _, err := c.GetUser(ctx, userID); err != nil {
-		return fmt.Errorf("预热用户信息缓存失败: %w", err)
+		return fmt.Errorf("预热用户信息失败: %w", err)
 	}
 
 	// 2. 预热用户权限
 	if _, err := c.GetUserPermissions(ctx, userID); err != nil {
-		return fmt.Errorf("预热用户权限缓存失败: %w", err)
+		return fmt.Errorf("预热用户权限失败: %w", err)
 	}
 
-	// 3. 预热用户角色
-	if _, err := c.GetUserRoles(ctx, userID); err != nil {
-		return fmt.Errorf("预热用户角色缓存失败: %w", err)
-	}
-
-	// 4. 预热用户菜单
+	// 3. 预热用户菜单
 	if _, err := c.GetUserTreeMenus(ctx, userID); err != nil {
-		return fmt.Errorf("预热用户菜单缓存失败: %w", err)
-	}
-
-	// 5. 预热用户角色编码
-	if _, err := c.GetUserRolesCode(ctx, userID); err != nil {
-		return fmt.Errorf("预热用户角色编码缓存失败: %w", err)
+		return fmt.Errorf("预热用户菜单失败: %w", err)
 	}
 
 	return nil

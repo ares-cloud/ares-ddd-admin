@@ -130,3 +130,25 @@ func (c *PermissionsQueryCache) WarmupPermissionCache(ctx context.Context, id in
 
 	return nil
 }
+
+// InvalidateChildrenCache 清除权限子节点列表缓存
+func (c *PermissionsQueryCache) InvalidateChildrenCache(ctx context.Context, parentID int64) error {
+	tenantID := actx.GetTenantId(ctx)
+	return c.decorator.InvalidateCache(ctx, keys.PermissionChildrenKey(tenantID, parentID))
+}
+
+// InvalidatePermissionTreeCache 清除权限树缓存
+func (c *PermissionsQueryCache) InvalidatePermissionTreeCache(ctx context.Context) error {
+	tenantID := actx.GetTenantId(ctx)
+	keys := []string{
+		keys.PermissionTreeKey(tenantID, "*"),  // 所有类型的权限树
+		keys.PermissionSimpleTreeKey(tenantID), // 简化的权限树
+	}
+	return c.decorator.InvalidateCache(ctx, keys...)
+}
+
+// InvalidatePermissionResourceCache 清除权限资源缓存
+func (c *PermissionsQueryCache) InvalidatePermissionResourceCache(ctx context.Context, permID int64) error {
+	tenantID := actx.GetTenantId(ctx)
+	return c.decorator.InvalidateCache(ctx, keys.PermissionResourceKey(tenantID, permID))
+}

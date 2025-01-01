@@ -30,3 +30,12 @@ func PermissionEnabledKey(tenantID string) string {
 func PermissionSimpleTreeKey(tenantID string) string {
 	return fmt.Sprintf("%s%s:simple:tree", permissionKeyPrefix, tenantID)
 }
+
+// 权限相关的缓存键
+func PermissionChildrenKey(tenantID string, parentID int64) string {
+	return fmt.Sprintf("%s:children:%s:%d", permissionKeyPrefix, tenantID, parentID)
+}
+
+func PermissionResourceKey(tenantID string, permID int64) string {
+	return fmt.Sprintf("%s:resource:%s:%d", permissionKeyPrefix, tenantID, permID)
+}

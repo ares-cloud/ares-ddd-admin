@@ -106,3 +106,27 @@ func (c *DepartmentQueryCache) WarmupCache(ctx context.Context, deptID string) e
 
 	return nil
 }
+
+// InvalidateDepartmentUserCache 清除部门用户列表缓存
+func (c *DepartmentQueryCache) InvalidateDepartmentUserCache(ctx context.Context, deptID string) error {
+	tenantID := actx.GetTenantId(ctx)
+	return c.decorator.InvalidateCache(ctx, keys.DepartmentUsersKey(tenantID, deptID))
+}
+
+// InvalidateChildrenCache 清除部门子节点列表缓存
+func (c *DepartmentQueryCache) InvalidateChildrenCache(ctx context.Context, parentID string) error {
+	tenantID := actx.GetTenantId(ctx)
+	return c.decorator.InvalidateCache(ctx, keys.DepartmentChildrenKey(tenantID, parentID))
+}
+
+// InvalidateDepartmentTreeCache 清除部门树缓存
+func (c *DepartmentQueryCache) InvalidateDepartmentTreeCache(ctx context.Context) error {
+	tenantID := actx.GetTenantId(ctx)
+	return c.decorator.InvalidateCache(ctx, keys.DepartmentTreeKey(tenantID, ""))
+}
+
+// InvalidateCache 清除部门缓存
+func (c *DepartmentQueryCache) InvalidateCache(ctx context.Context, deptID string) error {
+	tenantID := actx.GetTenantId(ctx)
+	return c.decorator.InvalidateCache(ctx, keys.DepartmentKeys(tenantID, deptID)...)
+}

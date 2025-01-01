@@ -29,3 +29,8 @@ func TenantKeys(tenantID string) []string {
 		TenantPermissionsKey(tenantID),
 	}
 }
+
+// 租户相关的缓存键
+func TenantStatusKey(tenantID string) string {
+	return fmt.Sprintf("tenant:status:%s", tenantID)
+}

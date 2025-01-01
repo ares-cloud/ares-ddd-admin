@@ -31,3 +31,13 @@ func DepartmentKeys(tenantID string, deptID string) []string {
 		DepartmentTreeKey(tenantID, ""),
 	}
 }
+
+// DepartmentChildrenKey 部门子节点列表缓存key
+func DepartmentChildrenKey(tenantID string, parentID string) string {
+	return fmt.Sprintf("%s%s:children:%s", deptPrefix, tenantID, parentID)
+}
+
+// DepartmentUsersKey 部门用户列表缓存key
+func DepartmentUsersKey(tenantID string, deptID string) string {
+	return fmt.Sprintf("%s%s:users:%s", deptPrefix, tenantID, deptID)
+}

@@ -69,18 +69,6 @@ func (e *UserRoleEvent) RoleIDs() []int64 {
 	return e.roleIDs
 }
 
-// UserPasswordChangedEvent 用户密码修改事件
-type UserPasswordChangedEvent struct {
-	UserEvent
-}
-
-// NewUserPasswordChangedEvent 创建用户密码修改事件
-func NewUserPasswordChangedEvent(tenantID, userID string) *UserPasswordChangedEvent {
-	return &UserPasswordChangedEvent{
-		UserEvent: *NewUserEvent(tenantID, userID, UserPasswordChanged),
-	}
-}
-
 // UserTransferEvent 用户部门调动事件
 type UserTransferEvent struct {
 	UserEvent

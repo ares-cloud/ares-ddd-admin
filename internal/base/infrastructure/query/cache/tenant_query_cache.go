@@ -56,3 +56,23 @@ func (c *TenantQueryCache) GetTenantPermissions(ctx context.Context, tenantID st
 	})
 	return permissions, err
 }
+
+// InvalidateTenantPermissionCache 清除租户权限缓存
+func (c *TenantQueryCache) InvalidateTenantPermissionCache(ctx context.Context, tenantID string) error {
+	return c.decorator.InvalidateCache(ctx, keys.TenantPermissionsKey(tenantID))
+}
+
+// InvalidateTenantStatusCache 清除租户状态缓存
+func (c *TenantQueryCache) InvalidateTenantStatusCache(ctx context.Context, tenantID string) error {
+	return c.decorator.InvalidateCache(ctx, keys.TenantStatusKey(tenantID))
+}
+
+// InvalidateTenantCache 清除租户缓存
+func (c *TenantQueryCache) InvalidateTenantCache(ctx context.Context, tenantID string) error {
+	keys := []string{
+		keys.TenantKey(tenantID),
+		keys.TenantStatusKey(tenantID),
+		keys.TenantPermissionsKey(tenantID),
+	}
+	return c.decorator.InvalidateCache(ctx, keys...)
+}

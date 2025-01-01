@@ -31,6 +31,8 @@ type ISysRoleRepo interface {
 	GetIdsByUserId(ctx context.Context, userId string) ([]int64, error)
 	GetPermissionsByRoleID(ctx context.Context, roleID int64) ([]int64, error)
 	GetUserCountByRoleID(ctx context.Context, roleID int64) (int64, error)
+	GetUsersByRoleID(ctx context.Context, roleID int64) ([]*entity.SysUser, error)
+	GetByTenantID(ctx context.Context, tenantID string) ([]*entity.Role, error)
 }
 
 type roleRepository struct {

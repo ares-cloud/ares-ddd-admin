@@ -75,3 +75,35 @@ func (c *RoleQueryCache) GetRoleByCode(ctx context.Context, code string) (*dto.R
 	})
 	return role, err
 }
+
+// InvalidateRolePermissionCache 清除角色权限缓存
+func (c *RoleQueryCache) InvalidateRolePermissionCache(ctx context.Context, roleID int64) error {
+	tenantID := actx.GetTenantId(ctx)
+	return c.decorator.InvalidateCache(ctx, keys.RolePermissionsKey(tenantID, roleID))
+}
+
+// GetRoleUsers 获取角色下的用户列表
+func (c *RoleQueryCache) GetRoleUsers(ctx context.Context, roleID int64) ([]*dto.UserDto, error) {
+	return c.next.GetRoleUsers(ctx, roleID)
+}
+
+// GetTenantRoles 获取租户下的角色列表
+func (c *RoleQueryCache) GetTenantRoles(ctx context.Context, tenantID string) ([]*dto.RoleDto, error) {
+	return c.next.GetTenantRoles(ctx, tenantID)
+}
+
+// InvalidateRoleCache 清除角色缓存
+func (c *RoleQueryCache) InvalidateRoleCache(ctx context.Context, roleID int64) error {
+	tenantID := actx.GetTenantId(ctx)
+	keys := []string{
+		keys.RoleKey(tenantID, roleID),
+		keys.RolePermissionsKey(tenantID, roleID),
+	}
+	return c.decorator.InvalidateCache(ctx, keys...)
+}
+
+// InvalidateRoleListCache 清除角色列表缓存
+func (c *RoleQueryCache) InvalidateRoleListCache(ctx context.Context) error {
+	tenantID := actx.GetTenantId(ctx)
+	return c.decorator.InvalidateCache(ctx, keys.RoleListKey(tenantID))
+}

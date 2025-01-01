@@ -221,3 +221,30 @@ func (r *sysRoleRepo) GetUserCountByRoleID(ctx context.Context, roleID int64) (i
 		Count(&count).Error
 	return count, err
 }
+
+// GetUsersByRoleID 获取角色下的用户列表
+func (r *sysRoleRepo) GetUsersByRoleID(ctx context.Context, roleID int64) ([]*entity.SysUser, error) {
+	var users []*entity.SysUser
+	err := r.Db(ctx).
+		Table("sys_user_role ur").
+		Select("u.*").
+		Joins("LEFT JOIN sys_user u ON ur.user_id = u.id").
+		Where("ur.role_id = ?", roleID).
+		Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// GetByTenantID 获取租户下的角色列表
+func (r *sysRoleRepo) GetByTenantID(ctx context.Context, tenantID string) ([]*entity.Role, error) {
+	var roles []*entity.Role
+	err := r.Db(ctx).
+		Where("tenant_id = ?", tenantID).
+		Find(&roles).Error
+	if err != nil {
+		return nil, err
+	}
+	return roles, nil
+}
