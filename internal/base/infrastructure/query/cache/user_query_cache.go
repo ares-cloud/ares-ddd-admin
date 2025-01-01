@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache/keys"
@@ -132,7 +133,7 @@ func (c *UserQueryCache) InvalidateUserPermissionCache(ctx context.Context, user
 
 // InvalidateRoleListCache 使角色列表缓存失效
 func (c *UserQueryCache) InvalidateRoleListCache(ctx context.Context) error {
-	return c.decorator.InvalidateCache(ctx, keys.RoleListKey())
+	return c.decorator.InvalidateCache(ctx, keys.RoleListKey(actx.GetTenantId(ctx)))
 }
 
 // WarmupUserCache 预热用户缓存

@@ -14,10 +14,11 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/casbin"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/base/oplog"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/converter"
-	handlers3 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/handlers"
+	handlers4 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/data"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
 	cache2 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache"
+	handlers3 "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache/handlers"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/impl"
 	rest2 "github.com/ares-cloud/ares-ddd-admin/internal/base/interfaces/rest"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
@@ -28,7 +29,7 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/monitoring/interfaces/rest"
 	storage2 "github.com/ares-cloud/ares-ddd-admin/internal/storage"
-	handlers4 "github.com/ares-cloud/ares-ddd-admin/internal/storage/application/handlers"
+	handlers5 "github.com/ares-cloud/ares-ddd-admin/internal/storage/application/handlers"
 	service3 "github.com/ares-cloud/ares-ddd-admin/internal/storage/domain/service"
 	"github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/cleaner"
 	repository2 "github.com/ares-cloud/ares-ddd-admin/internal/storage/infrastructure/persistence/repository"
@@ -125,20 +126,25 @@ func wireApp(bootstrap *configs.Bootstrap, configsData *configs.Data, storageCon
 	departmentQueryCache := cache2.NewDepartmentQueryCache(departmentQueryService, cacheDecorator)
 	departmentQueryHandler := handlers2.NewDepartmentQueryHandler(departmentQueryCache)
 	departmentController := rest2.NewDepartmentController(departmentCommandHandler, departmentQueryHandler, enforcer)
-	iDataPermissionRepository := repository.NewDataPermissionRepository(iDataBase)
-	dataPermissionCommandHandler := handlers2.NewDataPermissionCommandHandler(iDataPermissionRepository)
-	dataPermissionQueryHandler := handlers2.NewDataPermissionQueryHandler(iDataPermissionRepository)
+	iDataPermissionRepo := data.NewDataPermissionRepo(iDataBase)
+	iDataPermissionRepository := repository.NewDataPermissionRepository(iDataPermissionRepo)
+	dataPermissionService := service2.NewDataPermissionService(iDataPermissionRepository, iRoleRepository, eventBus)
+	dataPermissionCommandHandler := handlers2.NewDataPermissionCommandHandler(dataPermissionService)
+	dataPermissionConverter := converter.NewDataPermissionConverter()
+	dataPermissionQueryService := impl.NewDataPermissionQueryService(iDataPermissionRepo, dataPermissionConverter)
+	dataPermissionQueryCache := cache2.NewDataPermissionQueryCache(dataPermissionQueryService, cacheDecorator)
+	dataPermissionQueryHandler := handlers2.NewDataPermissionQueryHandler(dataPermissionQueryCache)
 	dataPermissionController := rest2.NewDataPermissionController(dataPermissionCommandHandler, dataPermissionQueryHandler)
-	eventHandler := cache2.NewCacheEventHandler(userQueryCache)
-	userEventHandler := handlers3.NewUserEventHandler()
-	handlerEvent := handlers3.NewHandlerEvent(eventBus, eventHandler, userEventHandler)
+	eventHandler := handlers3.NewCacheEventHandler(userQueryCache)
+	userEventHandler := handlers4.NewUserEventHandler()
+	handlerEvent := handlers4.NewHandlerEvent(eventBus, eventHandler, userEventHandler)
 	baseServer := base.NewBaseServer(sysRoleController, sysUserController, sysTenantController, sysPermissionsController, authController, loginLogController, operationLogController, departmentController, dataPermissionController, handlerEvent)
 	monitoringServer := monitoring.NewServer(metricsController)
 	iStorageRepository := repository2.NewStorageRepository(iDataBase)
-	storageQueryHandler := handlers4.NewStorageQueryHandler(iStorageRepository)
+	storageQueryHandler := handlers5.NewStorageQueryHandler(iStorageRepository)
 	storageFactory := storage.NewStorageFactory(storageConfig, redisClient)
 	storageService := service3.NewStorageService(iStorageRepository, storageFactory)
-	storageCommandHandler := handlers4.NewStorageCommandHandler(storageService)
+	storageCommandHandler := handlers5.NewStorageCommandHandler(storageService)
 	storageController := rest3.NewStorageController(storageQueryHandler, storageCommandHandler, storageService)
 	recycleCleaner := cleaner.NewRecycleCleaner(iStorageRepository, storageService, storageConfig)
 	storageServer, cleanup3, err := storage2.NewServer(storageController, recycleCleaner)

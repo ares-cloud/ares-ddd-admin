@@ -9,7 +9,6 @@ import (
 	dCache "github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/database/cache"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database/db_query"
-	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 )
 
 type RoleQueryCache struct {
@@ -28,7 +27,8 @@ func NewRoleQueryCache(
 }
 
 func (c *RoleQueryCache) GetRole(ctx context.Context, id int64) (*dto.RoleDto, error) {
-	key := keys.RoleKey(id)
+	tenantID := actx.GetTenantId(ctx)
+	key := keys.RoleKey(tenantID, id)
 	var role *dto.RoleDto
 	err := c.decorator.Cached(ctx, key, &role, func() error {
 		var err error
@@ -39,14 +39,15 @@ func (c *RoleQueryCache) GetRole(ctx context.Context, id int64) (*dto.RoleDto, e
 }
 
 func (c *RoleQueryCache) GetRolePermissions(ctx context.Context, roleID int64) ([]*dto.PermissionsDto, error) {
-	key := keys.RolePermissionsKey(roleID)
-	var perms []*dto.PermissionsDto
-	err := c.decorator.Cached(ctx, key, &perms, func() error {
+	tenantID := actx.GetTenantId(ctx)
+	key := keys.RolePermissionsKey(tenantID, roleID)
+	var permissions []*dto.PermissionsDto
+	err := c.decorator.Cached(ctx, key, &permissions, func() error {
 		var err error
-		perms, err = c.next.GetRolePermissions(ctx, roleID)
+		permissions, err = c.next.GetRolePermissions(ctx, roleID)
 		return err
 	})
-	return perms, err
+	return permissions, err
 }
 
 // 列表查询不缓存,直接透传
@@ -62,9 +63,10 @@ func (c *RoleQueryCache) FindByType(ctx context.Context, roleType int8) ([]*dto.
 	return c.next.FindByType(ctx, roleType)
 }
 
-// GetRoleByCode 根据编码获取角色
+// GetRoleByCode 根据编码获取角色(带缓存)
 func (c *RoleQueryCache) GetRoleByCode(ctx context.Context, code string) (*dto.RoleDto, error) {
-	key := keys.RoleCodeKey(code)
+	tenantID := actx.GetTenantId(ctx)
+	key := keys.RoleCodeKey(tenantID, code)
 	var role *dto.RoleDto
 	err := c.decorator.Cached(ctx, key, &role, func() error {
 		var err error
@@ -72,10 +74,4 @@ func (c *RoleQueryCache) GetRoleByCode(ctx context.Context, code string) (*dto.R
 		return err
 	})
 	return role, err
-}
-
-func (c *RoleQueryCache) FindByID(ctx context.Context, id int64) (*dto.RoleDto, herrors.Herr) {
-	tenantID := actx.GetTenantId(ctx)
-	key := keys.RoleKey(tenantID, id)
-	// ... 其他代码
 }

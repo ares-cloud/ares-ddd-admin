@@ -14,7 +14,8 @@ type IRoleRepository interface {
 	FindByID(ctx context.Context, id int64) (*model.Role, error)
 	FindByCode(ctx context.Context, code string) (*model.Role, error)
 	ExistsByCode(ctx context.Context, code string) (bool, error)
-
+	// ExistsById 检查数据权限是否存在
+	ExistsById(ctx context.Context, id int64) (bool, error)
 	// 权限相关
 	AssignPermissions(ctx context.Context, roleID int64, permissionIDs []int64) error
 	GetRolePermissions(ctx context.Context, roleID int64) ([]*model.Permissions, error)

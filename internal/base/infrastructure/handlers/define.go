@@ -2,17 +2,17 @@ package handlers
 
 import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/events"
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache/handlers"
 	pkgEvent "github.com/ares-cloud/ares-ddd-admin/pkg/events"
 )
 
 type HandlerEvent struct {
-	queryCache *cache.EventHandler
+	queryCache *handlers.EventHandler
 	uh         *UserEventHandler
 	eventBus   *pkgEvent.EventBus
 }
 
-func NewHandlerEvent(eventBus *pkgEvent.EventBus, queryCache *cache.EventHandler, uh *UserEventHandler) *HandlerEvent {
+func NewHandlerEvent(eventBus *pkgEvent.EventBus, queryCache *handlers.EventHandler, uh *UserEventHandler) *HandlerEvent {
 	return &HandlerEvent{
 		queryCache: queryCache,
 		uh:         uh,

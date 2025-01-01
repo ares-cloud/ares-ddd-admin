@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache/keys"
@@ -26,9 +27,10 @@ func NewDepartmentQueryCache(
 	}
 }
 
-// GetDepartment 获取部门详情(带缓存)
+// GetDepartment 获取部门信息(带缓存)
 func (c *DepartmentQueryCache) GetDepartment(ctx context.Context, id string) (*dto.DepartmentDto, error) {
-	key := keys.DepartmentKey(id)
+	tenantID := actx.GetTenantId(ctx)
+	key := keys.DepartmentKey(tenantID, id)
 	var dept *dto.DepartmentDto
 	err := c.decorator.Cached(ctx, key, &dept, func() error {
 		var err error
@@ -40,7 +42,8 @@ func (c *DepartmentQueryCache) GetDepartment(ctx context.Context, id string) (*d
 
 // GetDepartmentTree 获取部门树(带缓存)
 func (c *DepartmentQueryCache) GetDepartmentTree(ctx context.Context, parentID string) ([]*dto.DepartmentTreeDto, error) {
-	key := keys.DepartmentTreeKey(parentID)
+	tenantID := actx.GetTenantId(ctx)
+	key := keys.DepartmentTreeKey(tenantID, parentID)
 	var tree []*dto.DepartmentTreeDto
 	err := c.decorator.Cached(ctx, key, &tree, func() error {
 		var err error
@@ -50,9 +53,10 @@ func (c *DepartmentQueryCache) GetDepartmentTree(ctx context.Context, parentID s
 	return tree, err
 }
 
-// GetUserDepartments 获取用户部门(带缓存)
+// GetUserDepartments 获取用户部门列表(带缓存)
 func (c *DepartmentQueryCache) GetUserDepartments(ctx context.Context, userID string) ([]*dto.DepartmentDto, error) {
-	key := keys.UserDepartmentsKey(userID)
+	tenantID := actx.GetTenantId(ctx)
+	key := keys.UserDepartmentsKey(tenantID, userID)
 	var depts []*dto.DepartmentDto
 	err := c.decorator.Cached(ctx, key, &depts, func() error {
 		var err error
@@ -87,28 +91,18 @@ func (c *DepartmentQueryCache) CountUnassignedUsers(ctx context.Context, qb *db_
 	return c.next.CountUnassignedUsers(ctx, qb)
 }
 
-// InvalidateDepartmentCache 使部门缓存失效
-func (c *DepartmentQueryCache) InvalidateDepartmentCache(ctx context.Context, deptID string) error {
-	keys := []string{
-		keys.DepartmentKey(deptID),
-		keys.DepartmentTreeKey(""),
+// WarmupCache 预热缓存
+func (c *DepartmentQueryCache) WarmupCache(ctx context.Context, deptID string) error {
+
+	// 1. 预热部门详情
+	if _, err := c.GetDepartment(ctx, deptID); err != nil {
+		return fmt.Errorf("预热部门详情缓存失败: %w", err)
 	}
-	return c.decorator.InvalidateCache(ctx, keys...)
-}
 
-// InvalidateUserDepartmentsCache 使用户部门缓存失效
-func (c *DepartmentQueryCache) InvalidateUserDepartmentsCache(ctx context.Context, userID string) error {
-	return c.decorator.InvalidateCache(ctx, keys.UserDepartmentsKey(userID))
-}
+	// 2. 预热部门树
+	if _, err := c.GetDepartmentTree(ctx, ""); err != nil {
+		return fmt.Errorf("预热部门树缓存失败: %w", err)
+	}
 
-func (c *DepartmentQueryCache) FindByID(ctx context.Context, id string) (*dto.DepartmentDto, error) {
-	tenantID := actx.GetTenantId(ctx)
-	key := keys.DepartmentKey(tenantID, id)
-	var dept *dto.DepartmentDto
-	err := c.decorator.Cached(ctx, key, &dept, func() error {
-		var err error
-		dept, err = c.next.FindByID(ctx, id)
-		return err
-	})
-	return dept, err
+	return nil
 }

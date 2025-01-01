@@ -154,7 +154,16 @@ func (r *roleRepository) ExistsByCode(ctx context.Context, code string) (bool, e
 	}
 	return true, nil
 }
-
+func (r *roleRepository) ExistsById(ctx context.Context, id int64) (bool, error) {
+	_, err := r.repo.FindById(ctx, id)
+	if err != nil {
+		if database.IfErrorNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
 func (r *roleRepository) Delete(ctx context.Context, id int64) error {
 	return r.repo.DelByIdUnScoped(ctx, id)
 }

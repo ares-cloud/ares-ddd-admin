@@ -1,8 +1,9 @@
-package cache
+package handlers
 
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache"
 	"log"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/events"
@@ -11,10 +12,10 @@ import (
 
 // EventHandler 缓存事件处理器
 type EventHandler struct {
-	userCache *UserQueryCache
+	userCache *cache.UserQueryCache
 }
 
-func NewCacheEventHandler(userCache *UserQueryCache) *EventHandler {
+func NewCacheEventHandler(userCache *cache.UserQueryCache) *EventHandler {
 	return &EventHandler{
 		userCache: userCache,
 	}
