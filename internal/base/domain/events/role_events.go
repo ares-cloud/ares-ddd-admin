@@ -1,7 +1,6 @@
 package events
 
 import (
-	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/events"
 )
 
@@ -25,43 +24,6 @@ func NewRoleEvent(tenantID string, roleID int64, eventType string) *RoleEvent {
 		BaseEvent: events.NewBaseEvent(eventType),
 		RoleID:    roleID,
 		TenantID:  tenantID,
-	}
-}
-
-// RoleCreatedEvent 角色创建事件
-type RoleCreatedEvent struct {
-	*RoleEvent
-	Role *model.Role `json:"role"`
-}
-
-func NewRoleCreatedEvent(role *model.Role) *RoleCreatedEvent {
-	return &RoleCreatedEvent{
-		RoleEvent: NewRoleEvent(role.TenantID, role.ID, RoleCreated),
-		Role:      role,
-	}
-}
-
-// RoleUpdatedEvent 角色更新事件
-type RoleUpdatedEvent struct {
-	*RoleEvent
-	Role *model.Role `json:"role"`
-}
-
-func NewRoleUpdatedEvent(role *model.Role) *RoleUpdatedEvent {
-	return &RoleUpdatedEvent{
-		RoleEvent: NewRoleEvent(role.TenantID, role.ID, RoleUpdated),
-		Role:      role,
-	}
-}
-
-// RoleDeletedEvent 角色删除事件
-type RoleDeletedEvent struct {
-	*RoleEvent
-}
-
-func NewRoleDeletedEvent(roleID int64) *RoleDeletedEvent {
-	return &RoleDeletedEvent{
-		RoleEvent: NewRoleEvent("", roleID, RoleDeleted),
 	}
 }
 

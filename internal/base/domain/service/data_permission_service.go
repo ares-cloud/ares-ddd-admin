@@ -14,13 +14,13 @@ import (
 type DataPermissionService struct {
 	permRepo repository.IDataPermissionRepository
 	roleRepo repository.IRoleRepository
-	eventBus *pkgEvent.EventBus
+	eventBus pkgEvent.IEventBus
 }
 
 func NewDataPermissionService(
 	permRepo repository.IDataPermissionRepository,
 	roleRepo repository.IRoleRepository,
-	eventBus *pkgEvent.EventBus,
+	eventBus pkgEvent.IEventBus,
 ) *DataPermissionService {
 	return &DataPermissionService{
 		permRepo: permRepo,
@@ -51,20 +51,19 @@ func (s *DataPermissionService) AssignDataPermission(ctx context.Context, perm *
 	}
 
 	// 4. 发布事件
-	s.eventBus.Publish(ctx, events.NewDataPermissionAssignedEvent(perm))
-
+	err1 := s.eventBus.Publish(ctx, events.NewDataPermissionEvent(actx.GetTenantId(ctx), perm, events.DataPermissionAssigned))
+	if err1 != nil {
+		return herrors.NewServerHError(err1)
+	}
 	return nil
 }
 
 // RemoveDataPermission 移除数据权限
 func (s *DataPermissionService) RemoveDataPermission(ctx context.Context, roleID int64) herrors.Herr {
 	// 1. 验证角色是否存在
-	exists, err := s.roleRepo.ExistsById(ctx, roleID)
-	if err != nil {
-		return errors.DataPermissionQueryFailed(err)
-	}
-	if !exists {
-		return errors.RoleNotFound(roleID)
+	dataPermission, herr := s.GetByRoleID(ctx, roleID)
+	if herrors.HaveError(herr) {
+		return herr
 	}
 
 	// 2. 删除数据权限
@@ -73,8 +72,10 @@ func (s *DataPermissionService) RemoveDataPermission(ctx context.Context, roleID
 	}
 
 	// 3. 发布事件
-	s.eventBus.Publish(ctx, events.NewDataPermissionRemovedEvent(actx.GetTenantId(ctx), roleID))
-
+	err1 := s.eventBus.Publish(ctx, events.NewDataPermissionEvent(actx.GetTenantId(ctx), dataPermission, events.DataPermissionRemoved))
+	if err1 != nil {
+		return herrors.NewServerHError(err1)
+	}
 	return nil
 }
 

@@ -14,13 +14,13 @@ import (
 
 type AuthService struct {
 	userRepo     repository.IUserRepository
-	eventBus     *events.EventBus
+	eventBus     events.IEventBus
 	queryService query.IUserQueryService
 }
 
 func NewAuthService(
 	userRepo repository.IUserRepository,
-	eventBus *events.EventBus,
+	eventBus events.IEventBus,
 	queryService query.IUserQueryService,
 ) *AuthService {
 	return &AuthService{
@@ -52,7 +52,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*mo
 	}
 
 	// 发布登录事件
-	event := domanevent.NewUserLoginEvent(user.TenantID, user.ID)
+	event := domanevent.NewUserEvent(user.TenantID, user.ID, domanevent.UserLoggedIn)
 	if err := s.eventBus.Publish(ctx, event); err != nil {
 		return nil, err
 	}
@@ -84,10 +84,9 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID string, oldPass
 	}
 
 	// 发布密码修改事件
-	//event := &domanevent.UserPasswordChangedEvent{
-	//	BaseEvent: events.BaseEvent{TenantID: user.TenantID},
-	//	UserID:    user.ID,
-	//}
-	// return s.eventBus.Publish(ctx, event)
+	event := domanevent.NewUserEvent(user.TenantID, user.ID, domanevent.UserUpdated)
+	if err := s.eventBus.Publish(ctx, event); err != nil {
+		return err
+	}
 	return nil
 }

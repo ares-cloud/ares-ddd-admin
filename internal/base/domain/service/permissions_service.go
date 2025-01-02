@@ -14,12 +14,12 @@ import (
 
 type PermissionService struct {
 	permRepo repository.IPermissionsRepository
-	eventBus *pkgEvent.EventBus
+	eventBus pkgEvent.IEventBus
 }
 
 func NewPermissionService(
 	permRepo repository.IPermissionsRepository,
-	eventBus *pkgEvent.EventBus,
+	eventBus pkgEvent.IEventBus,
 ) *PermissionService {
 	return &PermissionService{
 		permRepo: permRepo,
@@ -44,11 +44,10 @@ func (s *PermissionService) CreatePermission(ctx context.Context, perm *model.Pe
 	}
 
 	// 3. 发布权限创建事件
-	event := events.NewPermissionCreatedEvent(actx.GetTenantId(ctx), perm.ID)
-	if err := s.eventBus.Publish(ctx, event); err != nil {
+	err = s.eventBus.Publish(ctx, events.NewPermissionEvent(actx.GetTenantId(ctx), perm.ID, events.PermissionCreated))
+	if err != nil {
 		return herrors.NewServerHError(err)
 	}
-
 	return nil
 }
 
@@ -69,11 +68,10 @@ func (s *PermissionService) UpdatePermission(ctx context.Context, perm *model.Pe
 	}
 
 	// 3. 发布权限更新事件
-	event := events.NewPermissionUpdatedEvent(actx.GetTenantId(ctx), perm.ID)
-	if err := s.eventBus.Publish(ctx, event); err != nil {
+	err = s.eventBus.Publish(ctx, events.NewPermissionEvent(actx.GetTenantId(ctx), perm.ID, events.PermissionUpdated))
+	if err != nil {
 		return herrors.NewServerHError(err)
 	}
-
 	return nil
 }
 
@@ -99,11 +97,10 @@ func (s *PermissionService) DeletePermission(ctx context.Context, id int64) herr
 	}
 
 	// 4. 发布权限删除事件
-	event := events.NewPermissionDeletedEvent(actx.GetTenantId(ctx), id)
-	if err := s.eventBus.Publish(ctx, event); err != nil {
+	err = s.eventBus.Publish(ctx, events.NewPermissionEvent(actx.GetTenantId(ctx), perm.ID, events.PermissionDeleted))
+	if err != nil {
 		return herrors.NewServerHError(err)
 	}
-
 	return nil
 }
 
@@ -138,9 +135,9 @@ func (s *PermissionService) UpdatePermissionStatus(ctx context.Context, id int64
 	}
 
 	// 4. 发布权限更新事件
-	event := events.NewPermissionUpdatedEvent(actx.GetTenantId(ctx), perm.ID)
-	if err := s.eventBus.Publish(ctx, event); err != nil {
-		return herrors.NewServerHError(err)
+	err1 := s.eventBus.Publish(ctx, events.NewPermissionEvent(actx.GetTenantId(ctx), perm.ID, events.PermissionStatusChange))
+	if err1 != nil {
+		return herrors.NewServerHError(err1)
 	}
 
 	return nil

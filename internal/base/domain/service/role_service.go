@@ -13,12 +13,12 @@ import (
 
 type RoleCommandService struct {
 	roleRepo repository.IRoleRepository
-	eventBus *events.EventBus
+	eventBus events.IEventBus
 }
 
 func NewRoleCommandService(
 	roleRepo repository.IRoleRepository,
-	eventBus *events.EventBus,
+	eventBus events.IEventBus,
 ) *RoleCommandService {
 	return &RoleCommandService{
 		roleRepo: roleRepo,
@@ -48,8 +48,10 @@ func (s *RoleCommandService) CreateRole(ctx context.Context, role *model.Role) h
 	}
 
 	// 4. 发布角色创建事件
-	s.eventBus.Publish(ctx, domanevent.NewRoleCreatedEvent(role))
-
+	err = s.eventBus.Publish(ctx, domanevent.NewRoleEvent(role.TenantID, role.ID, domanevent.RoleCreated))
+	if err != nil {
+		return herrors.NewErr(err)
+	}
 	return nil
 }
 
@@ -75,8 +77,10 @@ func (s *RoleCommandService) UpdateRole(ctx context.Context, role *model.Role) h
 	}
 
 	// 4. 发布角色更新事件
-	s.eventBus.Publish(ctx, domanevent.NewRoleUpdatedEvent(role))
-
+	err = s.eventBus.Publish(ctx, domanevent.NewRoleEvent(role.TenantID, role.ID, domanevent.RoleUpdated))
+	if err != nil {
+		return herrors.NewErr(err)
+	}
 	return nil
 }
 
@@ -106,8 +110,10 @@ func (s *RoleCommandService) DeleteRole(ctx context.Context, id int64) herrors.H
 	}
 
 	// 4. 发布角色删除事件
-	s.eventBus.Publish(ctx, domanevent.NewRoleDeletedEvent(id))
-
+	err = s.eventBus.Publish(ctx, domanevent.NewRoleEvent(role.TenantID, role.ID, domanevent.RoleDeleted))
+	if err != nil {
+		return herrors.NewErr(err)
+	}
 	return nil
 }
 
@@ -133,8 +139,10 @@ func (s *RoleCommandService) AssignPermissions(ctx context.Context, roleID int64
 	}
 
 	// 4. 发布权限分配事件
-	s.eventBus.Publish(ctx, domanevent.NewRolePermissionsAssignedEvent(roleID, permissionIDs))
-
+	err = s.eventBus.Publish(ctx, domanevent.NewRolePermissionsAssignedEvent(roleID, permissionIDs))
+	if err != nil {
+		return herrors.NewServerHError(err)
+	}
 	return nil
 }
 

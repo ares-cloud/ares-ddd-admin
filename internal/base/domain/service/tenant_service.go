@@ -13,12 +13,12 @@ import (
 
 type TenantCommandService struct {
 	tenantRepo repository.ITenantRepository
-	publisher  *pkgEvents.EventBus
+	publisher  pkgEvents.IEventBus
 }
 
 func NewTenantCommandService(
 	tenantRepo repository.ITenantRepository,
-	publisher *pkgEvents.EventBus,
+	publisher pkgEvents.IEventBus,
 ) *TenantCommandService {
 	return &TenantCommandService{
 		tenantRepo: tenantRepo,
@@ -47,7 +47,7 @@ func (s *TenantCommandService) CreateTenant(ctx context.Context, tenant *model.T
 	}
 
 	// 发布租户创建事件
-	event := events.NewTenantCreatedEvent(tenant.ID)
+	event := events.NewTenantEvent(tenant.ID, events.TenantCreated)
 	err = s.publisher.Publish(ctx, event)
 	if err != nil {
 		return herrors.NewErr(err)
@@ -81,7 +81,7 @@ func (s *TenantCommandService) UpdateTenant(ctx context.Context, tenant *model.T
 	}
 
 	// 发布租户更新事件
-	event := events.NewTenantUpdatedEvent(tenant.ID)
+	event := events.NewTenantEvent(tenant.ID, events.TenantUpdated)
 	err = s.publisher.Publish(ctx, event)
 	if err != nil {
 		return herrors.NewErr(err)
@@ -115,7 +115,7 @@ func (s *TenantCommandService) DeleteTenant(ctx context.Context, id string) herr
 	}
 
 	// 发布租户删除事件
-	event := events.NewTenantDeletedEvent(id)
+	event := events.NewTenantEvent(tenant.ID, events.TenantDeleted)
 	err = s.publisher.Publish(ctx, event)
 	if err != nil {
 		return herrors.NewErr(err)
@@ -194,7 +194,7 @@ func (s *TenantCommandService) LockTenant(ctx context.Context, id string, reason
 	}
 
 	// 发布租户锁定事件
-	event := events.NewTenantLockedEvent(tenant.ID, reason)
+	event := events.NewTenantEvent(tenant.ID, events.TenantLocked)
 	if err := s.publisher.Publish(ctx, event); err != nil {
 		return herrors.NewErr(err)
 	}
@@ -224,7 +224,7 @@ func (s *TenantCommandService) UnlockTenant(ctx context.Context, id string) herr
 	}
 
 	// 发布租户解锁事件
-	event := events.NewTenantUnlockedEvent(tenant.ID)
+	event := events.NewTenantEvent(tenant.ID, events.TenantUnlocked)
 	if err := s.publisher.Publish(ctx, event); err != nil {
 		return herrors.NewErr(err)
 	}

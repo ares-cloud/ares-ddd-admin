@@ -15,12 +15,12 @@ import (
 
 type UserCommandService struct {
 	userRepo repository.IUserRepository
-	eventBus *events.EventBus
+	eventBus events.IEventBus
 }
 
 func NewUserCommandService(
 	userRepo repository.IUserRepository,
-	eventBus *events.EventBus,
+	eventBus events.IEventBus,
 ) *UserCommandService {
 	return &UserCommandService{
 		userRepo: userRepo,
@@ -93,7 +93,7 @@ func (s *UserCommandService) AssignRoles(ctx context.Context, userID string, rol
 	}
 
 	// 发布角色分配事件
-	event := domanevent.NewUserRoleEvent(user.TenantID, userID, roleIDs)
+	event := domanevent.NewUserEvent(user.TenantID, user.ID, domanevent.UserRoleChanged)
 	if err := s.eventBus.Publish(ctx, event); err != nil {
 		return herrors.NewServerHError(err)
 	}
