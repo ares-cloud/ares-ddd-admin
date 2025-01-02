@@ -160,3 +160,9 @@ func (c *UserQueryCache) WarmupUserCache(ctx context.Context, userID string) err
 
 	return nil
 }
+
+// InvalidateTenantUserCache 清除租户下所有用户缓存
+func (c *UserQueryCache) InvalidateTenantUserCache(ctx context.Context, tenantID string) error {
+	// 使用租户前缀清除所有相关缓存
+	return c.decorator.InvalidateTenantTypeCache(ctx, tenantID, "user")
+}

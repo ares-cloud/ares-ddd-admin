@@ -16,13 +16,13 @@ import (
 type DepartmentService struct {
 	deptRepo repository.IDepartmentRepository
 	userRepo repository.IUserRepository
-	eventBus *pkgEvent.EventBus
+	eventBus pkgEvent.IEventBus
 }
 
 func NewDepartmentService(
 	deptRepo repository.IDepartmentRepository,
 	userRepo repository.IUserRepository,
-	eventBus *pkgEvent.EventBus,
+	eventBus pkgEvent.IEventBus,
 ) *DepartmentService {
 	return &DepartmentService{
 		deptRepo: deptRepo,
@@ -67,8 +67,7 @@ func (s *DepartmentService) CreateDepartment(ctx context.Context, dept *model.De
 	}
 
 	// 5. 发布部门创建事件
-	event := events.NewDepartmentCreatedEvent(actx.GetTenantId(ctx), dept.ID)
-	if err := s.eventBus.Publish(ctx, event); err != nil {
+	if err := s.eventBus.Publish(ctx, events.NewDepartmentEvent(dept.TenantID, dept.ID, events.DepartmentCreated)); err != nil {
 		return herrors.NewServerHError(err)
 	}
 	return nil
@@ -121,8 +120,7 @@ func (s *DepartmentService) UpdateDepartment(ctx context.Context, dept *model.De
 	}
 
 	// 6. 发布部门更新事件
-	event := events.NewDepartmentUpdatedEvent(actx.GetTenantId(ctx), dept.ID)
-	if err := s.eventBus.Publish(ctx, event); err != nil {
+	if err := s.eventBus.Publish(ctx, events.NewDepartmentEvent(dept.TenantID, dept.ID, events.DepartmentUpdated)); err != nil {
 		return herrors.NewServerHError(err)
 	}
 	return nil
@@ -154,8 +152,7 @@ func (s *DepartmentService) DeleteDepartment(ctx context.Context, id string) her
 	}
 
 	// 4. 发布部门删除事件
-	event := events.NewDepartmentDeletedEvent(actx.GetTenantId(ctx), id)
-	if err := s.eventBus.Publish(ctx, event); err != nil {
+	if err := s.eventBus.Publish(ctx, events.NewDepartmentEvent(dept.TenantID, dept.ID, events.DepartmentDeleted)); err != nil {
 		return herrors.NewServerHError(err)
 	}
 	return nil
@@ -333,8 +330,7 @@ func (s *DepartmentService) SetDepartmentAdmin(ctx context.Context, deptID strin
 	}
 
 	// 5. 发布管理员设置事件
-	event := events.NewDepartmentAdminSetEvent(actx.GetTenantId(ctx), deptID, adminID)
-	if err := s.eventBus.Publish(ctx, event); err != nil {
+	if err := s.eventBus.Publish(ctx, events.NewDepartmentEvent(dept.TenantID, dept.ID, events.DepartmentUpdated)); err != nil {
 		return herrors.NewServerHError(err)
 	}
 	return nil

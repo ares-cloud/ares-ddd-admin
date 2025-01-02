@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/converter"
@@ -87,4 +88,23 @@ func (s *PermissionsQueryService) GetSimplePermissionsTree(ctx context.Context) 
 
 	// 2. 转换为树形结构
 	return s.permissionsConverter.ToSimpleTreeDTOList(perms), nil
+}
+
+// GetPermissionRoles 获取拥有该权限的角色列表
+func (s *PermissionsQueryService) GetPermissionRoles(ctx context.Context, permID int64) ([]*dto.RoleDto, error) {
+	//// 1. 构建查询条件
+	//qb := db_query.NewQueryBuilder()
+	//qb.InnerJoin("sys_role_permissions rp", "r.id = rp.role_id")
+	//qb.Where("rp.permission_id", db_query.Eq, permID)
+	//qb.Where("r.tenant_id", db_query.Eq, actx.GetTenantId(ctx))
+	//
+	//// 2. 查询数据
+	//roles, err := s.permRepo.GetPermissionRoles(ctx, qb)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//// 3. 转换为DTO
+	//return s.permissionsConverter.ToRoleDTOList(roles), nil
+	return make([]*dto.RoleDto, 0), nil
 }

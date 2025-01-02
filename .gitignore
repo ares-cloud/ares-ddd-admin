@@ -38,3 +38,4 @@ dumped_hertz_remote_config.json
 deploy/data/*
 .gitattributes
 .hz
+.codegpt

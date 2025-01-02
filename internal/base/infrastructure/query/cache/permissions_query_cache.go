@@ -102,6 +102,9 @@ func (c *PermissionsQueryCache) GetSimplePermissionsTree(ctx context.Context) ([
 func (c *PermissionsQueryCache) Find(ctx context.Context, qb *db_query.QueryBuilder) ([]*dto.PermissionsDto, int64, herrors.Herr) {
 	return c.next.Find(ctx, qb)
 }
+func (c *PermissionsQueryCache) GetPermissionRoles(ctx context.Context, permID int64) ([]*dto.RoleDto, error) {
+	return c.next.GetPermissionRoles(ctx, permID)
+}
 
 // InvalidatePermissionCache 使权限缓存失效
 func (c *PermissionsQueryCache) InvalidatePermissionCache(ctx context.Context, id int64) error {

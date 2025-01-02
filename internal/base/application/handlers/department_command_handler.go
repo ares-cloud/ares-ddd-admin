@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/errors"
 
@@ -37,7 +38,7 @@ func (h *DepartmentCommandHandler) HandleCreate(ctx context.Context, cmd *comman
 	dept.Email = cmd.Email
 	dept.Status = cmd.Status
 	dept.Description = cmd.Description
-	dept.TenantID = cmd.TenantID
+	dept.TenantID = actx.GetTenantId(ctx)
 
 	// 调用领域服务创建部门
 	if err := h.deptService.CreateDepartment(ctx, dept); err != nil {

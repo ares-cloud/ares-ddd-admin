@@ -107,3 +107,9 @@ func (c *RoleQueryCache) InvalidateRoleListCache(ctx context.Context) error {
 	tenantID := actx.GetTenantId(ctx)
 	return c.decorator.InvalidateCache(ctx, keys.RoleListKey(tenantID))
 }
+
+// InvalidateTenantRoleCache 清除租户下所有角色缓存
+func (c *RoleQueryCache) InvalidateTenantRoleCache(ctx context.Context, tenantID string) error {
+	// 使用租户前缀清除所有相关缓存
+	return c.decorator.InvalidateTenantTypeCache(ctx, tenantID, "role")
+}

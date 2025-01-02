@@ -130,3 +130,9 @@ func (c *DepartmentQueryCache) InvalidateCache(ctx context.Context, deptID strin
 	tenantID := actx.GetTenantId(ctx)
 	return c.decorator.InvalidateCache(ctx, keys.DepartmentKeys(tenantID, deptID)...)
 }
+
+// InvalidateTenantDepartmentCache 清除租户下所有部门缓存
+func (c *DepartmentQueryCache) InvalidateTenantDepartmentCache(ctx context.Context, tenantID string) error {
+	// 使用租户前缀清除所有相关缓存
+	return c.decorator.InvalidateTenantTypeCache(ctx, tenantID, "dept")
+}
