@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"time"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
@@ -103,6 +104,7 @@ func (r *sysTenantRepo) Update(ctx context.Context, tenant *entity.Tenant) error
 
 // AssignPermissions 分配权限给租户
 func (r *sysTenantRepo) AssignPermissions(ctx context.Context, tenantID string, permissionIDs []int64) error {
+	ctx = actx.BuildIgnoreTenantCtx(ctx)
 	return r.GetDb().InTx(ctx, func(ctx context.Context) error {
 		// 删除原有权限关联
 		if err := r.Db(ctx).Where("tenant_id = ?", tenantID).Delete(&entity.TenantPermissions{}).Error; err != nil {
@@ -110,14 +112,16 @@ func (r *sysTenantRepo) AssignPermissions(ctx context.Context, tenantID string, 
 		}
 
 		// 创建新的权限关联
+		pars := make([]*entity.TenantPermissions, 0)
 		for _, permID := range permissionIDs {
 			tp := &entity.TenantPermissions{
 				TenantID:     tenantID,
 				PermissionID: permID,
 			}
-			if err := r.Db(ctx).Create(tp).Error; err != nil {
-				return err
-			}
+			pars = append(pars, tp)
+		}
+		if err := r.Db(ctx).Create(&pars).Error; err != nil {
+			return err
 		}
 		return nil
 	})
