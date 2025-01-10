@@ -37,7 +37,7 @@ func NewServer(config *configs.Bootstrap, hc *h_redis.RedisClient,
 	ms *monitoring.Server,
 	sms *storage.Server,
 ) *hserver.Serve {
-	tk := token.NewRdbToken(hc.GetClient(), config.JWT.Issuer, config.JWT.SigningKey, config.JWT.ExpirationToken, config.JWT.ExpirationRefresh)
+	tk := token.NewRdbToken(hc.GetClient(), config.JWT.Issuer, config.JWT.SigningKey, config.JWT.ExpirationToken, config.JWT.ExpirationRefresh, true)
 	svr := hserver.NewServe(&hserver.ServerConfig{
 		Port:               config.Server.Port,
 		RateQPS:            config.Server.RateQPS,

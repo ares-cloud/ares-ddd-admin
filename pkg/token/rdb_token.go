@@ -16,11 +16,12 @@ type RdbToken struct {
 	signingKey        string
 	expirationToken   int64
 	expirationRefresh int64
+	enableSSO         bool // Flag to enable/disable SSO
 	rdb               *redis.Client
 }
 
-func NewRdbToken(rdb *redis.Client, issuer, signingKey string, expirationToken, expirationRefresh int64) IToken {
-	return &RdbToken{rdb: rdb, issuer: issuer, signingKey: signingKey, expirationToken: expirationToken, expirationRefresh: expirationRefresh}
+func NewRdbToken(rdb *redis.Client, issuer, signingKey string, expirationToken, expirationRefresh int64, enableSSO bool) IToken {
+	return &RdbToken{rdb: rdb, issuer: issuer, signingKey: signingKey, expirationToken: expirationToken, expirationRefresh: expirationRefresh, enableSSO: enableSSO}
 }
 
 func (r *RdbToken) GenerateToken(userID string, data interface{}) (*Token, error) {
@@ -34,8 +35,12 @@ func (r *RdbToken) GenerateToken(userID string, data interface{}) (*Token, error
 	}
 	ctx := context.Background()
 	userKey := "user:auth:" + userID
-	if err := r.rdb.Del(ctx, userKey).Err(); err != nil {
-		return nil, err
+	// Clear existing tokens if SSO is enabled
+	if r.enableSSO {
+		err = r.DelUserToken(userID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	accessTokenHash := generateTokenHash(accessToken)
 	refreshTokenHash := generateTokenHash(refreshToken)
