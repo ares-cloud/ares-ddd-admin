@@ -112,7 +112,9 @@ func (r *sysMenuRepo) GetAllTree(ctx context.Context) ([]*entity.Permissions, []
 	var permissions []*entity.Permissions
 
 	// 只查询需要的字段
-	err := r.Db(ctx).Select("id, code, name, localize, icon, parent_id").
+	err := r.Db(ctx).
+		//Select("id, code, name, localize, icon, parent_id").
+		Where("type = 1").
 		Order("sequence desc").
 		Find(&permissions).Error
 	if err != nil {

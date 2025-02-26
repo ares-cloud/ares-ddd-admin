@@ -3,6 +3,8 @@ package actx
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/constant"
+	"golang.org/x/exp/slices"
 	"strings"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/token"
@@ -136,4 +138,11 @@ func Store(ctx context.Context, accessToken token.AccessToken) context.Context {
 	ctx = WithTenantId(ctx, accessToken.TenantId)
 	ctx = WithUsername(ctx, accessToken.UserName)
 	return ctx
+}
+func IsSuperAdmin(ctx context.Context) bool {
+	roles := GetRoles(ctx)
+	if len(roles) == 0 {
+		return false
+	}
+	return slices.Contains(roles, constant.RoleSuperAdmin)
 }

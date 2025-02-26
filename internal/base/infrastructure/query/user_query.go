@@ -10,6 +10,7 @@ import (
 // IUserQueryService 用户查询服务接口
 type IUserQueryService interface {
 	// 基础查询
+	GetSuperAdmin(ctx context.Context) (*dto.UserInfoDto, error)
 	GetUser(ctx context.Context, id string) (*dto.UserDto, error)
 	FindUsers(ctx context.Context, qb *db_query.QueryBuilder) ([]*dto.UserDto, error)
 	CountUsers(ctx context.Context, qb *db_query.QueryBuilder) (int64, error)

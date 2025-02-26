@@ -32,9 +32,9 @@ const (
 	StatusInvalidToken = 401
 )
 const (
-	RoleUser       = "USER"
-	RoleAdmin      = "Admin"
-	RoleSuperAdmin = "SuperAdmin"
+	RoleUser       = "user"
+	RoleAdmin      = "admin"
+	RoleSuperAdmin = "superAdmin"
 	RoleAgent      = "Agent"
 )
 

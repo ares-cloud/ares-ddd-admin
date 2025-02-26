@@ -65,6 +65,13 @@ func (c *PermissionsQueryCache) FindTreeByType(ctx context.Context, permType int
 
 // FindAllEnabled 查询所有启用的权限(带缓存)
 func (c *PermissionsQueryCache) FindAllEnabled(ctx context.Context) ([]*dto.PermissionsDto, herrors.Herr) {
+	if actx.IsSuperAdmin(ctx) {
+		permissionsDtos, err := c.next.FindAllEnabled(ctx)
+		if err != nil {
+			return nil, herrors.NewServerHError(err)
+		}
+		return permissionsDtos, nil
+	}
 	tenantID := actx.GetTenantId(ctx)
 	key := keys.PermissionEnabledKey(tenantID)
 	var permissions []*dto.PermissionsDto

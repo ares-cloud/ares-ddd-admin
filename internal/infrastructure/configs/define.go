@@ -14,13 +14,15 @@ const (
 )
 
 type Bootstrap struct {
-	Server   *Server        `mapstructure:"server"`
-	Log      *Log           `mapstructure:"log"`
-	JWT      *JWT           `mapstructure:"jwt"`
-	Data     *Data          `mapstructure:"data"`
-	ConfPath *string        `mapstructure:"conf_path"`
-	Storage  *StorageConfig `mapstructure:"storage"` // 添加存储配置
+	Server     *Server        `mapstructure:"server"`
+	SuperAdmin *SuperAdmin    `mapstructure:"super_admin"`
+	Log        *Log           `mapstructure:"log"`
+	JWT        *JWT           `mapstructure:"jwt"`
+	Data       *Data          `mapstructure:"data"`
+	ConfPath   *string        `mapstructure:"conf_path"`
+	Storage    *StorageConfig `mapstructure:"storage"` // 添加存储配置
 }
+
 type Server struct {
 	Port               int    `mapstructure:"port"`
 	RateQPS            int    `mapstructure:"rate_qps"`
@@ -67,4 +69,9 @@ type Redis struct {
 	Db           int64  `mapstructure:"db"`
 	ReadTimeout  int64  `mapstructure:"read_timeout"`
 	WriteTimeout int64  `mapstructure:"write_timeout"`
+}
+type SuperAdmin struct {
+	Nickname string `mapstructure:"nickname"`
+	Phone    string `mapstructure:"phone"`
+	Password string `mapstructure:"password"`
 }

@@ -3,6 +3,9 @@ package impl
 import (
 	"context"
 	"fmt"
+	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/constant"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/converter"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
@@ -18,6 +21,7 @@ type UserQueryService struct {
 	userConverter        *converter.UserConverter
 	roleConverter        *converter.RoleConverter
 	permissionsConverter *converter.PermissionsConverter
+	conf                 *configs.Bootstrap
 }
 
 func NewUserQueryService(
@@ -27,6 +31,7 @@ func NewUserQueryService(
 	userConverter *converter.UserConverter,
 	roleConverter *converter.RoleConverter,
 	permissionsConverter *converter.PermissionsConverter,
+	conf *configs.Bootstrap,
 ) *UserQueryService {
 	return &UserQueryService{
 		userRepo:             userRepo,
@@ -35,7 +40,26 @@ func NewUserQueryService(
 		userConverter:        userConverter,
 		roleConverter:        roleConverter,
 		permissionsConverter: permissionsConverter,
+		conf:                 conf,
 	}
+}
+func (u *UserQueryService) GetSuperAdmin(_ context.Context) (*dto.UserInfoDto, error) {
+	userId := constant.RoleSuperAdmin
+	return &dto.UserInfoDto{
+		User: &dto.UserDto{
+			ID:       userId,
+			Username: u.conf.SuperAdmin.Phone,
+			Nickname: u.conf.SuperAdmin.Nickname,
+			Phone:    u.conf.SuperAdmin.Phone,
+			Email:    "",
+			Avatar:   "",
+			Status:   1,
+			TenantID: "",
+		},
+		Roles:       []string{userId},
+		HomePage:    "User",
+		Permissions: []string{"*"},
+	}, nil
 }
 
 // GetUser 获取用户详情
@@ -159,22 +183,27 @@ func (u *UserQueryService) GetUserMenus(ctx context.Context, userID string) ([]*
 
 // GetUserTreeMenus 获取用户菜单树
 func (u *UserQueryService) GetUserTreeMenus(ctx context.Context, userID string) ([]*dto.PermissionsTreeDto, error) {
-	// 1. 获取用户角色
-	roles, err := u.roleRepo.GetIdsByUserId(ctx, userID)
+	var permissions []*entity.Permissions
+	var err error
+	if actx.IsSuperAdmin(ctx) {
+		permissions, _, err = u.permissionsRepo.GetAllTree(ctx)
+	} else {
+		// 1. 获取用户角色
+		roles, err := u.roleRepo.GetIdsByUserId(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(roles) == 0 {
+			return []*dto.PermissionsTreeDto{}, nil
+		}
+
+		// 2. 获取角色对应的菜单权限
+		permissions, _, err = u.permissionsRepo.GetTreeByUserAndType(context.Background(), userID, 1) // type=1表示菜单类型
+	}
 	if err != nil {
 		return nil, err
 	}
-
-	if len(roles) == 0 {
-		return []*dto.PermissionsTreeDto{}, nil
-	}
-
-	// 2. 获取角色对应的菜单权限
-	permissions, _, err := u.permissionsRepo.GetTreeByUserAndType(context.Background(), userID, 1) // type=1表示菜单类型
-	if err != nil {
-		return nil, err
-	}
-
 	// 3. 转换为DTO
 	return u.permissionsConverter.ToSimpleTreeDTOList(permissions), nil
 }

@@ -27,6 +27,9 @@ func NewUserQueryCache(
 		decorator: decorator,
 	}
 }
+func (c *UserQueryCache) GetSuperAdmin(ctx context.Context) (*dto.UserInfoDto, error) {
+	return c.next.GetSuperAdmin(ctx)
+}
 
 func (c *UserQueryCache) GetUser(ctx context.Context, id string) (*dto.UserDto, error) {
 	key := keys.UserKey(id)
@@ -62,6 +65,9 @@ func (c *UserQueryCache) GetUserRoles(ctx context.Context, userID string) ([]*dt
 }
 
 func (c *UserQueryCache) GetUserTreeMenus(ctx context.Context, userID string) ([]*dto.PermissionsTreeDto, error) {
+	if actx.IsSuperAdmin(ctx) {
+		return c.next.GetUserTreeMenus(ctx, userID)
+	}
 	key := keys.UserMenusKey(userID)
 	var menus []*dto.PermissionsTreeDto
 	err := c.decorator.Cached(ctx, key, &menus, func() error {

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
 	iQuery "github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query"
@@ -71,6 +72,13 @@ func (h *UserQueryHandler) HandleList(ctx context.Context, q *queries.ListUsersQ
 
 // HandleGetUserInfo 处理获取用户信息查询
 func (h *UserQueryHandler) HandleGetUserInfo(ctx context.Context, q queries.GetUserInfoQuery) (*dto.UserInfoDto, herrors.Herr) {
+	if actx.IsSuperAdmin(ctx) {
+		dto, err := h.queryService.GetSuperAdmin(ctx)
+		if err != nil {
+			return nil, herrors.QueryFail(err)
+		}
+		return dto, nil
+	}
 	// 1. 获取用户基本信息
 	user, err := h.queryService.GetUser(ctx, q.UserID)
 	if err != nil {

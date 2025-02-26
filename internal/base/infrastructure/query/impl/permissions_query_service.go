@@ -2,6 +2,8 @@ package impl
 
 import (
 	"context"
+	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 
 	"github.com/ares-cloud/ares-ddd-admin/pkg/hserver/herrors"
 
@@ -14,14 +16,17 @@ import (
 type PermissionsQueryService struct {
 	permRepo             repository.IPermissionsRepo
 	permissionsConverter *converter.PermissionsConverter
+	tenantRepo           repository.ISysTenantRepo
 }
 
 func NewPermissionsQueryService(
 	permRepo repository.IPermissionsRepo,
+	tenantRepo repository.ISysTenantRepo,
 	permissionsConverter *converter.PermissionsConverter,
 ) *PermissionsQueryService {
 	return &PermissionsQueryService{
 		permRepo:             permRepo,
+		tenantRepo:           tenantRepo,
 		permissionsConverter: permissionsConverter,
 	}
 }
@@ -68,17 +73,24 @@ func (s *PermissionsQueryService) FindTreeByType(ctx context.Context, permType i
 
 // FindAllEnabled 查询所有启用的权限
 func (s *PermissionsQueryService) FindAllEnabled(ctx context.Context) ([]*dto.PermissionsDto, error) {
-	// 构建查询条件
-	qb := db_query.NewQueryBuilder()
-	qb.Where("status", db_query.Eq, 1)
-	qb.OrderBy("sequence", true)
+	tenantId := actx.GetTenantId(ctx)
+	var perms []*entity.Permissions
+	var err error
+	// 没有租户就是全部,超级管理获取全部
+	if tenantId == "" || actx.IsSuperAdmin(ctx) {
+		// 构建查询条件
+		qb := db_query.NewQueryBuilder()
+		qb.Where("status", db_query.Eq, 1)
+		qb.OrderBy("sequence", true)
 
-	// 查询数据
-	perms, err := s.permRepo.Find(ctx, qb)
+		// 查询数据
+		perms, err = s.permRepo.Find(ctx, qb)
+	} else {
+		perms, err = s.tenantRepo.GetPermissionsByTenantID(ctx, tenantId)
+	}
 	if err != nil {
 		return nil, err
 	}
-
 	return s.permissionsConverter.ToDTOList(perms), nil
 }
 

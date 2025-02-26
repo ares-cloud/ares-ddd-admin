@@ -445,12 +445,16 @@ func (h *EventHandler) handlePermissionEvent(ctx context.Context, event *events.
 
 	switch event.EventName() {
 	case events.PermissionCreated:
-		// 1. 清除权限树缓存
-		if err := h.permCache.InvalidatePermissionTreeCache(ctx); err != nil {
-			return fmt.Errorf("清除权限树缓存失败: %w", err)
-		}
-		// 2. 清除父权限的子权限列表缓存
-		if err := h.permCache.InvalidateChildrenCache(ctx, 0); err != nil {
+		//// 1. 清除权限树缓存
+		//if err := h.permCache.InvalidatePermissionTreeCache(ctx); err != nil {
+		//	return fmt.Errorf("清除权限树缓存失败: %w", err)
+		//}
+		//// 2. 清除父权限的子权限列表缓存
+		//if err := h.permCache.InvalidateChildrenCache(ctx, 0); err != nil {
+		//	return fmt.Errorf("清除根权限子权限列表缓存失败: %w", err)
+		//}
+		// 直接使得权限缓存失效
+		if err := h.permCache.InvalidatePermissionCache(ctx, 0); err != nil {
 			return fmt.Errorf("清除根权限子权限列表缓存失败: %w", err)
 		}
 

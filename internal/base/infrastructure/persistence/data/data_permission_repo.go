@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/repository"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/persistence/entity"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/database"
@@ -13,6 +14,11 @@ type dataPermissionRepo struct {
 }
 
 func NewDataPermissionRepo(db database.IDataBase) repository.IDataPermissionRepo {
+	model := new(entity.DataPermission)
+	// 同步表
+	if err := db.DB(context.Background()).AutoMigrate(model); err != nil {
+		hlog.Fatalf("sync sys user tables to db error: %v", err)
+	}
 	return &dataPermissionRepo{db: db}
 }
 

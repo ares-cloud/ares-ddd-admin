@@ -8,7 +8,9 @@ import (
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/application/queries"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/model"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/domain/repository"
+	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
+	"github.com/ares-cloud/ares-ddd-admin/pkg/constant"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/ipcity"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"time"
@@ -20,13 +22,15 @@ import (
 )
 
 type AuthHandler struct {
+	conf     *configs.Bootstrap
 	authRepo repository.IAuthRepository
 	uds      iQuery.IUserQueryService
 	llr      repository.ILoginLogRepository
 }
 
-func NewAuthHandler(authRepo repository.IAuthRepository, uds iQuery.IUserQueryService, llr repository.ILoginLogRepository) *AuthHandler {
+func NewAuthHandler(conf *configs.Bootstrap, authRepo repository.IAuthRepository, uds iQuery.IUserQueryService, llr repository.ILoginLogRepository) *AuthHandler {
 	return &AuthHandler{
+		conf:     conf,
 		authRepo: authRepo,
 		uds:      uds,
 		llr:      llr,
@@ -39,6 +43,28 @@ func (h *AuthHandler) HandleLogin(ctx context.Context, cmd commands.LoginCommand
 	valid, err := h.authRepo.ValidateCaptcha(ctx, cmd.CaptchaKey, cmd.CaptchaCode)
 	if err != nil {
 		return nil, herrors.NewErr(err)
+	}
+	if cmd.Username == h.conf.SuperAdmin.Phone {
+		if cmd.Password != h.conf.SuperAdmin.Password {
+			return nil, herrors.NewBadReqError("密码错误")
+		}
+		user := model.NewUser("", h.conf.SuperAdmin.Phone, h.conf.SuperAdmin.Password)
+		user.ID = constant.RoleSuperAdmin
+		userId := constant.RoleSuperAdmin
+		// 生成token
+		tokenData, err := tk.GenerateToken(userId, &token.AccessToken{
+			UserId:   userId,
+			TenantId: "",
+			Roles:    []string{userId},
+			Platform: cmd.Platform,
+			UserName: cmd.Username,
+		})
+		if err != nil {
+			return nil, herrors.NewErr(err)
+		}
+		// 记录登录失败日志
+		go h.recordLoginLog(ctx, user, cmd, nil)
+		return dto.ToAuthDto(tokenData), nil
 	}
 
 	// 查找用户认证信息

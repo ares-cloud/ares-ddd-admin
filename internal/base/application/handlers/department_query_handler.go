@@ -49,7 +49,7 @@ func (h *DepartmentQueryHandler) HandleList(ctx context.Context, req *queries.Li
 	if req.ParentID != "" {
 		qb.Where("parent_id", db_query.Eq, req.ParentID)
 	}
-	qb.OrderBy("sort", false)
+	qb.OrderBy("sequence", false)
 	qb.WithPage(&req.Page)
 
 	// 查询总数
