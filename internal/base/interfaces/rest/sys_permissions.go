@@ -44,6 +44,7 @@ func (c *SysPermissionsController) RegisterRouter(g *route.RouterGroup, t token.
 			Action:      "新增",
 		}), hserver.NewHandlerFu[commands.CreatePermissionsCommand](c.AddPermissions))
 		ur.GET("", casbin.Handler(c.ef), hserver.NewHandlerFu[queries.ListPermissionsQuery](c.PermissionsList))
+		ur.GET(":id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.GetDetails))
 		ur.PUT("", oplog.Record(oplog.LogOption{
 			IncludeBody: true,
 			Module:      c.modeNma,
@@ -94,6 +95,30 @@ func (c *SysPermissionsController) AddPermissions(ctx context.Context, params *c
 func (c *SysPermissionsController) PermissionsList(ctx context.Context, params *queries.ListPermissionsQuery) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
 	data, err := c.queryHandel.HandleList(ctx, params)
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result.WithData(data)
+}
+
+// GetDetails 获取权限详情
+// @Summary 获取权限详情
+// @Description 获取指定ID的权限详情
+// @Tags 系统权限
+// @ID GetDetails
+// @Accept json
+// @Produce json
+// @Param id path int64 true "权限ID"
+// @Success 200 {object} base_info.Success{data=dto.PermissionsDto}
+// @Failure 400 {object} base_info.Swagger400Resp "code为400 参数输入错误"
+// @Failure 401 {object} base_info.Swagger401Resp "code为401 token未带上"
+// @Failure 500 {object} base_info.Swagger500Resp "code为500 服务端内部错误"
+// @Router /v1/sys/permissions/{id} [get]
+func (c *SysPermissionsController) GetDetails(ctx context.Context, params *models.IntIdReq) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	data, err := c.queryHandel.HandleGet(ctx, queries.GetPermissionsQuery{
+		Id: params.Id,
+	})
 	if err != nil {
 		return result.WithError(err)
 	}

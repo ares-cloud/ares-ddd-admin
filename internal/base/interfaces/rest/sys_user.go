@@ -60,6 +60,11 @@ func (c *SysUserController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 			Module:      c.modeNma,
 			Action:      "更新状态",
 		}), hserver.NewHandlerFu[commands.UpdateUserStatusCommand](c.UpdateUserStatus))
+		ur.PUT("/role", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "分配角色",
+		}), hserver.NewHandlerFu[commands.AssignUserRoleCommand](c.AssignRole))
 		ur.GET("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.StringIdReq](c.GetDetails))
 		ur.GET("/info", hserver.NewNotParHandlerFu(c.GetUserInfo))
 		ur.GET("/menus", hserver.NewNotParHandlerFu(c.GetUserMenus))
@@ -188,6 +193,28 @@ func (c *SysUserController) DeleteUser(ctx context.Context, params *models.Strin
 func (c *SysUserController) UpdateUserStatus(ctx context.Context, params *commands.UpdateUserStatusCommand) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
 	err := c.cmdHandel.HandleUpdateStatus(ctx, *params)
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result
+}
+
+// AssignRole 分配角色
+// @Summary 分配角色
+// @Description 为指定用户分配角色
+// @Tags 系统用户
+// @ID AssignRole
+// @Accept json
+// @Produce json
+// @Param req body commands.AssignUserRoleCommand true "分配角色信息"
+// @Success 200 {object} base_info.Success
+// @Failure 400 {object} base_info.Swagger400Resp "参数错误"
+// @Failure 401 {object} base_info.Swagger401Resp "未授权"
+// @Failure 500 {object} base_info.Swagger500Resp "服务器内部错误"
+// @Router /v1/sys/user/role [put]
+func (c *SysUserController) AssignRole(ctx context.Context, params *commands.AssignUserRoleCommand) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	err := c.cmdHandel.HandleAssignUserRole(ctx, *params)
 	if err != nil {
 		return result.WithError(err)
 	}

@@ -20,5 +20,5 @@ type IPermissionsQuery interface {
 	// FindAllEnabled 查询所有启用的权限
 	FindAllEnabled(ctx context.Context) ([]*dto.PermissionsDto, herrors.Herr)
 	// GetSimplePermissionsTree 获取简化的权限树
-	GetSimplePermissionsTree(ctx context.Context) ([]*dto.PermissionsTreeDto, herrors.Herr)
+	GetSimplePermissionsTree(ctx context.Context) (*dto.PermissionsTreeResult, herrors.Herr)
 }

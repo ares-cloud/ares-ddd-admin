@@ -35,7 +35,11 @@ func (s *PermissionsQueryService) FindByID(ctx context.Context, id int64) (*dto.
 	if perm == nil {
 		return nil, nil
 	}
-	return s.permissionsConverter.ToDTO(perm, nil), nil
+	resources, err := s.permRepo.GetByPermissionsId(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.permissionsConverter.ToDTO(perm, resources), nil
 }
 
 // Find 查询权限列表
@@ -79,15 +83,23 @@ func (s *PermissionsQueryService) FindAllEnabled(ctx context.Context) ([]*dto.Pe
 }
 
 // GetSimplePermissionsTree 获取简化的权限树
-func (s *PermissionsQueryService) GetSimplePermissionsTree(ctx context.Context) ([]*dto.PermissionsTreeDto, error) {
+func (s *PermissionsQueryService) GetSimplePermissionsTree(ctx context.Context) (*dto.PermissionsTreeResult, error) {
 	// 1. 查询所有权限
 	perms, _, err := s.permRepo.GetTreeByType(ctx, 1) // 1表示菜单类型
 	if err != nil {
 		return nil, err
 	}
-
+	// 获取ids
+	ids := make([]int64, 0, len(perms))
+	for _, perm := range perms {
+		ids = append(ids, perm.ID)
+	}
+	tres := s.permissionsConverter.ToSimpleTreeDTOList(perms)
 	// 2. 转换为树形结构
-	return s.permissionsConverter.ToSimpleTreeDTOList(perms), nil
+	return &dto.PermissionsTreeResult{
+		Tree: tres,
+		Ids:  ids,
+	}, nil
 }
 
 // GetPermissionRoles 获取拥有该权限的角色列表

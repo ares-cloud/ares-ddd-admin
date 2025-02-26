@@ -80,13 +80,13 @@ func (c *PermissionsQueryCache) FindAllEnabled(ctx context.Context) ([]*dto.Perm
 }
 
 // GetSimplePermissionsTree 获取简化的权限树(带缓存)
-func (c *PermissionsQueryCache) GetSimplePermissionsTree(ctx context.Context) ([]*dto.PermissionsTreeDto, herrors.Herr) {
+func (c *PermissionsQueryCache) GetSimplePermissionsTree(ctx context.Context) (*dto.PermissionsTreeResult, herrors.Herr) {
 	tenantID := actx.GetTenantId(ctx)
 	key := keys.PermissionSimpleTreeKey(tenantID)
-	var permissions []*dto.PermissionsTreeDto
-	err := c.decorator.Cached(ctx, key, &permissions, func() error {
+	var permissionsTree *dto.PermissionsTreeResult
+	err := c.decorator.Cached(ctx, key, &permissionsTree, func() error {
 		var err error
-		permissions, err = c.next.GetSimplePermissionsTree(ctx)
+		permissionsTree, err = c.next.GetSimplePermissionsTree(ctx)
 		return err
 	})
 	if err != nil {
@@ -95,7 +95,7 @@ func (c *PermissionsQueryCache) GetSimplePermissionsTree(ctx context.Context) ([
 		}
 		return nil, herrors.NewServerHError(err)
 	}
-	return permissions, nil
+	return permissionsTree, nil
 }
 
 // Find 查询权限列表(不缓存)

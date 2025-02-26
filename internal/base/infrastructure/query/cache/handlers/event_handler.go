@@ -113,14 +113,10 @@ func (h *EventHandler) handleUserEvent(ctx context.Context, event *events.UserEv
 		if err := h.userCache.InvalidateUserListCache(ctx); err != nil {
 			return fmt.Errorf("清除用户列表缓存失败: %w", err)
 		}
-		// 清除用户角色相关缓存
-		//if err := h.roleCache.InvalidateUserRoleCache(ctx, event.UserID); err != nil {
-		//	return fmt.Errorf("清除用户角色缓存失败: %w", err)
-		//}
-		//// 清除用户部门相关缓存
-		//if err := h.deptCache.InvalidateUserDepartmentCache(ctx, event.UserID); err != nil {
-		//	return fmt.Errorf("清除用户部门缓存失败: %w", err)
-		//}
+	case events.UserRoleChanged:
+		if err := h.userCache.InvalidateUserCache(ctx, event.UserID); err != nil {
+			return fmt.Errorf("清除用户缓存失败: %w", err)
+		}
 	case events.UserLoggedIn:
 		if err := h.userCache.WarmupUserCache(ctx, event.UserID); err != nil {
 			hlog.CtxDebugf(ctx, "user login warmup user cache err :%v", err)

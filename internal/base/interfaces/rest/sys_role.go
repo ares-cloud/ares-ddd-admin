@@ -55,6 +55,11 @@ func (c *SysRoleController) RegisterRouter(g *route.RouterGroup, t token.IToken)
 			Module:      c.modeNma,
 			Action:      "删除",
 		}), casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.DeleteRole))
+		ur.PUT("/permissions", casbin.Handler(c.ef), oplog.Record(oplog.LogOption{
+			IncludeBody: true,
+			Module:      c.modeNma,
+			Action:      "分配权限",
+		}), casbin.Handler(c.ef), hserver.NewHandlerFu[commands.AssignRolePermissionsCommand](c.AssignPermissions))
 		ur.GET("/:id", casbin.Handler(c.ef), hserver.NewHandlerFu[models.IntIdReq](c.GetDetails))
 		ur.GET("/enabled", hserver.NewNotParHandlerFu(c.GetAllEnabled))
 		ur.GET("/data-permission", hserver.NewNotParHandlerFu(c.GetAllDataPermission))
@@ -139,6 +144,28 @@ func (c *SysRoleController) UpdateRole(ctx context.Context, params *commands.Upd
 func (c *SysRoleController) DeleteRole(ctx context.Context, params *models.IntIdReq) *hserver.ResponseResult {
 	result := hserver.DefaultResponseResult()
 	err := c.cmdHandel.HandleDelete(ctx, &commands.DeleteRoleCommand{ID: params.Id})
+	if err != nil {
+		return result.WithError(err)
+	}
+	return result
+}
+
+// AssignPermissions 分配角色权限
+// @Summary 分配角色权限
+// @Description 分配角色权限
+// @Tags 系统角色
+// @ID AssignPermissions
+// @Accept json
+// @Produce json
+// @Param req body commands.AssignRolePermissionsCommand true
+// @Success 200 {object} base_info.Success
+// @Failure 400 {object} base_info.Swagger400Resp "code为400 参数输入错误"
+// @Failure 401 {object} base_info.Swagger401Resp "code为401 token未带上"
+// @Failure 500 {object} base_info.Swagger500Resp "code为500 服务端内部错误"
+// @Router /v1/sys/role/permissions [put]
+func (c *SysRoleController) AssignPermissions(ctx context.Context, params *commands.AssignRolePermissionsCommand) *hserver.ResponseResult {
+	result := hserver.DefaultResponseResult()
+	err := c.cmdHandel.HandleAssignPermissions(ctx, params)
 	if err != nil {
 		return result.WithError(err)
 	}

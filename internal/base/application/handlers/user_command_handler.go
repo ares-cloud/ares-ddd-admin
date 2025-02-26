@@ -85,14 +85,6 @@ func (h *UserCommandHandler) HandleUpdate(ctx context.Context, cmd commands.Upda
 		}
 	}
 
-	// 更新角色
-	if len(cmd.RoleIDs) > 0 {
-		if hr := h.userService.AssignRoles(ctx, user.ID, cmd.RoleIDs); herrors.HaveError(hr) {
-			hlog.CtxErrorf(ctx, "failed to assign roles: %s", hr)
-			return hr
-		}
-	}
-
 	// 保存更新
 	if hr := h.userService.UpdateUser(ctx, user); herrors.HaveError(hr) {
 		hlog.CtxErrorf(ctx, "failed to update user: %s", hr)
@@ -142,5 +134,19 @@ func (h *UserCommandHandler) HandleUpdateStatus(ctx context.Context, cmd command
 		return hr
 	}
 
+	return nil
+}
+
+// HandleAssignUserRole 处理角色分配
+func (h *UserCommandHandler) HandleAssignUserRole(ctx context.Context, cmd commands.AssignUserRoleCommand) herrors.Herr {
+	if hr := cmd.Validate(); herrors.HaveError(hr) {
+		hlog.CtxErrorf(ctx, "Command validation error: %s", hr)
+		return hr
+	}
+	// 更新角色
+	if hr := h.userService.AssignRoles(ctx, cmd.UserID, cmd.RoleIDs); herrors.HaveError(hr) {
+		hlog.CtxErrorf(ctx, "failed to assign roles: %s", hr)
+		return hr
+	}
 	return nil
 }

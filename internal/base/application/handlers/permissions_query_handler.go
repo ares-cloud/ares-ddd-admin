@@ -78,6 +78,6 @@ func (h *PermissionsQueryHandler) HandleGetAllEnabled(ctx context.Context) ([]*d
 	return permissions, nil
 }
 
-func (h *PermissionsQueryHandler) HandleGetPermissionsTree(ctx context.Context) ([]*dto.PermissionsTreeDto, herrors.Herr) {
+func (h *PermissionsQueryHandler) HandleGetPermissionsTree(ctx context.Context) (*dto.PermissionsTreeResult, herrors.Herr) {
 	return h.permQuery.GetSimplePermissionsTree(ctx)
 }

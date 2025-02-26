@@ -136,7 +136,7 @@ func (c *UserQueryCache) InvalidateUserDepartmentCache(ctx context.Context, user
 	return c.decorator.InvalidateCache(ctx, keys.UserDepartmentKey(userID))
 }
 
-// InvalidateRoleListCache 使角色列表缓存失效
+// InvalidateRoleListCache 使角色列表缓存
 func (c *UserQueryCache) InvalidateRoleListCache(ctx context.Context) error {
 	return c.decorator.InvalidateCache(ctx, keys.RoleListKey(actx.GetTenantId(ctx)))
 }

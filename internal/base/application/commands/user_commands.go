@@ -55,3 +55,12 @@ type UpdateUserStatusCommand struct {
 func (c *UpdateUserStatusCommand) Validate() herrors.Herr {
 	return validator.Validate(c)
 }
+
+type AssignUserRoleCommand struct {
+	UserID  string  `json:"userId" validate:"required" label:"用户ID"`
+	RoleIDs []int64 `json:"roleIds" validate:"required,dive,gt=0" label:"角色ID列表"`
+}
+
+func (a *AssignUserRoleCommand) Validate() herrors.Herr {
+	return validator.Validate(a)
+}

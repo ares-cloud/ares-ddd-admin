@@ -1,39 +1,38 @@
-version: '3'
 services:
-  nsqlookupd:
-    image: nsqio/nsq
-    command: /nsqlookupd
-    container_name: nsqlookupd
-    ports:
-      - "4160:4160"
-      - "4161:4161"
-    networks:
-      - default
-  nsqd:
-    image: nsqio/nsq
-    container_name: nsqd
-    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160 --data-path=/data
-    ports:
-      - "4150:4150"
-      - "4151:4151"
-    volumes:
-      - ./data/nsq/data:/data
-    depends_on:
-      - nsqlookupd
-    networks:
-      - default
-
-  nsqadmin:
-    image: nsqio/nsq
-    container_name: nsqadmin
-    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
-    ports:
-      - "4171:4171"
-    depends_on:
-      - nsqlookupd
-      - nsqd
-    networks:
-      - default
+#  nsqlookupd:
+#    image: nsqio/nsq
+#    command: /nsqlookupd
+#    container_name: nsqlookupd
+#    ports:
+#      - "4160:4160"
+#      - "4161:4161"
+#    networks:
+#      - default
+#  nsqd:
+#    image: nsqio/nsq
+#    container_name: nsqd
+#    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160 --data-path=/data
+#    ports:
+#      - "4150:4150"
+#      - "4151:4151"
+#    volumes:
+#      - ./data/nsq/data:/data
+#    depends_on:
+#      - nsqlookupd
+#    networks:
+#      - default
+#
+#  nsqadmin:
+#    image: nsqio/nsq
+#    container_name: nsqadmin
+#    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+#    ports:
+#      - "4171:4171"
+#    depends_on:
+#      - nsqlookupd
+#      - nsqd
+#    networks:
+#      - default
 
   postgresql:
     image: bitnami/postgresql:15    # 使用 Bitnami 提供的 PostgreSQL 15 版本
