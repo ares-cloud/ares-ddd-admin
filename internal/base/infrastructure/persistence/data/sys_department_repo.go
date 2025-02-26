@@ -51,6 +51,14 @@ func (r *sysDepartmentRepo) GetByUserID(ctx context.Context, userID string) ([]*
 	err := r.Db(ctx).Where("user_id = ?", userID).Find(&list).Error
 	return list, err
 }
+func (r *sysDepartmentRepo) GetDeptByUserID(ctx context.Context, userID string) ([]*entity.Department, error) {
+	var list []*entity.Department
+	err := r.Db(ctx).Model(&entity.UserDepartment{}).
+		Joins("LEFT JOIN sys_department ON sys_department.id = user_department.dept_id").
+		Where("user_department.user_id = ?", userID).
+		Find(&list).Error
+	return list, err
+}
 
 // FindByIds 根据ID列表查询部门
 func (r *sysDepartmentRepo) FindByIds(ctx context.Context, ids []string) ([]*entity.Department, error) {

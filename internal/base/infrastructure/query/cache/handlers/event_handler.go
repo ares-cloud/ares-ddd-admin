@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 
@@ -87,39 +86,113 @@ func (h *EventHandler) Handle(ctx context.Context, event pkgEvent.Event) error {
 
 // 用户相关事件处理
 func (h *EventHandler) handleUserEvent(ctx context.Context, event *events.UserEvent) error {
-	// 根据事件类型处理
+	hlog.CtxDebugf(ctx, "处理用户事件: %s, 用户ID=%s", event.EventName(), event.UserID)
+
 	switch event.EventName() {
 	case events.UserCreated:
-		// 用户创建时清除用户列表缓存
+		// 1. 清除用户列表缓存
 		if err := h.userCache.InvalidateUserListCache(ctx); err != nil {
 			return fmt.Errorf("清除用户列表缓存失败: %w", err)
+		}
+		// 2. 清除部门用户列表缓存
+		depts, err := h.userCache.GetUserDepartments(ctx, event.UserID)
+		if err != nil {
+			return fmt.Errorf("获取用户部门列表失败: %w", err)
+		}
+		for _, dept := range depts {
+			if err := h.deptCache.InvalidateDepartmentUserCache(ctx, dept.ID); err != nil {
+				return fmt.Errorf("清除部门[%s]用户列表缓存失败: %w", dept.ID, err)
+			}
 		}
 
 	case events.UserUpdated:
-		// 用户更新时清除用户相关缓存
+		// 1. 清除用户相关缓存
 		if err := h.userCache.InvalidateUserCache(ctx, event.UserID); err != nil {
 			return fmt.Errorf("清除用户缓存失败: %w", err)
 		}
-		// 同时清除用户列表缓存
+		// 2. 清除用户列表缓存
 		if err := h.userCache.InvalidateUserListCache(ctx); err != nil {
 			return fmt.Errorf("清除用户列表缓存失败: %w", err)
+		}
+		// 3. 清除用户权限和菜单缓存
+		if err := h.userCache.InvalidateUserPermissionCache(ctx, event.UserID); err != nil {
+			return fmt.Errorf("清除用户权限缓存失败: %w", err)
+		}
+		if err := h.userCache.InvalidateUserMenuCache(ctx, event.UserID); err != nil {
+			return fmt.Errorf("清除用户菜单缓存失败: %w", err)
+		}
+		// 4. 清除部门用户列表缓存
+		depts, err := h.userCache.GetUserDepartments(ctx, event.UserID)
+		if err != nil {
+			return fmt.Errorf("获取用户部门列表失败: %w", err)
+		}
+		for _, dept := range depts {
+			if err := h.deptCache.InvalidateDepartmentUserCache(ctx, dept.ID); err != nil {
+				return fmt.Errorf("清除部门[%s]用户列表缓存失败: %w", dept.ID, err)
+			}
 		}
 
 	case events.UserDeleted:
-		// 用户删除时清除所有相关缓存
+		// 1. 清除用户所有相关缓存
 		if err := h.userCache.InvalidateUserCache(ctx, event.UserID); err != nil {
 			return fmt.Errorf("清除用户缓存失败: %w", err)
 		}
 		if err := h.userCache.InvalidateUserListCache(ctx); err != nil {
 			return fmt.Errorf("清除用户列表缓存失败: %w", err)
 		}
+		if err := h.userCache.InvalidateUserPermissionCache(ctx, event.UserID); err != nil {
+			return fmt.Errorf("清除用户权限缓存失败: %w", err)
+		}
+		if err := h.userCache.InvalidateUserMenuCache(ctx, event.UserID); err != nil {
+			return fmt.Errorf("清除用户菜单缓存失败: %w", err)
+		}
+		// 2. 清除部门用户列表缓存
+		depts, err := h.userCache.GetUserDepartments(ctx, event.UserID)
+		if err != nil {
+			return fmt.Errorf("获取用户部门列表失败: %w", err)
+		}
+		for _, dept := range depts {
+			if err := h.deptCache.InvalidateDepartmentUserCache(ctx, dept.ID); err != nil {
+				return fmt.Errorf("清除部门[%s]用户列表缓存失败: %w", dept.ID, err)
+			}
+		}
+		// 3. 清除角色用户列表缓存
+		roles, err := h.userCache.GetUserRoles(ctx, event.UserID)
+		if err != nil {
+			return fmt.Errorf("获取用户角色列表失败: %w", err)
+		}
+		for _, role := range roles {
+			if err := h.roleCache.InvalidateRoleUserCache(ctx, role.ID); err != nil {
+				return fmt.Errorf("清除角色[%d]用户列表缓存失败: %w", role.ID, err)
+			}
+		}
+
 	case events.UserRoleChanged:
+		// 1. 清除用户权限相关缓存
 		if err := h.userCache.InvalidateUserCache(ctx, event.UserID); err != nil {
 			return fmt.Errorf("清除用户缓存失败: %w", err)
 		}
+		if err := h.userCache.InvalidateUserPermissionCache(ctx, event.UserID); err != nil {
+			return fmt.Errorf("清除用户权限缓存失败: %w", err)
+		}
+		if err := h.userCache.InvalidateUserMenuCache(ctx, event.UserID); err != nil {
+			return fmt.Errorf("清除用户菜单缓存失败: %w", err)
+		}
+		// 2. 清除角色用户列表缓存
+		roles, err := h.userCache.GetUserRoles(ctx, event.UserID)
+		if err != nil {
+			return fmt.Errorf("获取用户角色列表失败: %w", err)
+		}
+		for _, role := range roles {
+			if err := h.roleCache.InvalidateRoleUserCache(ctx, role.ID); err != nil {
+				return fmt.Errorf("清除角色[%d]用户列表缓存失败: %w", role.ID, err)
+			}
+		}
+
 	case events.UserLoggedIn:
+		// 预热用户缓存
 		if err := h.userCache.WarmupUserCache(ctx, event.UserID); err != nil {
-			hlog.CtxDebugf(ctx, "user login warmup user cache err :%v", err)
+			hlog.CtxDebugf(ctx, "用户登录预热缓存失败: %v", err)
 		}
 	}
 
@@ -128,16 +201,64 @@ func (h *EventHandler) handleUserEvent(ctx context.Context, event *events.UserEv
 
 // 角色相关事件处理
 func (h *EventHandler) handleRoleEvent(ctx context.Context, event *events.RoleEvent) error {
-	log.Printf("处理角色事件: %s, 角色ID=%d", event.EventName(), event.RoleID)
+	hlog.CtxDebugf(ctx, "处理角色事件: %s, 角色ID=%d", event.EventName(), event.RoleID)
 
-	// 清除角色缓存
-	if err := h.roleCache.InvalidateRoleCache(ctx, event.RoleID); err != nil {
-		return fmt.Errorf("清除角色缓存失败: %w", err)
-	}
+	switch event.EventName() {
+	case events.RoleCreated:
+		// 清除角色列表缓存
+		if err := h.roleCache.InvalidateRoleListCache(ctx); err != nil {
+			return fmt.Errorf("清除角色列表缓存失败: %w", err)
+		}
 
-	// 清除角色列表缓存
-	if err := h.roleCache.InvalidateRoleListCache(ctx); err != nil {
-		return fmt.Errorf("清除角色列表缓存失败: %w", err)
+	case events.RoleUpdated:
+		// 1. 清除角色缓存
+		if err := h.roleCache.InvalidateRoleCache(ctx, event.RoleID); err != nil {
+			return fmt.Errorf("清除角色缓存失败: %w", err)
+		}
+		// 2. 清除角色列表缓存
+		if err := h.roleCache.InvalidateRoleListCache(ctx); err != nil {
+			return fmt.Errorf("清除角色列表缓存失败: %w", err)
+		}
+		// 3. 清除该角色下所有用户的权限和菜单缓存
+		users, err := h.roleCache.GetRoleUsers(ctx, event.RoleID)
+		if err != nil {
+			return fmt.Errorf("获取角色用户列表失败: %w", err)
+		}
+		for _, user := range users {
+			if err := h.userCache.InvalidateUserPermissionCache(ctx, user.ID); err != nil {
+				return fmt.Errorf("清除用户[%s]权限缓存失败: %w", user.ID, err)
+			}
+			if err := h.userCache.InvalidateUserMenuCache(ctx, user.ID); err != nil {
+				return fmt.Errorf("清除用户[%s]菜单缓存失败: %w", user.ID, err)
+			}
+		}
+
+	case events.RoleDeleted:
+		// 1. 清除角色缓存
+		if err := h.roleCache.InvalidateRoleCache(ctx, event.RoleID); err != nil {
+			return fmt.Errorf("清除角色缓存失败: %w", err)
+		}
+		// 2. 清除角色列表缓存
+		if err := h.roleCache.InvalidateRoleListCache(ctx); err != nil {
+			return fmt.Errorf("清除角色列表缓存失败: %w", err)
+		}
+		// 3. 清除角色权限缓存
+		if err := h.roleCache.InvalidateRolePermissionCache(ctx, event.RoleID); err != nil {
+			return fmt.Errorf("清除角色权限缓存失败: %w", err)
+		}
+		// 4. 清除该角色下所有用户的权限和菜单缓存
+		users, err := h.roleCache.GetRoleUsers(ctx, event.RoleID)
+		if err != nil {
+			return fmt.Errorf("获取角色用户列表失败: %w", err)
+		}
+		for _, user := range users {
+			if err := h.userCache.InvalidateUserPermissionCache(ctx, user.ID); err != nil {
+				return fmt.Errorf("清除用户[%s]权限缓存失败: %w", user.ID, err)
+			}
+			if err := h.userCache.InvalidateUserMenuCache(ctx, user.ID); err != nil {
+				return fmt.Errorf("清除用户[%s]菜单缓存失败: %w", user.ID, err)
+			}
+		}
 	}
 
 	return nil
@@ -303,7 +424,7 @@ func (h *EventHandler) handleDepartmentEvent(ctx context.Context, event *events.
 
 // 数据权限相关事件处理
 func (h *EventHandler) handleDataPermissionEvent(ctx context.Context, event *events.DataPermissionEvent) error {
-	log.Printf("处理数据权限事件: %s, 角色ID=%d", event.EventName(), event.Permission.RoleID)
+	hlog.CtxDebugf(ctx, "处理数据权限事件: %s, 角色ID=%d", event.EventName(), event.Permission.RoleID)
 
 	// 清除角色的数据权限缓存
 	if err := h.dataPermCache.InvalidateCache(ctx, event.Permission.RoleID); err != nil {
@@ -330,7 +451,7 @@ func (h *EventHandler) handleDataPermissionEvent(ctx context.Context, event *eve
 
 // 部门用户变更事件处理
 func (h *EventHandler) handleDepartmentUserEvent(ctx context.Context, event *events.UserTransferredEvent) error {
-	log.Printf("处理部门用户变更事件: 部门ID=%s, 用户IDs=%v", event.DeptID, event)
+	hlog.CtxDebugf(ctx, "处理部门用户变更事件: 部门ID=%s, 用户ID=%s", event.DeptID, event.UserID)
 
 	// 1. 清除部门的用户列表缓存
 	if err := h.deptCache.InvalidateDepartmentUserCache(ctx, event.DeptID); err != nil {
@@ -392,7 +513,7 @@ func (h *EventHandler) handleTenantEvent(ctx context.Context, event *events.Tena
 
 // 角色权限变更事件处理
 func (h *EventHandler) handleRolePermissionEvent(ctx context.Context, event *events.RolePermissionsAssignedEvent) error {
-	log.Printf("处理角色权限变更事件: 角色ID=%d", event.RoleID)
+	hlog.CtxDebugf(ctx, "处理角色权限变更事件: 角色ID=%d", event.RoleID)
 
 	// 1. 清除角色的权限缓存
 	if err := h.roleCache.InvalidateRolePermissionCache(ctx, event.RoleID); err != nil {
@@ -418,7 +539,7 @@ func (h *EventHandler) handleRolePermissionEvent(ctx context.Context, event *eve
 
 // 租户权限变更事件处理
 func (h *EventHandler) handleTenantPermissionEvent(ctx context.Context, event *events.TenantPermissionEvent) error {
-	log.Printf("处理租户权限变更事件: 租户ID=%s", event.TenantID)
+	hlog.CtxDebugf(ctx, "处理租户权限变更事件: 租户ID=%s", event.TenantID)
 
 	// 1. 清除租户的权限缓存
 	if err := h.tenantCache.InvalidateTenantPermissionCache(ctx, event.TenantID); err != nil {
@@ -445,20 +566,16 @@ func (h *EventHandler) handlePermissionEvent(ctx context.Context, event *events.
 
 	switch event.EventName() {
 	case events.PermissionCreated:
-		//// 1. 清除权限树缓存
-		//if err := h.permCache.InvalidatePermissionTreeCache(ctx); err != nil {
-		//	return fmt.Errorf("清除权限树缓存失败: %w", err)
-		//}
-		//// 2. 清除父权限的子权限列表缓存
-		//if err := h.permCache.InvalidateChildrenCache(ctx, 0); err != nil {
-		//	return fmt.Errorf("清除根权限子权限列表缓存失败: %w", err)
-		//}
 		// 直接使得权限缓存失效
 		if err := h.permCache.InvalidatePermissionCache(ctx, 0); err != nil {
-			return fmt.Errorf("清除根权限子权限列表缓存失败: %w", err)
+			return fmt.Errorf("清除权限缓存失败: %w", err)
+		}
+		// 清除权限树缓存
+		if err := h.permCache.InvalidatePermissionTreeCache(ctx); err != nil {
+			return fmt.Errorf("清除权限树缓存失败: %w", err)
 		}
 
-	case events.PermissionUpdated:
+	case events.PermissionUpdated, events.PermissionStatusChange:
 		// 1. 清除权限基本信息缓存
 		if err := h.permCache.InvalidatePermissionCache(ctx, event.PermID); err != nil {
 			return fmt.Errorf("清除权限缓存失败: %w", err)
@@ -473,8 +590,22 @@ func (h *EventHandler) handlePermissionEvent(ctx context.Context, event *events.
 			return fmt.Errorf("获取权限角色列表失败: %w", err)
 		}
 		for _, role := range roles {
+			// 清除角色权限缓存
 			if err := h.roleCache.InvalidateRolePermissionCache(ctx, role.ID); err != nil {
 				return fmt.Errorf("清除角色[%d]权限缓存失败: %w", role.ID, err)
+			}
+			// 清除该角色下所有用户的权限和菜单缓存
+			users, err := h.roleCache.GetRoleUsers(ctx, role.ID)
+			if err != nil {
+				return fmt.Errorf("获取角色用户列表失败: %w", err)
+			}
+			for _, user := range users {
+				if err := h.userCache.InvalidateUserPermissionCache(ctx, user.ID); err != nil {
+					return fmt.Errorf("清除用户[%s]权限缓存失败: %w", user.ID, err)
+				}
+				if err := h.userCache.InvalidateUserMenuCache(ctx, user.ID); err != nil {
+					return fmt.Errorf("清除用户[%s]菜单缓存失败: %w", user.ID, err)
+				}
 			}
 		}
 
@@ -497,28 +628,22 @@ func (h *EventHandler) handlePermissionEvent(ctx context.Context, event *events.
 			return fmt.Errorf("获取权限角色列表失败: %w", err)
 		}
 		for _, role := range roles {
+			// 清除角色权限缓存
 			if err := h.roleCache.InvalidateRolePermissionCache(ctx, role.ID); err != nil {
 				return fmt.Errorf("清除角色[%d]权限缓存失败: %w", role.ID, err)
 			}
-		}
-
-	case events.PermissionStatusChange:
-		// 1. 清除权限基本信息缓存
-		if err := h.permCache.InvalidatePermissionCache(ctx, event.PermID); err != nil {
-			return fmt.Errorf("清除权限缓存失败: %w", err)
-		}
-		// 2. 清除权限树缓存
-		if err := h.permCache.InvalidatePermissionTreeCache(ctx); err != nil {
-			return fmt.Errorf("清除权限树缓存失败: %w", err)
-		}
-		// 3. 清除拥有该权限的角色的权限缓存
-		roles, err := h.permCache.GetPermissionRoles(ctx, event.PermID)
-		if err != nil {
-			return fmt.Errorf("获取权限角色列表失败: %w", err)
-		}
-		for _, role := range roles {
-			if err := h.roleCache.InvalidateRolePermissionCache(ctx, role.ID); err != nil {
-				return fmt.Errorf("清除角色[%d]权限缓存失败: %w", role.ID, err)
+			// 清除该角色下所有用户的权限和菜单缓存
+			users, err := h.roleCache.GetRoleUsers(ctx, role.ID)
+			if err != nil {
+				return fmt.Errorf("获取角色用户列表失败: %w", err)
+			}
+			for _, user := range users {
+				if err := h.userCache.InvalidateUserPermissionCache(ctx, user.ID); err != nil {
+					return fmt.Errorf("清除用户[%s]权限缓存失败: %w", user.ID, err)
+				}
+				if err := h.userCache.InvalidateUserMenuCache(ctx, user.ID); err != nil {
+					return fmt.Errorf("清除用户[%s]菜单缓存失败: %w", user.ID, err)
+				}
 			}
 		}
 	}

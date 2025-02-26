@@ -2,10 +2,12 @@ package impl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/ares-cloud/ares-ddd-admin/internal/infrastructure/configs"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 	"github.com/ares-cloud/ares-ddd-admin/pkg/constant"
+	"gorm.io/gorm"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/converter"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
@@ -21,6 +23,8 @@ type UserQueryService struct {
 	userConverter        *converter.UserConverter
 	roleConverter        *converter.RoleConverter
 	permissionsConverter *converter.PermissionsConverter
+	deptRepo             repository.ISysDepartmentRepo
+	deptConverter        *converter.DepartmentConverter
 	conf                 *configs.Bootstrap
 }
 
@@ -31,6 +35,8 @@ func NewUserQueryService(
 	userConverter *converter.UserConverter,
 	roleConverter *converter.RoleConverter,
 	permissionsConverter *converter.PermissionsConverter,
+	deptRepo repository.ISysDepartmentRepo,
+	deptConverter *converter.DepartmentConverter,
 	conf *configs.Bootstrap,
 ) *UserQueryService {
 	return &UserQueryService{
@@ -40,6 +46,8 @@ func NewUserQueryService(
 		userConverter:        userConverter,
 		roleConverter:        roleConverter,
 		permissionsConverter: permissionsConverter,
+		deptRepo:             deptRepo,
+		deptConverter:        deptConverter,
 		conf:                 conf,
 	}
 }
@@ -236,6 +244,16 @@ func (u *UserQueryService) CountUsersByDepartment(ctx context.Context, deptID st
 		return 0, fmt.Errorf("部门ID不能为空")
 	}
 	return u.userRepo.CountByDepartment(ctx, deptID, excludeAdminID, qb)
+}
+func (u *UserQueryService) GetUserDepartments(ctx context.Context, userID string) ([]*dto.DepartmentDto, error) {
+	departments, err := u.deptRepo.GetDeptByUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return []*dto.DepartmentDto{}, nil
+		}
+		return nil, err
+	}
+	return u.deptConverter.ToDTOList(departments), nil
 }
 
 // FindUnassignedUsers 查询未分配部门的用户

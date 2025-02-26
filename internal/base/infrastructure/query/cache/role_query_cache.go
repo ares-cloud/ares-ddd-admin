@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/cache/keys"
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/query/impl"
@@ -112,4 +111,10 @@ func (c *RoleQueryCache) InvalidateRoleListCache(ctx context.Context) error {
 func (c *RoleQueryCache) InvalidateTenantRoleCache(ctx context.Context, tenantID string) error {
 	// 使用租户前缀清除所有相关缓存
 	return c.decorator.InvalidateTenantTypeCache(ctx, tenantID, "role")
+}
+
+// InvalidateRoleUserCache 清除角色用户列表缓存
+func (c *RoleQueryCache) InvalidateRoleUserCache(ctx context.Context, roleID int64) error {
+	key := keys.RoleUsersKey(actx.GetTenantId(ctx), roleID)
+	return c.decorator.InvalidateCache(ctx, key)
 }

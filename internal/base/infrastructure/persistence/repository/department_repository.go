@@ -16,6 +16,7 @@ type ISysDepartmentRepo interface {
 	GetByCode(ctx context.Context, code string) (*entity.Department, error)
 	GetByParentID(ctx context.Context, parentID string) ([]*entity.Department, error)
 	GetByUserID(ctx context.Context, userID string) ([]*entity.UserDepartment, error)
+	GetDeptByUserID(ctx context.Context, userID string) ([]*entity.Department, error)
 	FindByIds(ctx context.Context, ids []string) ([]*entity.Department, error)
 	AssignUsers(ctx context.Context, deptID string, userIDs []string) error
 	RemoveUsers(ctx context.Context, deptID string, userIDs []string) error

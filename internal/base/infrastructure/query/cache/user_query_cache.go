@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"fmt"
-
 	"github.com/ares-cloud/ares-ddd-admin/pkg/actx"
 
 	"github.com/ares-cloud/ares-ddd-admin/internal/base/infrastructure/dto"
@@ -96,6 +95,10 @@ func (c *UserQueryCache) FindUsersByDepartment(ctx context.Context, deptID strin
 
 func (c *UserQueryCache) CountUsersByDepartment(ctx context.Context, deptID string, excludeAdminID string, qb *db_query.QueryBuilder) (int64, error) {
 	return c.next.CountUsersByDepartment(ctx, deptID, excludeAdminID, qb)
+}
+
+func (c *UserQueryCache) GetUserDepartments(ctx context.Context, userID string) ([]*dto.DepartmentDto, error) {
+	return c.next.GetUserDepartments(ctx, userID)
 }
 
 // GetUserRolesCode 获取用户角色编码列表(带缓存)

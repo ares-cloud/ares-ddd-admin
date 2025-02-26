@@ -21,7 +21,7 @@ func DepartmentTreeKey(tenantID string, parentID string) string {
 
 // UserDepartmentsKey 用户部门缓存key
 func UserDepartmentsKey(tenantID string, userID string) string {
-	return fmt.Sprintf("user:%s:depts:%s", tenantID, userID)
+	return fmt.Sprintf("%s%s:user:%s:depts", deptPrefix, tenantID, userID)
 }
 
 // DepartmentKeys 生成部门相关的所有缓存key
