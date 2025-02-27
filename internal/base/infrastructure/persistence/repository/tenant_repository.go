@@ -23,6 +23,7 @@ type ISysTenantRepo interface {
 	// 权限相关
 	AssignPermissions(ctx context.Context, tenantID string, permissionIDs []int64) error
 	GetPermissionsByTenantID(ctx context.Context, tenantID string) ([]*entity.Permissions, error)
+	GetTenantIDPermissionsByType(ctx context.Context, tenantID string, int8 int64) ([]*entity.Permissions, error)
 	HasPermission(ctx context.Context, tenantID string, permissionID int64) (bool, error)
 
 	Lock(ctx context.Context, tenantID string, reason string) error

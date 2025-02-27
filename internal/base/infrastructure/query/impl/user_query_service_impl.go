@@ -25,6 +25,7 @@ type UserQueryService struct {
 	permissionsConverter *converter.PermissionsConverter
 	deptRepo             repository.ISysDepartmentRepo
 	deptConverter        *converter.DepartmentConverter
+	tenantRepo           repository.ISysTenantRepo
 	conf                 *configs.Bootstrap
 }
 
@@ -37,6 +38,7 @@ func NewUserQueryService(
 	permissionsConverter *converter.PermissionsConverter,
 	deptRepo repository.ISysDepartmentRepo,
 	deptConverter *converter.DepartmentConverter,
+	tenantRepo repository.ISysTenantRepo,
 	conf *configs.Bootstrap,
 ) *UserQueryService {
 	return &UserQueryService{
@@ -48,6 +50,7 @@ func NewUserQueryService(
 		permissionsConverter: permissionsConverter,
 		deptRepo:             deptRepo,
 		deptConverter:        deptConverter,
+		tenantRepo:           tenantRepo,
 		conf:                 conf,
 	}
 }
@@ -196,18 +199,33 @@ func (u *UserQueryService) GetUserTreeMenus(ctx context.Context, userID string) 
 	if actx.IsSuperAdmin(ctx) {
 		permissions, _, err = u.permissionsRepo.GetAllTree(ctx)
 	} else {
-		// 1. 获取用户角色
-		roles, err := u.roleRepo.GetIdsByUserId(ctx, userID)
+		// 获取租户
+		tenantId := actx.GetTenantId(ctx)
+		if tenantId == "" {
+			return nil, errors.New("租户ID不能为空")
+		}
+		// 获取租户
+		tenant, err := u.tenantRepo.FindById(ctx, tenantId)
 		if err != nil {
 			return nil, err
 		}
+		// 判断是不是租户管理员
+		if tenant.AdminUserID == userID {
+			permissions, err = u.tenantRepo.GetTenantIDPermissionsByType(ctx, tenantId, 1)
+		} else {
+			// 1. 获取用户角色
+			roles, err := u.roleRepo.GetIdsByUserId(ctx, userID)
+			if err != nil {
+				return nil, err
+			}
 
-		if len(roles) == 0 {
-			return []*dto.PermissionsTreeDto{}, nil
+			if len(roles) == 0 {
+				return []*dto.PermissionsTreeDto{}, nil
+			}
+
+			// 2. 获取角色对应的菜单权限
+			permissions, _, err = u.permissionsRepo.GetTreeByUserAndType(context.Background(), userID, 1) // type=1表示菜单类型
 		}
-
-		// 2. 获取角色对应的菜单权限
-		permissions, _, err = u.permissionsRepo.GetTreeByUserAndType(context.Background(), userID, 1) // type=1表示菜单类型
 	}
 	if err != nil {
 		return nil, err

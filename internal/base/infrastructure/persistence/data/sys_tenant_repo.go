@@ -140,6 +140,16 @@ func (r *sysTenantRepo) GetPermissionsByTenantID(ctx context.Context, tenantID s
 	return permissions, nil
 }
 
+// GetTenantIDPermissionsByType 根据租户ID和权限类型获取权限列表
+func (r *sysTenantRepo) GetTenantIDPermissionsByType(ctx context.Context, tenantID string, int8 int64) ([]*entity.Permissions, error) {
+	var permissions []*entity.Permissions
+	err := r.Db(ctx).
+		Joins("JOIN sys_tenant_permissions tp ON tp.permission_id = sys_permissions.id").
+		Where("tp.tenant_id = ? AND sys_permissions.type = ?", tenantID, int8).
+		Find(&permissions).Error
+	return permissions, err
+}
+
 // HasPermission 检查租户是否拥有指定权限
 func (r *sysTenantRepo) HasPermission(ctx context.Context, tenantID string, permissionID int64) (bool, error) {
 	var count int64
