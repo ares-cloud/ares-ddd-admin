@@ -119,6 +119,15 @@ func (u *UserQueryService) FindUsers(ctx context.Context, qb *db_query.QueryBuil
 
 // GetUserRolesCode 获取用户角色编码列表
 func (u *UserQueryService) GetUserRolesCode(ctx context.Context, userID string) ([]string, error) {
+	// 1.判断用户是不是租户管理员
+	ten, err2 := u.tenantRepo.FindById(ctx, actx.GetTenantId(ctx))
+	if err2 != nil {
+		return nil, err2
+	}
+	if ten != nil && ten.AdminUserID == userID {
+		// 租户默认返回的是超级管理
+		return []string{constant.RoleSuperAdmin}, nil
+	}
 	// 1. 获取用户角色
 	roles, err := u.roleRepo.GetByUserId(ctx, userID)
 	if err != nil {
@@ -143,13 +152,37 @@ func (u *UserQueryService) CountUsers(ctx context.Context, qb *db_query.QueryBui
 
 // GetUserPermissions 获取用户权限
 func (u *UserQueryService) GetUserPermissions(ctx context.Context, userID string) ([]string, error) {
+	// 1先获取用户信息
+	user, err := u.userRepo.FindById(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if actx.GetTenantId(ctx) == "" {
+		return nil, fmt.Errorf("tenantId is empty")
+	}
+	// 2.获取租户
+	tenant, err := u.tenantRepo.FindById(ctx, user.TenantID)
+	if err != nil {
+		return nil, err
+	}
+	// 获取角色对应的权限
+	permissions := make([]string, 0)
+	// 3.判断是不是租户管理员
+	if tenant.AdminUserID == userID {
+		// 租户管理员
+		ps, err1 := u.tenantRepo.GetPermissionsByTenantID(ctx, tenant.ID)
+		if err1 != nil {
+			return nil, err1
+		}
+		for _, p := range ps {
+			permissions = append(permissions, p.Code)
+		}
+	}
 	roles, err := u.roleRepo.GetUserRoles(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取角色对应的权限
-	permissions := make([]string, 0)
 	for _, role := range roles {
 		perms, err := u.roleRepo.GetRolePermissions(ctx, role.RoleID)
 		if err != nil {
